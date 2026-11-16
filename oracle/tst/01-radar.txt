@@ -1,0 +1,80 @@
+# generated once, with a fixed seed; edit freely
+radar 1
+inicio 1000
+seq
+hit 6072 0 87 0
+hit 7299 1 42 0
+hit 8547 0 30 0
+hit 9542 1 59 0
+now 9562
+estado jogando jogando
+calc
+hit 10201 0 33 1
+hit 11759 0 78 0
+hit 13073 1 97 0
+hit 14419 0 100 0
+hit 15341 1 88 0
+hit 15835 0 101 0
+hit 16489 1 67 1
+now 16509
+estado jogando jogando
+calc
+hit 17620 0 94 0
+hit 18934 1 54 0
+hit 20587 0 93 0
+quedas 1
+now 24087
+estado ocioso
+calc
+seq
+hit 32882 0 91 0
+hit 34159 1 52 0
+hit 35376 1 95 1
+hit 36161 0 80 0
+now 36181
+estado jogando jogando
+calc
+hit 36671 1 69 0
+hit 38335 0 51 1
+hit 39249 1 55 0
+hit 40821 0 95 0
+hit 42454 1 64 0
+hit 44151 0 30 0
+hit 45650 1 96 0
+now 45670
+estado jogando jogando
+calc
+hit 46520 0 37 0
+hit 47716 1 55 0
+hit 49012 0 75 0
+quedas 2
+now 52512
+estado ocioso
+calc
+seq
+hit 56912 0 59 0
+hit 58489 1 41 0
+hit 59461 1 39 1
+hit 59945 0 65 0
+now 59965
+estado jogando jogando
+calc
+hit 60619 1 53 0
+hit 61211 0 62 0
+hit 62005 1 67 0
+hit 63114 0 44 1
+hit 64355 1 54 0
+hit 65324 0 95 0
+hit 67014 1 32 0
+now 67034
+estado jogando jogando
+calc
+hit 68277 0 50 0
+hit 69763 1 99 0
+hit 71270 0 97 0
+quedas 3
+now 74770
+estado ocioso
+calc
+calc
+report 2026_11_16_10_00_00

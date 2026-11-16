@@ -1,0 +1,142 @@
+# long runs of continuous hits: every hit above the minimum, 600ms apart
+radar 1
+conf continuos 4
+inicio 0
+seq
+hit 5635 1 85 0
+hit 6274 0 78 0
+hit 6924 1 87 0
+hit 7492 0 61 0
+hit 8143 1 80 0
+now 8153
+estado jogando jogando
+calc
+hit 8824 0 89 0
+hit 9391 1 56 0
+hit 10025 0 69 0
+hit 10581 1 55 0
+hit 11238 0 94 0
+now 11248
+estado jogando jogando
+calc
+hit 11920 1 52 0
+hit 12592 0 75 0
+hit 13227 1 91 0
+hit 13904 0 91 0
+hit 14464 1 89 0
+now 14474
+estado jogando jogando
+calc
+hit 14987 0 83 0
+hit 15523 1 53 0
+hit 16052 0 62 0
+hit 16633 1 88 0
+hit 17160 0 79 0
+now 17170
+estado jogando jogando
+calc
+hit 17763 1 78 0
+hit 18434 0 62 0
+hit 19086 1 64 0
+hit 19769 0 68 0
+hit 20416 1 50 0
+now 20426
+estado jogando jogando
+calc
+hit 21105 0 55 0
+hit 21742 1 91 0
+hit 22333 0 76 0
+hit 22994 1 55 0
+hit 23579 0 70 0
+now 23589
+estado jogando jogando
+calc
+hit 24157 1 82 0
+hit 24750 0 51 0
+hit 25287 1 86 0
+hit 25834 0 75 0
+hit 26381 1 68 0
+now 26391
+estado jogando jogando
+calc
+hit 26999 0 54 0
+hit 27523 1 93 0
+hit 28043 0 63 0
+hit 28616 1 53 0
+hit 29256 0 74 0
+now 29266
+estado jogando jogando
+calc
+quedas 1
+now 32756
+estado ocioso
+calc
+seq
+hit 34877 1 76 0
+hit 35415 0 86 0
+hit 36096 1 62 0
+hit 36788 0 67 0
+hit 37394 1 55 0
+now 37404
+estado jogando jogando
+calc
+hit 37993 0 71 0
+hit 38516 1 76 0
+hit 39066 0 58 0
+hit 39649 1 95 0
+hit 40194 0 50 0
+now 40204
+estado jogando jogando
+calc
+hit 40729 1 79 0
+quedas 2
+now 44229
+estado ocioso
+calc
+seq
+hit 46373 1 61 0
+hit 47067 0 85 0
+hit 47635 1 78 0
+hit 48285 0 62 0
+hit 48838 1 76 0
+now 48848
+estado jogando jogando
+calc
+hit 49522 0 74 0
+hit 50071 1 75 0
+hit 50698 0 63 0
+hit 51218 1 67 0
+hit 51889 0 69 0
+now 51899
+estado jogando jogando
+calc
+hit 52414 1 63 0
+hit 52981 0 75 0
+hit 53655 1 91 0
+hit 54322 0 35 0
+hit 54852 1 59 0
+now 54862
+estado jogando jogando
+calc
+hit 55426 0 78 0
+hit 56012 1 50 0
+hit 56688 0 71 0
+hit 57283 1 74 0
+hit 57821 0 54 0
+now 57831
+estado jogando jogando
+calc
+hit 58364 1 63 0
+hit 59033 0 90 0
+hit 59615 1 50 0
+hit 60288 0 73 0
+hit 60903 1 89 0
+now 60913
+estado jogando jogando
+calc
+hit 61539 0 58 0
+quedas 3
+now 65039
+estado ocioso
+calc
+report 2026_11_16_10_00_00

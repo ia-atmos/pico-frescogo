@@ -1,0 +1,153 @@
+# generated once, with a fixed seed; edit freely
+radar 0
+conf distancia 900
+conf maxima 70
+conf continuos 3
+inicio 1000
+seq
+hit 7910 1 0 1
+hit 9457 1 0 0
+hit 10946 0 0 1
+hit 12252 0 0 1
+now 12272
+estado jogando jogando
+calc
+hit 13571 0 0 0
+hit 14478 1 0 0
+hit 15054 0 0 0
+hit 15956 0 0 0
+hit 16999 1 0 0
+hit 18618 0 0 0
+hit 19438 0 0 0
+now 19458
+estado jogando jogando
+calc
+hit 20272 1 0 0
+hit 20850 0 0 0
+hit 22316 1 0 0
+hit 23409 0 0 0
+hit 24599 1 0 0
+hit 25548 1 0 0
+hit 27011 0 0 0
+now 27031
+estado jogando jogando
+calc
+hit 28050 1 0 1
+hit 29548 0 0 0
+hit 30309 1 0 0
+hit 30917 0 0 0
+quedas 1
+now 34417
+estado ocioso
+calc
+seq
+hit 41154 0 0 0
+hit 42538 0 0 1
+hit 43540 1 0 0
+hit 44114 0 0 0
+now 44134
+estado jogando jogando
+calc
+hit 45747 1 0 0
+hit 46779 0 0 0
+hit 47939 0 0 0
+hit 48733 1 0 0
+hit 49629 0 0 1
+hit 50586 1 0 0
+hit 52052 1 0 0
+now 52072
+estado jogando jogando
+calc
+hit 53627 0 0 1
+hit 54958 1 0 0
+hit 56258 0 0 0
+hit 57487 1 0 1
+hit 58297 0 0 0
+hit 58771 1 0 0
+hit 59759 0 0 1
+now 59779
+estado jogando jogando
+calc
+hit 61303 1 0 0
+hit 62010 0 0 0
+hit 62570 1 0 0
+hit 64165 0 0 0
+quedas 2
+now 67665
+estado ocioso
+calc
+seq
+hit 72783 1 0 1
+hit 73660 0 0 1
+hit 75340 0 0 1
+hit 76099 1 0 0
+now 76119
+estado jogando jogando
+calc
+hit 76601 1 0 0
+hit 77821 0 0 0
+hit 78982 1 0 0
+hit 79668 0 0 0
+hit 81072 1 0 0
+hit 81817 1 0 0
+hit 82809 0 0 0
+now 82829
+estado jogando jogando
+calc
+hit 84316 0 0 0
+hit 85847 1 0 0
+hit 86352 0 0 0
+hit 86988 1 0 0
+hit 88189 0 0 0
+hit 89095 1 0 0
+hit 90220 0 0 0
+now 90240
+estado jogando jogando
+calc
+hit 91069 1 0 0
+hit 91983 0 0 0
+hit 92492 1 0 0
+hit 93909 0 0 0
+quedas 3
+now 97409
+estado ocioso
+calc
+seq
+hit 104394 0 0 0
+hit 105295 0 0 0
+hit 106436 1 0 0
+hit 108135 0 0 0
+now 108155
+estado jogando jogando
+calc
+hit 109289 1 0 1
+hit 109984 0 0 0
+hit 110842 1 0 1
+hit 111972 1 0 0
+hit 113232 0 0 0
+hit 113855 1 0 1
+hit 114565 1 0 0
+now 114585
+estado jogando jogando
+calc
+hit 115968 0 0 1
+hit 117638 1 0 0
+hit 118805 0 0 0
+hit 119298 0 0 0
+hit 119958 1 0 0
+hit 121296 0 0 1
+hit 122178 0 0 0
+now 122198
+estado jogando jogando
+calc
+hit 123654 1 0 0
+hit 124635 0 0 0
+hit 125209 1 0 0
+hit 126597 0 0 0
+quedas 4
+now 130097
+estado ocioso
+calc
+manual 2
+calc
+report 2026_11_16_10_00_00

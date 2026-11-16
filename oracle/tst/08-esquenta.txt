@@ -1,0 +1,14 @@
+radar 1
+conf esquenta 60
+esquenta 1 5000
+inicio 1000
+seq
+estado jogando jogando
+hit 6000 0 70 0
+hit 6700 1 66 0
+hit 7300 0 81 0
+hit 8100 1 58 1
+now 20000
+calc
+now 70000
+calc
