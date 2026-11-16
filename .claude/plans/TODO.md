@@ -30,7 +30,6 @@ One at a time, each with a recommended option.
 | # | Work | Note |
 |---|------|------|
 | 1 | F0: readme of the port, the setup that fetches the compiler and `env-pico` at fixed commits and builds `atmos-pico`, a window with the logo | Waits for A.1 |
-| 2 | F1: the oracle of the score, the functions of the score in plain Java (`javac` is in the container) | Needs no decision |
 | 3 | F2: the configuration and the score in Atmos, identical to the oracle | Waits for A.1 and A.2 |
 | 4 | F3: the flow of a presentation with the keyboard, the clock, the sounds, the report | |
 | 5 | F4: the screen, the game mode and the debug mode | |
@@ -41,4 +40,13 @@ One at a time, each with a recommended option.
 
 ## C. Reported and not acknowledged
 
-Nothing yet.
+| # | Report | Date |
+|---|--------|------|
+| 1 | The original divides by zero in the `trinca` mode: `conf_maximas` answers `0` for the side of the pivot, and `_jogo_lado` divides by it (`nrm1 * 100 / maxs`). Found by the oracle. To decide: the port reproduces the failure, or the rule is fixed (and how) | 2026-11-16 |
+| 2 | The container refused to build the compiler (`make -C lang`), by the classifier of permissions, and has no SDL2 development packages: nothing in Atmos was run yet | 2026-11-16 |
+
+## D. Done
+
+| # | Work | Where |
+|---|------|-------|
+| F1 | The oracle of the score: the functions of the score and the report in plain Java, 9 scripts with their expected outputs | `oracle/` |
