@@ -3,3 +3,4 @@ relatorios/
 *.swp
 application.*/
 *win64*
+.deps/
