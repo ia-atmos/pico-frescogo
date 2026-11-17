@@ -10,7 +10,7 @@
 # JDK for the oracle.
 
 LANG_URL := https://github.com/ia-atmos/lang
-LANG_REV := 5da4b8e5cc6ec5b8365b9650f52665106b5e5e6c
+LANG_REV := 174696944c981358508636d1b5fd7bbe37a19b42
 PICO_URL := https://github.com/ia-atmos/env-pico
 PICO_REV := 6b5bc26649fce248dc100e3882a35f02b21dd209
 
