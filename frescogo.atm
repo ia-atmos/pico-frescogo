@@ -14,17 +14,20 @@ val VERSAO   = MAJOR ++ "." ++ MINOR ++ "." ++ REVISION
 ;; one of the original sketch, while the original is kept beside the port.
 val DIR = "placar/"
 
-;; The size of the screen. The original has `fullScreen()`: see the TODO.
-val width  = 1300
-val height = 900
+;; The size of the screen, as `fullScreen()` in the original. pico gives no
+;; size of the display yet: TEMPORARY, a native literal over SDL, until pico
+;; has the query (see the TODO). It needs SDL, which `pico.open` initializes.
+pico.open [title="FrescoGO! " ++ VERSAO]
+val width  = `:number ({ SDL_DisplayMode m; SDL_GetCurrentDisplayMode(0,&m); m.w; })`
+val height = `:number ({ SDL_DisplayMode m; SDL_GetCurrentDisplayMode(0,&m); m.h; })`
 
 val dy = 0.001 * height     ;; 0.001 height
 val dx = 0.001 * width      ;; 0.001 width
 val W  = width  / 11.0
 val H  = height /  8.0
 
-pico.open [title="FrescoGO! " ++ VERSAO]
 pico.set.dim ['!', w=width, h=height]
+pico.set.window [fullscreen=true]
 pico.set.expert(true, 60)       ;; the frame rate of Processing
 
 func draw_logo (x, img) {
