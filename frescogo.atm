@@ -1,0 +1,43 @@
+;; FrescoGO! in Atmos, over pico.
+;;
+;; The port of `placar/placar.pde` (v5.3.0, at `1d2edb8`), one to one with the
+;; original first (see `README.md`). Built and run with `atmos-pico`:
+;;
+;;      make run
+
+val MAJOR    = 5
+val MINOR    = 3
+val REVISION = 0
+val VERSAO   = MAJOR ++ "." ++ MINOR ++ "." ++ REVISION
+
+;; The directory of the data (`conf.json`, images, fonts, sounds) is still the
+;; one of the original sketch, while the original is kept beside the port.
+val DIR = "placar/"
+
+;; The size of the screen. The original has `fullScreen()`: see the TODO.
+val width  = 1300
+val height = 900
+
+val dy = 0.001 * height     ;; 0.001 height
+val dx = 0.001 * width      ;; 0.001 width
+val W  = width  / 11.0
+val H  = height /  8.0
+
+pico.open [title="FrescoGO! " ++ VERSAO]
+pico.set.dim ['!', w=width, h=height]
+pico.set.expert(true, 60)       ;; the frame rate of Processing
+
+func draw_logo (x, img) {
+    pico.output.draw.image(DIR ++ img, ['!', x=x+2*W, y=H, h=height//8])
+}
+
+func draw_jogo () {
+    pico.set.effect [color='white']
+    pico.output.clear()
+    draw_logo(0*W, "data/fresco-radar.png")
+    draw_logo(7*W, "data/fresco-radar.png")
+}
+
+loop on :draw {
+    draw_jogo()
+}
