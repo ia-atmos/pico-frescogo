@@ -1,5 +1,7 @@
 # FrescoGO! - Placar para o Radar
 
+> Port to Atmos, made with AI: see [PORT.md](PORT.md).
+
 ## Fluxo da Apresentação
 
 - Um sino com 5 sons curtos indica que a uma nova apresentação irá começar.
