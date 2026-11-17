@@ -29,7 +29,7 @@ One at a time, each with a recommended option.
 
 | # | Work | Note |
 |---|------|------|
-| 1 | Fullscreen: pico gives no size of the display (with `fs=true`, the world is 100x100 and the window 500x500), and the original draws in pixels of the screen. Asked to the session `pico-sdl` on 2026-11-17; for now a fixed window of 1300x900 | Waits for `pico-sdl` |
+| 1 | Fullscreen: pico gives no size of the display. `pico-sdl` answered on 2026-11-17 that it will propose a query to the author; meanwhile the port reads the size with a native literal over SDL (`SDL_GetCurrentDisplayMode`), marked TEMPORARY in `frescogo.atm`. Replace it when pico has the query | Waits for pico |
 | 2 | Move `placar/data/` to `data/` when the original is removed (the constant `DIR` of `frescogo.atm`) | |
 | 3 | F2: the configuration and the score in Atmos, identical to the oracle | Waits for A.2 |
 | 4 | F3: the flow of a presentation with the keyboard, the clock, the sounds, the report | |
