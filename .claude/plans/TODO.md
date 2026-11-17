@@ -12,6 +12,7 @@ The plan is in the repository of the compiler:
 |------|----------|
 | 2026-11-16 | The serial port: option A. A small library of the port, natives over POSIX (`open`, `termios`, a read that does not block), polled by a task once per frame, as the original does in `draw`. No new environment for now |
 | 2026-11-16 | Packages: the session may install whatever it needs in the container |
+| 2026-11-17 | The port lives at the root of the repository; the original (`placar/`) is removed later |
 
 ## A. Decisions that wait for the author
 
@@ -20,7 +21,6 @@ One at a time, each with a recommended option.
 | # | Decision | Recommended |
 |---|----------|-------------|
 | 2 | The configuration: a small reader of JSON, or `conf.json` becomes a file of the language | The reader of JSON: it keeps the files of the users |
-| 3 | Where the port lives: beside the original (`atmos/`) or in its place | Beside, while fidelity is checked |
 | 4 | The sounds: convert the formats that pico does not play (to be checked: WAV, OGG, MP3, AIFF) | Convert, and keep the originals |
 | 5 | Windows: the serial line over POSIX leaves it out | Accept for now; it returns with `env-posix` |
 | 6 | The oracle of the screen: install Processing to run the original under `Xvfb` and compare screenshots | Only after the score and the report are identical |
@@ -29,7 +29,8 @@ One at a time, each with a recommended option.
 
 | # | Work | Note |
 |---|------|------|
-| 1 | F0: readme of the port, the setup that fetches the compiler and `env-pico` at fixed commits and builds `atmos-pico`, a window with the logo | SDL2 installed; `lang` and `atmos-pico` build, and run with no screen under `xvfb-run` |
+| 1 | Fullscreen: pico gives no size of the display (with `fs=true`, the world is 100x100 and the window 500x500), and the original draws in pixels of the screen. Asked to the session `pico-sdl` on 2026-11-17; for now a fixed window of 1300x900 | Waits for `pico-sdl` |
+| 2 | Move `placar/data/` to `data/` when the original is removed (the constant `DIR` of `frescogo.atm`) | |
 | 3 | F2: the configuration and the score in Atmos, identical to the oracle | Waits for A.2 |
 | 4 | F3: the flow of a presentation with the keyboard, the clock, the sounds, the report | |
 | 5 | F4: the screen, the game mode and the debug mode | |
@@ -72,4 +73,5 @@ To adopt the rule of 6 minutes (B.11): `tempo` 360 with no truce (`tregua` 0) an
 
 | # | Work | Where |
 |---|------|-------|
+| F0 | The setup (`Makefile`: the compiler and pico at fixed commits), `PORT.md`, a window with the logos, the test of the screen | `Makefile`, `frescogo.atm`, `tst/` |
 | F1 | The oracle of the score: the functions of the score and the report in plain Java, 9 scripts with their expected outputs | `oracle/` |
