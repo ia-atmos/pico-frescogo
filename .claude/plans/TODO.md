@@ -6,6 +6,30 @@ The list of the session `pico-frescogo`: the port of FrescoGO!
 The plan is in the repository of the compiler:
 `ia-atmos/lang`, `.claude/plans/261116-pico-frescogo.md`.
 
+## Index of items (`#N`)
+
+Everything this session puts to the author has a number, unique and never
+reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
+`F4`) stay valid where they were written, and are given here.
+
+| # | Item | Kind | State | Was |
+|---|------|------|-------|-----|
+| #1 | Fullscreen: keep reading the size of the display (recommended, as the original), or a fixed logical size of 16:9 | decision | open, asked on 2026-11-18 | |
+| #2 | The original divides by zero in the `trinca` mode | defect of the original | reported, not acknowledged | C.1 |
+| #3 | The rule of `frescogo/frescogo` against the code: the 6th strongest of 10 continuous hits doubles (the rule says the 5th), and others | remark | reported, not acknowledged | C.3 |
+| #4 | Known differences of the port in the flow (the `delay` of the automatic fall, Caps Lock, `millis`) | remark | reported, not acknowledged | C.4 |
+| #5 | Remove the `trinca` mode | work, after fidelity | asked by the author | B.10 |
+| #6 | Adopt the rule of 6 minutes, with the discount of time per fall | work, after fidelity | asked by the author | B.11 |
+| #7 | Windows: the serial line over POSIX leaves it out | decision | open; recommended: accept for now | A.5 |
+| #8 | The oracle of the screen: install Processing to run the original under `Xvfb` and compare screenshots | decision | open; recommended: try it during F4 | A.6 |
+| #9 | Replace the native literal of the size of the display when pico has the query | work | waits for pico | B.1 |
+| #10 | Move `placar/data/` to `data/` and remove the original | work | waits for fidelity | B.2 |
+| #11 | F4: the screen, the game mode and the debug mode | work | next | B.5 |
+| #12 | F5: the radar: the filter, a scripted source, the serial line over POSIX | work | not started | B.6 |
+| #13 | F6: the remaining keys, the launcher, a full presentation by the author with the device | work | not started | B.7 |
+| #14 | F7: the same program written for expressiveness | work | after fidelity | B.8 |
+| #15 | Design a second environment (`env-posix`) from the case of the serial line | work, with the author | not started | B.9 |
+
 ## Decided by the author
 
 | Date | Decision |
@@ -13,6 +37,7 @@ The plan is in the repository of the compiler:
 | 2026-11-16 | The serial port: option A. A small library of the port, natives over POSIX (`open`, `termios`, a read that does not block), polled by a task once per frame, as the original does in `draw`. No new environment for now |
 | 2026-11-16 | Packages: the session may install whatever it needs in the container |
 | 2026-11-18 | The configuration becomes a table of Atmos with comments, `data/conf.atm`, read with `X.load` (no JSON) |
+| 2026-11-18 | (no decision needed) The sounds: pico plays the 15 files as they are, the MP3 included |
 | 2026-11-17 | The port lives at the root of the repository; the original (`placar/`) is removed later |
 
 ## A. Decisions that wait for the author
@@ -21,7 +46,6 @@ One at a time, each with a recommended option.
 
 | # | Decision | Recommended |
 |---|----------|-------------|
-| 4 | The sounds: convert the formats that pico does not play (to be checked: WAV, OGG, MP3, AIFF) | Convert, and keep the originals |
 | 5 | Windows: the serial line over POSIX leaves it out | Accept for now; it returns with `env-posix` |
 | 6 | The oracle of the screen: install Processing to run the original under `Xvfb` and compare screenshots | Only after the score and the report are identical |
 
