@@ -39,6 +39,7 @@ run: $(ATMOS)
 
 test: $(ATMOS)
 	oracle/run.sh
+	tst/jogo.sh
 	tst/run.sh
 
 clean:
