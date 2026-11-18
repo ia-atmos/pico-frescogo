@@ -5,54 +5,14 @@
 ;;
 ;;      make run
 
-val MAJOR    = 5
-val MINOR    = 3
-val REVISION = 0
-val VERSAO   = MAJOR ++ "." ++ MINOR ++ "." ++ REVISION
+include "jogo.atm"
 
 ;; The directory of the images, fonts, and sounds is still the one of the
 ;; original sketch, while the original is kept beside the port.
 val DIR = "placar/"
 
-;; THE CONFIGURATION (`data/conf.atm`), as `setup` reads `conf.json`
-
-val CONF = do {
-    pin f = io.open("data/conf.atm")
-    X.load(io.read(f, :all))
-}
-
-val CONF_TEMPO       = CONF.tempo           ;; 300s  = 5mins
-val CONF_DISTANCIA   = CONF.distancia       ;; 750cm = 7.5m
-val CONF_GOLPES      = CONF.golpes          ;; 60 golpes por minuto para a dupla
-var CONF_EQUILIBRIO  = CONF.equilibrio      ;; 130=30% de diferenca maxima entre os atletas (0=desligado)
-val CONF_VEL_MIN     = CONF.minima          ;; 50km/h menor velocidade contabilizada
-val CONF_VEL_MAX     = CONF.maxima          ;; 85km/h maior velocidade contabilizada no modo manual
-val CONF_MAXIMAS     = CONF.potentes        ;; 10=5 ataques de cada lado por minuto
-var CONF_INTENSIDADE = CONF.continuos       ;; 10 golpes continuos
-val CONF_SAQUE       = CONF.saque           ;; 45km/h menor velocidade que considera saque no modo autonomo
-val CONF_TRINCA      = CONF.trinca
-val CONF_TREGUA      = CONF.tregua
-val CONF_QUEDAS      = CONF.quedas          ;; 2400 = 2.4s por queda para cada 60s - 12s/5min
-val CONF_ESQUENTA    = CONF.esquenta
-val CONF_DESCANSO    = CONF.descanso
-val LADO_RADAR       = CONF.lado_radar - 1  ;; 0=esq, 1=dir
-val LADO_PIVO        = CONF.lado_pivo  - 1  ;; 0=esq, 1=dir
-val RADAR_REPS       = CONF.radar_reps
-val RADAR_IGUAL      = CONF.radar_igual
-val RADAR_OPOSI      = CONF.radar_oposi
-var CONF_RECORDE     = CONF.recorde
-val CONF_NOMES       = [ "Atleta 1", "Atleta 2", CONF.arbitro, CONF.prefixo ]   ;; 0=esq, 1=dir, 2=arb, 3=pre
-val CONF_SERIAL      = CONF.serial          ;; ""=auto, "desligado", "/dev/ttyUSB0"
-
-val RADAR_MOCK = false
-
-if CONF_TRINCA {
-    set CONF_EQUILIBRIO = 0
-}
-
-if RADAR_MOCK && CONF_INTENSIDADE!=0 {
-    set CONF_INTENSIDADE = 4
-}
+;; THE CONFIGURATION, as `setup` reads it
+val CONF = conf_load("data/conf.atm")
 
 ;; The size of the screen, as `fullScreen()` in the original. pico gives no
 ;; size of the display yet: TEMPORARY, a native literal over SDL, until pico
