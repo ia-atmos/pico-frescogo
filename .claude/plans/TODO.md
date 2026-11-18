@@ -12,6 +12,7 @@ The plan is in the repository of the compiler:
 |------|----------|
 | 2026-11-16 | The serial port: option A. A small library of the port, natives over POSIX (`open`, `termios`, a read that does not block), polled by a task once per frame, as the original does in `draw`. No new environment for now |
 | 2026-11-16 | Packages: the session may install whatever it needs in the container |
+| 2026-11-18 | The configuration becomes a table of Atmos with comments, `data/conf.atm`, read with `X.load` (no JSON) |
 | 2026-11-17 | The port lives at the root of the repository; the original (`placar/`) is removed later |
 
 ## A. Decisions that wait for the author
@@ -20,7 +21,6 @@ One at a time, each with a recommended option.
 
 | # | Decision | Recommended |
 |---|----------|-------------|
-| 2 | The configuration: a small reader of JSON, or `conf.json` becomes a file of the language | The reader of JSON: it keeps the files of the users |
 | 4 | The sounds: convert the formats that pico does not play (to be checked: WAV, OGG, MP3, AIFF) | Convert, and keep the originals |
 | 5 | Windows: the serial line over POSIX leaves it out | Accept for now; it returns with `env-posix` |
 | 6 | The oracle of the screen: install Processing to run the original under `Xvfb` and compare screenshots | Only after the score and the report are identical |
@@ -31,7 +31,7 @@ One at a time, each with a recommended option.
 |---|------|------|
 | 1 | Fullscreen: pico gives no size of the display. `pico-sdl` answered on 2026-11-17 that it will propose a query to the author; meanwhile the port reads the size with a native literal over SDL (`SDL_GetCurrentDisplayMode`), marked TEMPORARY in `frescogo.atm`. Replace it when pico has the query | Waits for pico |
 | 2 | Move `placar/data/` to `data/` when the original is removed (the constant `DIR` of `frescogo.atm`) | |
-| 3 | F2: the configuration and the score in Atmos, identical to the oracle | Waits for A.2 |
+| 3 | F2: the configuration and the score in Atmos, identical to the oracle | |
 | 4 | F3: the flow of a presentation with the keyboard, the clock, the sounds, the report | |
 | 5 | F4: the screen, the game mode and the debug mode | |
 | 6 | F5: the radar: the filter over a scripted source of packets, then the serial line (option A), tested here over a pseudo-terminal | The real device is tested by the author |
