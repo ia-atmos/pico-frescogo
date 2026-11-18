@@ -19,7 +19,7 @@ expressiveness. The rules and the operation are those of `README.md`.
 | `data/conf.atm` | The configuration, a table of Atmos with comments (the original has `conf.json`) |
 | `placar/` | The original, kept as the reference while the port is checked; it will be removed. The port still reads its data (`placar/data/`) |
 | `oracle/` | The functions of the score of the original in plain Java, and scripts of hits with the numbers they give: the tests of the score |
-| `tst/` | The tests: the score against the oracle (`jogo.sh`), and the screen at fixed frames, with no display (`run.sh`) |
+| `tst/` | The tests: the score against the oracle (`jogo.sh`), scripted presentations with their traces and reports (`fluxo.sh`), and the screen at fixed frames, with no display (`run.sh`) |
 | `.claude/plans/TODO.md` | What waits for a decision, and what is not done |
 
 ## Build and run

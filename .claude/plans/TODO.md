@@ -31,7 +31,6 @@ One at a time, each with a recommended option.
 |---|------|------|
 | 1 | Fullscreen: pico gives no size of the display. `pico-sdl` answered on 2026-11-17 that it will propose a query to the author; meanwhile the port reads the size with a native literal over SDL (`SDL_GetCurrentDisplayMode`), marked TEMPORARY in `frescogo.atm`. Replace it when pico has the query | Waits for pico |
 | 2 | Move `placar/data/` to `data/` when the original is removed (the constant `DIR` of `frescogo.atm`) | |
-| 4 | F3: the flow of a presentation with the keyboard, the clock, the sounds, the report | |
 | 5 | F4: the screen, the game mode and the debug mode | |
 | 6 | F5: the radar: the filter over a scripted source of packets, then the serial line (option A), tested here over a pseudo-terminal | The real device is tested by the author |
 | 7 | F6: the editing of the names, the remaining keys, the launcher | |
@@ -51,6 +50,17 @@ For the future, asked by the author on 2026-11-16 (after the faithful port):
 |---|--------|------|
 | 1 | The original divides by zero in the `trinca` mode: `conf_maximas` answers `0` for the side of the pivot, and `_jogo_lado` divides by it (`nrm1 * 100 / maxs`). Found by the oracle. To decide: the port reproduces the failure, or the rule is fixed (and how) | 2026-11-16 |
 | 3 | The rule (`frescogo/frescogo`, `README.md`) against the code of v5.3.0 with the default `conf.json`. See the table below | 2026-11-17 |
+| 4 | Known differences of the port from the original, in the flow (F3). See the list below | 2026-11-18 |
+
+The differences in the flow (C.4):
+
+- **`delay(1000)` of the automatic fall.** The original blocks the whole sketch for one second, with the previous frame on the screen, and then serves. The port goes on drawing: the state is the same at every moment, the keys wait as they do in the original, but the screen shows the fall one second earlier.
+- **Caps Lock** is not seen in the typing of the names (pico gives `shift` only): a letter is upper case only with SHIFT.
+- **`millis()`** is the clock of pico (the sum of the frames), not the time of the machine: it starts at 0, and the original starts at the time that `setup` took.
+- **The keys held for 2 seconds** depend on the repetition of keys of the system, as in the original (`keyPressed` is called at each repetition).
+- **`CONF.setString`** of the names changes only the table in memory, as in the original (it never saved `conf.json`).
+- The scripted keys of pico (`PICO_ATM_KEYS`) have no modifiers: the port also tracks `Left Ctrl` and `Right Ctrl` as keys. To tell `pico-sdl`.
+- Performance: `jogo_calc` at every frame, as the original, costs about 2 ms with 576 hits: fine for 60 frames per second.
 
 The rule against the code (C.3):
 
@@ -73,5 +83,6 @@ To adopt the rule of 6 minutes (B.11): `tempo` 360 with no truce (`tregua` 0) an
 | # | Work | Where |
 |---|------|-------|
 | F0 | The setup (`Makefile`: the compiler and pico at fixed commits), `PORT.md`, a window with the logos, the test of the screen | `Makefile`, `frescogo.atm`, `tst/` |
+| F3 | The flow (`go_*`), the keyboard (`keyPressed`, the keys held for 2 s, the names), the sounds, the report, the screenshot and `resultados.csv`. Five scripted presentations, each report given back to the oracle | `frescogo.atm`, `tst/fluxo.sh` |
 | F2 | The configuration and the score in Atmos: identical to the oracle in its 12 scripts, and in 40 random ones (not kept). The `1.2` of the powerful hits is a float in Processing: a native literal reproduces it (it differs from a double at 45->54, 50->60, ...) | `jogo.atm`, `tst/jogo.sh` |
 | F1 | The oracle of the score: the functions of the score and the report in plain Java, 9 scripts with their expected outputs | `oracle/` |
