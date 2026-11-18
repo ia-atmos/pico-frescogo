@@ -31,7 +31,6 @@ One at a time, each with a recommended option.
 |---|------|------|
 | 1 | Fullscreen: pico gives no size of the display. `pico-sdl` answered on 2026-11-17 that it will propose a query to the author; meanwhile the port reads the size with a native literal over SDL (`SDL_GetCurrentDisplayMode`), marked TEMPORARY in `frescogo.atm`. Replace it when pico has the query | Waits for pico |
 | 2 | Move `placar/data/` to `data/` when the original is removed (the constant `DIR` of `frescogo.atm`) | |
-| 3 | F2: the configuration and the score in Atmos, identical to the oracle | |
 | 4 | F3: the flow of a presentation with the keyboard, the clock, the sounds, the report | |
 | 5 | F4: the screen, the game mode and the debug mode | |
 | 6 | F5: the radar: the filter over a scripted source of packets, then the serial line (option A), tested here over a pseudo-terminal | The real device is tested by the author |
@@ -74,4 +73,5 @@ To adopt the rule of 6 minutes (B.11): `tempo` 360 with no truce (`tregua` 0) an
 | # | Work | Where |
 |---|------|-------|
 | F0 | The setup (`Makefile`: the compiler and pico at fixed commits), `PORT.md`, a window with the logos, the test of the screen | `Makefile`, `frescogo.atm`, `tst/` |
+| F2 | The configuration and the score in Atmos: identical to the oracle in its 12 scripts, and in 40 random ones (not kept). The `1.2` of the powerful hits is a float in Processing: a native literal reproduces it (it differs from a double at 45->54, 50->60, ...) | `jogo.atm`, `tst/jogo.sh` |
 | F1 | The oracle of the score: the functions of the score and the report in plain Java, 9 scripts with their expected outputs | `oracle/` |
