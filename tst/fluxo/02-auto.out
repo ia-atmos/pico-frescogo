@@ -1,0 +1,115 @@
+[000000] go reinicio
+[000000] snd restart.wav
+[002176] go saque
+[002176] snd start.wav
+[002880] hit peteleco.mp3
+[003504] hit peteleco.mp3
+[003936] hit agudo.wav
+[004384] hit double.wav
+[004960] hit peteleco.mp3
+[005440] hit peteleco.mp3
+[006000] hit peteleco.mp3
+[006576] hit peteleco.mp3
+[007088] hit peteleco.mp3
+[007696] hit peteleco.mp3
+[011184] go queda
+[011184] snd fall.wav
+[012192] go saque
+[012192] snd start.wav
+[012208] hit peteleco.mp3
+[012240] hit peteleco.mp3
+[013280] hit peteleco.mp3
+[013824] hit peteleco.mp3
+[014368] hit peteleco.mp3
+[014784] hit agudo.wav
+[015280] hit double.wav
+[015776] hit peteleco.mp3
+[016288] hit double.wav
+[016832] hit peteleco.mp3
+[020320] go queda
+[020320] snd fall.wav
+[021328] go saque
+[021328] snd start.wav
+[022080] hit peteleco.mp3
+[022496] hit agudo.wav
+[022944] hit double.wav
+[023488] hit peteleco.mp3
+[024032] hit peteleco.mp3
+[024496] go queda
+[024496] snd fall.wav
+[025504] go saque
+[025504] snd start.wav
+[025840] hit peteleco.mp3
+[026368] hit peteleco.mp3
+[026960] hit peteleco.mp3
+[027600] hit peteleco.mp3
+[030304] go queda
+[030304] snd fall.wav
+[032384] go terminando
+[032384] go termino
+[032384] snd queda2.wav
+=== frescogo-TESTE-Atleta 1-Atleta 2.txt
+Data:          TESTE
+Versão:        v5.3.0 / dupla / 750cm / +cnts / +pots / 300s
+Total:         00873 pontos
+
+SEQUÊNCIA 01
+============
+
+TEMPO   DIR   KMH + *
+-----   ---   --- - -
+002864   <-   043    
+003488   <-   062    
+003920   ->   060    
+004368   <-   046    
+004944   ->   056    
+005424   <-   048    
+005984   <-   046    
+006560   ->   052    
+007072   <-   044    
+007680   ->   000    
+
+
+SEQUÊNCIA 02
+============
+
+TEMPO   DIR   KMH + *
+-----   ---   --- - -
+011184   ->   025    
+012224   <-   025    
+013264   <-   049    
+013808   ->   049    
+014352   <-   064    
+014768   ->   054    
+015264   <-   054    
+015760   ->   052    
+016272   <-   049    
+016816   ->   000    
+
+
+SEQUÊNCIA 03
+============
+
+TEMPO   DIR   KMH + *
+-----   ---   --- - -
+022064   <-   064    
+022480   ->   060    
+022928   <-   049    
+023472   ->   049    
+024016   <-   000    
+
+
+SEQUÊNCIA 04
+============
+
+TEMPO   DIR   KMH + *
+-----   ---   --- - -
+025824   <-   051    
+026352   ->   045    
+026944   <-   042    
+027584   ->   000    
+
+
+
+=== resultados.csv
+TESTE ; MIX_AA ; 873 ; 4 ; 0 ; Atleta 1 ; 412 ; 6 ; 55.66 ; Atleta 2 ; 461 ; 5 ; 59.0 ; 

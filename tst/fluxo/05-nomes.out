@@ -1,0 +1,31 @@
+[000000] go reinicio
+[000000] snd restart.wav
+[009328] go saque
+[009328] snd start.wav
+[009712] hit peteleco.mp3
+[010320] hit peteleco.mp3
+[010896] hit peteleco.mp3
+[011024] snd clap.wav
+[011504] hit peteleco.mp3
+[012144] hit peteleco.mp3
+[012768] hit peteleco.mp3
+[013328] hit peteleco.mp3
+[013840] hit peteleco.mp3
+[014464] go queda
+[014464] snd fall.wav
+[016544] go terminando
+[016544] go termino
+[016544] snd queda2.wav
+[018624] snd undo.wav
+[020704] go terminando
+[020704] go termino
+[020704] snd queda2.wav
+=== frescogo-TESTE-ana-bia.txt
+Data:          TESTE
+Versão:        v5.3.0 / dupla / 750cm / +cnts / +pots / 300s
+Total:         00000 pontos
+
+
+=== resultados.csv
+TESTE ; fem ; 0 ; 1 ; 0 ; ana ; 0 ; 0 ; 0.0 ; bia ; 0 ; 0 ; 0.0 ; 
+TESTE ; fem ; 0 ; 1 ; 0 ; ana ; 0 ; 0 ; 0.0 ; bia ; 0 ; 0 ; 0.0 ; 

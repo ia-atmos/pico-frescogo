@@ -1,0 +1,105 @@
+[000000] go reinicio
+[000000] snd restart.wav
+[002096] go esquenta
+[002096] snd restart.wav
+[002176] go saque
+[002176] snd start.wav
+[002560] hit peteleco.mp3
+[002672] snd clap.wav
+[003088] hit peteleco.mp3
+[003200] snd clap.wav
+[003632] hit peteleco.mp3
+[004240] hit peteleco.mp3
+[004736] hit peteleco.mp3
+[004768] snd clap.wav
+[005216] hit peteleco.mp3
+[005840] hit peteleco.mp3
+[006320] hit peteleco.mp3
+[006896] hit peteleco.mp3
+[007520] hit peteleco.mp3
+[007680] snd clap.wav
+[008016] hit peteleco.mp3
+[008464] hit agudo.wav
+[009104] hit peteleco.mp3
+[009728] hit peteleco.mp3
+[010288] hit peteleco.mp3
+[010896] hit peteleco.mp3
+[011456] hit peteleco.mp3
+[011920] hit peteleco.mp3
+[012336] hit agudo.wav
+[012816] hit double.wav
+[013408] hit peteleco.mp3
+[013872] hit peteleco.mp3
+[014448] hit peteleco.mp3
+[014944] hit peteleco.mp3
+[015520] hit peteleco.mp3
+[015952] hit agudo.wav
+[016432] hit double.wav
+[016896] hit peteleco.mp3
+[017376] hit double.wav
+[017408] snd clap.wav
+[018016] hit peteleco.mp3
+[018672] hit peteleco.mp3
+[018752] snd clap.wav
+[019168] hit peteleco.mp3
+[019680] hit double.wav
+[020256] hit peteleco.mp3
+[020720] hit peteleco.mp3
+[021200] hit double.wav
+[021696] hit double.wav
+[022224] hit double.wav
+[022720] hit peteleco.mp3
+[023248] hit double.wav
+[023712] hit peteleco.mp3
+[023760] snd clap.wav
+[024272] hit peteleco.mp3
+[024288] snd clap.wav
+[024816] hit peteleco.mp3
+[025232] hit agudo.wav
+[025840] hit peteleco.mp3
+[026304] hit peteleco.mp3
+[026816] hit double.wav
+[027344] hit double.wav
+[027968] hit peteleco.mp3
+[027984] snd clap.wav
+[028448] hit peteleco.mp3
+[032176] snd 30s.wav
+[062176] go terminando
+[062192] go termino
+[062192] snd queda2.wav
+[082272] go reinicio
+[082272] snd restart.wav
+[082352] go saque
+[082352] snd start.wav
+[082416] hit peteleco.mp3
+[082864] hit agudo.wav
+[083360] hit double.wav
+[083872] hit double.wav
+[084496] hit peteleco.mp3
+[085024] hit peteleco.mp3
+[085680] go queda
+[085680] snd fall.wav
+[087760] go terminando
+[087760] go termino
+[087760] snd queda2.wav
+=== frescogo-TESTE-Atleta 1-Atleta 2.txt
+Data:          TESTE
+Versão:        v5.3.0 / dupla / 750cm / +cnts / +pots / 300s
+Total:         00172 pontos
+
+SEQUÊNCIA 01
+============
+
+TEMPO   DIR   KMH + *
+-----   ---   --- - -
+000128   <-   060    
+000576   ->   054    
+001072   <-   052    
+001584   ->   043    
+002208   <-   051    
+002736   ->   000    
+
+
+
+=== resultados.csv
+TESTE ; MIX_AA ; 172 ; 1 ; 0 ; Atleta 1 ; 56 ; 1 ; 54.0 ; Atleta 2 ; 119 ; 2 ; 56.0 ; 

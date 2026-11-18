@@ -1,0 +1,129 @@
+[000000] go reinicio
+[000000] snd restart.wav
+[000096] go saque
+[000096] snd start.wav
+[000960] hit peteleco.mp3
+[001568] hit peteleco.mp3
+[001696] snd clap.wav
+[002096] hit peteleco.mp3
+[002528] hit agudo.wav
+[003040] hit double.wav
+[003456] hit agudo.wav
+[004064] hit peteleco.mp3
+[004704] hit peteleco.mp3
+[004848] snd clap.wav
+[005120] hit agudo.wav
+[005584] hit double.wav
+[006128] hit peteleco.mp3
+[006656] hit peteleco.mp3
+[007232] hit peteleco.mp3
+[007712] hit peteleco.mp3
+[008352] hit peteleco.mp3
+[008800] hit agudo.wav
+[009280] hit double.wav
+[009872] hit peteleco.mp3
+[010384] hit peteleco.mp3
+[010848] hit peteleco.mp3
+[011488] hit peteleco.mp3
+[012000] hit peteleco.mp3
+[012064] snd clap.wav
+[012592] hit peteleco.mp3
+[013040] hit agudo.wav
+[013664] go queda
+[013664] snd fall.wav
+[015744] snd undo.wav
+[017824] snd undo.wav
+[017904] go saque
+[017904] snd start.wav
+[024368] hit peteleco.mp3
+[024896] hit peteleco.mp3
+[024944] snd clap.wav
+[025440] hit peteleco.mp3
+[026032] hit peteleco.mp3
+[026192] snd clap.wav
+[026592] hit peteleco.mp3
+[027040] hit agudo.wav
+[027648] hit peteleco.mp3
+[028192] hit peteleco.mp3
+[028816] hit peteleco.mp3
+[029296] hit peteleco.mp3
+[029888] hit peteleco.mp3
+[030512] hit peteleco.mp3
+[031072] go queda
+[031072] snd fall.wav
+[033152] snd undo.wav
+[033232] go saque
+[033232] snd start.wav
+[033776] hit peteleco.mp3
+[034224] hit agudo.wav
+[034656] hit agudo.wav
+[035024] hit laser.wav
+[035424] hit double.wav
+[035568] snd clap.wav
+[035888] hit double.wav
+[036352] hit peteleco.mp3
+[036704] hit laser.wav
+[036736] snd clap.wav
+[037152] hit double.wav
+[037536] hit laser.wav
+[037888] go queda
+[037888] snd fall.wav
+[042048] go terminando
+[042048] go termino
+[042048] snd queda2.wav
+=== frescogo-TESTE-Atleta 1-Atleta 2.txt
+Data:          TESTE
+Versão:        v5.3.0 / dupla / 750cm / +cnts / +pots / 300s
+Total:         01724 pontos
+
+SEQUÊNCIA 01
+============
+
+TEMPO   DIR   KMH + *
+-----   ---   --- - -
+000944   <-   044    
+001552   <-   051   *
+002080   ->   062    
+002512   <-   052    
+003024   ->   064    
+003440   <-   044    
+004048   ->   042    
+004688   <-   064   *
+005104   ->   058    
+005568   <-   049    
+006112   ->   051    
+006640   <-   046    
+007216   ->   056    
+007696   <-   042    
+008336   ->   060    
+008784   <-   056    
+009264   ->   045    
+009856   <-   052    
+010368   ->   058    
+010832   <-   042    
+011472   ->   052    
+011984   <-   045   *
+012576   ->   060    
+013024   <-   000    
+
+
+SEQUÊNCIA 02
+============
+
+TEMPO   DIR   KMH + *
+-----   ---   --- - -
+033760   <-   060    
+034208   ->   062    
+034640   <-   073    
+035008   ->   067    
+035408   <-   058   *
+035872   ->   058    
+036336   ->   076    
+036688   <-   060   *
+037136   ->   070    
+037520   ->   000    
+
+
+
+=== resultados.csv
+TESTE ; MIX_AA ; 1724 ; 2 ; 1 ; Atleta 1 ; 1212 ; 12 ; 60.33 ; Atleta 2 ; 694 ; 9 ; 58.44 ; 
