@@ -1,0 +1,513 @@
+;; The configuration and the score of FrescoGO!: one to one with `placar.pde`
+;; (the variables of the configuration and of the game, `conf_*`, `jogo_*`,
+;; and the text of the report of `go_termino`).
+;;
+;; It does not depend on pico: `frescogo.atm` includes it, and so does the
+;; test of the score (`tst/jogo.atm`), which compares it with the oracle.
+
+```:prelude
+// `kmh2*1.2 <= kmh` of `_jogo_lado`: Processing reads `1.2` as a float,
+// and the product is a float.
+static int fresco_mais_forte (double kmh2, double kmh) {
+    volatile float x = (float)kmh2 * 1.2f;
+    volatile float y = (float)kmh;
+    return x <= y;
+}
+```
+
+val MAJOR    = 5
+val MINOR    = 3
+val REVISION = 0
+val VERSAO   = MAJOR ++ "." ++ MINOR ++ "." ++ REVISION
+
+var NOW = 0
+var MODO = 0            ;; 0=jogo, 1=debug
+
+var RADAR      = nil    ;; the serial line of the radar, or nil
+var RADAR_MOCK = false
+
+var ESQUENTA = false
+var ESQUENTA_INICIO = 0
+
+var CONF_TEMPO
+var CONF_DISTANCIA
+var CONF_GOLPES
+var CONF_EQUILIBRIO
+var CONF_VEL_MIN
+var CONF_VEL_MAX
+var CONF_MAXIMAS
+var CONF_INTENSIDADE
+var CONF_SAQUE
+var CONF_TRINCA
+var CONF_TREGUA
+var CONF_QUEDAS
+var CONF_ESQUENTA
+var CONF_DESCANSO
+
+var LADO_RADAR
+var LADO_PIVO
+var RADAR_REPS
+var RADAR_IGUAL
+var RADAR_OPOSI
+
+var CONF_RECORDE
+pin CONF_NOMES = [ "Atleta 1", "Atleta 2", "", "" ]    ;; 0=esq, 1=dir, 2=arb, 3=pre
+var CONF_SERIAL
+
+var ESTADO = "ocioso"           ;; ocioso, digitando, jogando, terminando, terminado
+var ESTADO_DIGITANDO = 255      ;; 0=esq, 1=dir, 2=arbitro
+var ESTADO_JOGANDO = nil        ;; sacando, jogando
+
+val INSS_DIFF = 1500            ;; maximo intervalo entre golpes continuos
+var INSS_SOUND_NEW = 0
+var INSS_SOUND_OLD = 0
+
+var JOGO_DESCANSO_TOTAL = 0
+var JOGO_DESCANSO_INICIO = 0
+var JOGO_DESCANSO_PLAY = false
+var JOGO_TOTAL = 0
+var JOGO_QUEDAS = 0
+var JOGO_QUEDAS_MANUAL = 0
+var JOGO_TEMPO_INICIO = 0
+var JOGO_TEMPO_PASSADO = 0
+var JOGO_TEMPO_RESTANTE = 0
+var JOGO_TEMPO_RESTANTE_SHOW = 0
+var JOGO_TEMPO_RESTANTE_OLD = 0
+
+;; pts, golpes, med, min, max, med_min, med_max, n_nrms,n_baks,k_nrms,k_baks, ins
+pin JOGO_JOGS = [
+    [0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0],
+]
+
+val IDX_PTS   = 0
+val IDX_GLP   = 1
+val IDX_MED   = 2
+val IDX_MIN   = 3
+val IDX_MAX   = 4
+val IDX_MMIN  = 5
+val IDX_MMAX  = 6
+val IDX_NRMS  = 7
+val IDX_BAKS  = 8
+val IDX_MNRMS = 9
+val IDX_MBAKS = 10
+val IDX_INSS  = 11
+
+pin JOGO = []
+    ;; /------------ seqs -----------\
+    ;;    /--------- seq ---------\
+    ;;      /------ golpe ------\
+    ;; [ [ [ now,jog,kmh,bak,ins ] ] ]
+    ;;        0   1   2   3   4
+
+val IDX_NOW = 0
+val IDX_JOG = 1
+val IDX_KMH = 2
+val IDX_BAK = 3
+val IDX_INS = 4
+
+;; The number of characters of a string, as `String.length` (the strings
+;; are UTF-8 here: the bytes that continue a character do not count).
+func len (str) {
+    var n = 0
+    loop i in #str {
+        val c = string.byte(str, i)
+        if (c < 0x80) || (c >= 0xC0) {
+            set n = n + 1
+        }
+    }
+    n
+}
+
+func ns (str, n) {
+    var s = str
+    loop i in (n - len(str)) {
+        set s = s ++ " "
+    }
+    s
+}
+
+;; `nf(n, digits)` of Processing: at least `digits` digits, with zeros.
+func nf (n, digits) {
+    if n < 0 {
+        "-" ++ nf(-n, digits)
+    } else {
+        var s = tostring(n)
+        loop {
+            while #s < digits
+            set s = "0" ++ s
+        }
+        s
+    }
+}
+
+func min (a, b) { math.min(a, b) }
+func max (a, b) { math.max(a, b) }
+
+;; The order of `IntList.sortReverse`.
+func sort_reverse (t) {
+    vector.sort(t, \(a,b) { a > b })
+}
+
+;; ----------------------------------------------------------------------------
+
+;; The configuration of `setup`, from the table of `data/conf.atm`.
+func conf_load (path) {
+    val CONF = do {
+        pin f = io.open(path)
+        X.load(io.read(f, :all))
+    }
+    set CONF_TEMPO       = CONF.tempo           ;; 300s  = 5mins
+    set CONF_DISTANCIA   = CONF.distancia       ;; 750cm = 7.5m
+    set CONF_GOLPES      = CONF.golpes          ;; 60 golpes por minuto para a dupla
+    set CONF_EQUILIBRIO  = CONF.equilibrio      ;; 130=30% de diferenca maxima entre os atletas (0=desligado)
+    set CONF_VEL_MIN     = CONF.minima          ;; 50km/h menor velocidade contabilizada
+    set CONF_VEL_MAX     = CONF.maxima          ;; 85km/h maior velocidade contabilizada no modo manual
+    set CONF_MAXIMAS     = CONF.potentes        ;; 10=5 ataques de cada lado por minuto
+    set CONF_INTENSIDADE = CONF.continuos       ;; 10 golpes continuos
+    set CONF_SAQUE       = CONF.saque           ;; 45km/h menor velocidade que considera saque no modo autonomo
+    set CONF_TRINCA      = CONF.trinca
+    set CONF_TREGUA      = CONF.tregua
+    set CONF_QUEDAS      = CONF.quedas          ;; 2400 = 2.4s por queda para cada 60s - 12s/5min
+    set CONF_ESQUENTA    = CONF.esquenta
+    set CONF_DESCANSO    = CONF.descanso
+    set LADO_RADAR       = CONF.lado_radar - 1  ;; 0=esq, 1=dir
+    set LADO_PIVO        = CONF.lado_pivo  - 1  ;; 0=esq, 1=dir
+    set RADAR_REPS       = CONF.radar_reps
+    set RADAR_IGUAL      = CONF.radar_igual
+    set RADAR_OPOSI      = CONF.radar_oposi
+    set CONF_RECORDE     = CONF.recorde
+    set CONF_NOMES@0     = "Atleta 1"
+    set CONF_NOMES@1     = "Atleta 2"
+    set CONF_NOMES@2     = CONF.arbitro
+    set CONF_NOMES@3     = CONF.prefixo
+    set CONF_SERIAL      = CONF.serial          ;; ""=auto, "desligado", "/dev/ttyUSB0"
+
+    if CONF_TRINCA {
+        set CONF_EQUILIBRIO = 0
+    }
+
+    if RADAR_MOCK && (CONF_INTENSIDADE != 0) {
+        set CONF_INTENSIDADE = 4
+    }
+
+    CONF
+}
+
+func conf_pars () {
+    "v" ++ VERSAO ++ " / " ++
+    (if CONF_TRINCA => "trinca" => "dupla") ++ " / " ++
+    (if conf_radar() => "radar" => (CONF_DISTANCIA ++ "cm")) ++ " / " ++
+    (if CONF_INTENSIDADE==0 => "-cnts" => "+cnts") ++ " / " ++
+    (if CONF_MAXIMAS    ==0 => "-pots" => "+pots") ++ " / " ++
+    CONF_TEMPO ++ "s"
+}
+
+func conf_tregua () {
+    CONF_TREGUA * CONF_TEMPO // 60      ;; 1 / 60s
+}
+
+func conf_quedas () {
+    CONF_QUEDAS * CONF_TEMPO // 60 // 1000
+}
+
+func conf_tempo () {
+    if ESQUENTA => CONF_ESQUENTA => (CONF_TEMPO + conf_tregua()*conf_quedas())
+}
+
+func conf_golpes (jog) {
+    if CONF_TRINCA {
+        if jog == LADO_PIVO => 0 => max(1, CONF_TEMPO * CONF_GOLPES // 60)
+    } else {
+        max(1, CONF_TEMPO * CONF_GOLPES // 60 // 2)
+    }
+}
+
+func conf_maximas (jog) {
+    if CONF_TRINCA {
+        if jog == LADO_PIVO => 0 => max(1, CONF_TEMPO * CONF_MAXIMAS // 60)
+    } else {
+        max(1, CONF_TEMPO * CONF_MAXIMAS // 60 // 2)
+    }
+}
+
+func conf_radar () {
+    (RADAR != nil) || RADAR_MOCK
+}
+
+;; ----------------------------------------------------------------------------
+
+func _jogo_tempo () {
+    var ret = 0
+    var last = NOW
+
+    if ESQUENTA {
+        if ESTADO != "ocioso" {
+            set ret = NOW - ESQUENTA_INICIO
+        }
+    } else {
+        loop i in #JOGO {
+            val seq = JOGO@i
+            val S = #seq
+            if S > 0 {
+                set last = seq@(S-1)@IDX_NOW
+                if S >= 2 {
+                    set ret = ret + (last - seq@0@IDX_NOW)
+                }
+            }
+        }
+    }
+
+    set JOGO_TEMPO_PASSADO = ret // 1000
+    set JOGO_TEMPO_RESTANTE = max(0, conf_tempo()-JOGO_TEMPO_PASSADO - jogo_quedas()*conf_quedas())
+    set JOGO_TEMPO_RESTANTE_SHOW = JOGO_TEMPO_RESTANTE
+
+    if (ESTADO == "jogando") && (ESTADO_JOGANDO == "jogando") {
+        set JOGO_TEMPO_RESTANTE_SHOW = JOGO_TEMPO_RESTANTE_SHOW - ((NOW - last) // 1000)
+    }
+}
+
+func _jogo_lado_ins (seq, inss) {
+    val kmhs = []
+    loop i in #inss {
+        val kmh = jogo_kmh(seq, inss@i)
+        vector.insert(kmhs, kmh)
+    }
+    sort_reverse(kmhs)
+    loop i in #inss {
+        val I = inss@i
+        val kmh = jogo_kmh(seq, I)
+        if kmh == kmhs@(CONF_INTENSIDADE // 2) {
+            set seq@I@IDX_INS = 1
+            break
+        }
+    }
+}
+
+func _jogo_lado (jog) {
+    val kmhs = []
+    val nrms = []
+    val baks = []
+
+    ;; INTENSIDADE
+    var ninss = 0
+
+    loop i in #JOGO {
+        val seq = JOGO@i
+        val inss = []
+        var inss_now = -1
+        val J = #seq - (if conf_radar() => 1 => 2)
+        loop j in J {    ;; -1/2: ignora ultimo golpe
+            val golpe = seq@j
+            if golpe@IDX_JOG != jog {
+                skip
+            }
+
+            val kmh = jogo_kmh(seq,j)
+
+            val prev1 = if j > 0 => seq@(j-1) => nil
+            val prev2 = if j > 1 => seq@(j-2) => nil
+
+            if kmh >= CONF_VEL_MIN {
+                vector.insert(kmhs, kmh)
+
+                ;; ataque nrm/bak valido?
+                if (CONF_MAXIMAS != 0) && (j > 0) {     ;; precisa de golpe anterior
+                    val kmh2 = jogo_kmh(seq,j-1)
+                    ;; se passou 1s || repetiu jog || 20% mais forte
+                    if ((prev1@IDX_NOW + 1000) < golpe@IDX_NOW) || (prev1@IDX_JOG == jog) ||
+                       `:boolean fresco_mais_forte(a_dbl($kmh2), a_dbl($kmh))`
+                    {
+                        if golpe@IDX_BAK == 0 {
+                            vector.insert(nrms, kmh)
+                        } else {
+                            vector.insert(baks, kmh)
+                        }
+                    }
+                }
+            }
+
+            if CONF_INTENSIDADE != 0 {
+                set golpe@IDX_INS = 0       ;; zera ins
+                val n = #inss
+                val ok0 = (golpe@IDX_NOW <= (inss_now + INSS_DIFF))
+                val ok1 = (j <= 0) || (prev1@IDX_JOG == jog)
+                val ok2 = (j <= 1) || (prev2@IDX_JOG == jog)
+                if ((n == 0) || (ok0 && (ok1 || ok2))) && (kmh >= CONF_VEL_MIN) {
+                    if #inss == (2*CONF_INTENSIDADE - 1) {
+                        ;; `inss` keeps the first CONF_INTENSIDADE, and the
+                        ;; others go to `tmp`, which `inss` becomes
+                        val tmp = []
+                        val z = #inss
+                        loop k in (CONF_INTENSIDADE, z-1) {
+                            vector.insert(tmp, inss@CONF_INTENSIDADE)
+                            vector.remove(inss, CONF_INTENSIDADE)
+                        }
+                        set ninss = ninss + 1
+                        _jogo_lado_ins(seq, inss)
+                        vector.clear(inss)
+                        loop _,v in tmp {
+                            vector.insert(inss, v)
+                        }
+                    }
+                    vector.insert(inss, j)
+                    set inss_now = golpe@IDX_NOW
+                    if #inss == CONF_INTENSIDADE {
+                        val s = i*100 + j
+                        if s > INSS_SOUND_NEW {
+                            set INSS_SOUND_NEW = s
+                        }
+                    }
+                } else {
+                    if #inss >= CONF_INTENSIDADE {
+                        set ninss = ninss + 1
+                        _jogo_lado_ins(seq, inss)
+                    }
+                    vector.clear(inss)
+                    if kmh >= CONF_VEL_MIN {
+                        vector.insert(inss, j)
+                    }
+                }
+            }
+        }
+        if (CONF_INTENSIDADE != 0) && (#inss >= CONF_INTENSIDADE) {
+            set ninss = ninss + 1
+            _jogo_lado_ins(seq, inss)
+        }
+    }
+    sort_reverse(kmhs)
+    sort_reverse(nrms)
+    sort_reverse(baks)
+
+    val glps = conf_golpes(jog)
+
+    ;; GOLPES
+    val N = min(glps, #kmhs)
+    var sum1 = 0    ;; simples
+    var sum2 = 0    ;; quadrado
+    loop i in N {
+        val cur = kmhs@i
+        set sum1 = sum1 + cur
+        set sum2 = sum2 + (cur*(50+cur) // 100)
+    }
+
+    val Nmax = min(glps // 2, N)
+    val Nmin = min(glps // 2, N-Nmax)
+
+    ;; MAXIMAS
+    var sumMin = 0
+    var sumMax = 0
+    loop i in Nmax {
+        set sumMax = sumMax + kmhs@i
+    }
+    loop i in Nmin {
+        set sumMin = sumMin + kmhs@(Nmax+i)
+    }
+
+    ;; INTENSIDADE
+    if CONF_INTENSIDADE != 0 {
+        loop i in #JOGO {
+            val seq = JOGO@i
+            loop j in #seq {
+                val golpe = seq@j
+                if (golpe@IDX_JOG == jog) && (golpe@IDX_INS == 1) {
+                    val cur = jogo_kmh(seq,j)
+                    set sum2 = sum2 + (cur*(50+cur) // 100)
+                }
+            }
+        }
+    }
+
+    ;; BAKS+NRMS
+    var nrm1 = 0
+    var bak1 = 0
+    val maxs = conf_maximas(jog)
+    if CONF_MAXIMAS != 0 {
+        loop i in min(maxs, #nrms) {
+            val nrm = min(100, nrms@i)  ;; >100 probably error
+            set nrm1 = nrm1 + nrm
+            set sum2 = sum2 + (nrm*(50+nrm) // 100)
+        }
+        loop i in min(maxs, #baks) {
+            val bak = min(100, baks@i)  ;; >100 probably error
+            set bak1 = bak1 + bak
+            set sum2 = sum2 + (bak*(50+bak) // 100)
+        }
+    }
+
+    val J = JOGO_JOGS@jog
+    set J@IDX_PTS   = sum2
+    set J@IDX_GLP   = #kmhs
+    set J@IDX_MED   = sum1 * 100 // max(1,N)
+    set J@IDX_MIN   = if N == 0 => 0 => kmhs@(N-1)
+    set J@IDX_MAX   = if N == 0 => 0 => kmhs@0
+    set J@IDX_MMIN  = sumMin * 100 // max(1, glps // 2)
+    set J@IDX_MMAX  = sumMax * 100 // max(1, glps // 2)
+    set J@IDX_NRMS  = #nrms
+    set J@IDX_BAKS  = #baks
+    set J@IDX_MNRMS = nrm1 * 100 // maxs
+    set J@IDX_MBAKS = bak1 * 100 // maxs
+    set J@IDX_INSS  = ninss
+}
+
+func jogo_kmh (seq, i) {
+    val cur = seq@i
+    val kmh = cur@IDX_KMH
+    if kmh != 0 {       ;; radar ligado
+        min(100, kmh)   ;; >100 probably error
+    } else {            ;; radar desligado
+        if #seq < (i+2) {
+            0
+        } else {
+            val nxt = seq@(i+1)
+            min(CONF_VEL_MAX, 36 * CONF_DISTANCIA // (nxt@IDX_NOW - cur@IDX_NOW))
+        }
+    }
+}
+
+func jogo_quedas () {
+    JOGO_QUEDAS + JOGO_QUEDAS_MANUAL
+}
+
+func jogo_equ () {
+    var p0 = JOGO_JOGS@0@IDX_PTS
+    var p1 = JOGO_JOGS@1@IDX_PTS
+
+    if CONF_EQUILIBRIO != 0 {
+        val pct = max(0, 100-JOGO_TEMPO_PASSADO)
+        set p0 = min(p0, max(p0*pct // 100, p1*CONF_EQUILIBRIO // 100))
+        set p1 = min(p1, max(p1*pct // 100, p0*CONF_EQUILIBRIO // 100))
+    }
+
+    [p0, p1]
+}
+
+func jogo_calc () {
+    _jogo_tempo()
+    _jogo_lado(0)
+    _jogo_lado(1)
+
+    val ps = jogo_equ()
+    set JOGO_TOTAL = ps@0 + ps@1
+}
+
+;; The text of the report (`placar.txt` of `go_termino`), with the date `ts`.
+func jogo_relatorio (ts) {
+    var out = ns("Data:",   15) ++ ts ++ "\n" ++
+              ns("Versão:", 15) ++ conf_pars() ++ "\n" ++
+              ns("Total:",  15) ++ nf(JOGO_TOTAL,5) ++ " pontos\n" ++
+              "\n"
+    loop i in #JOGO {
+        val seq = JOGO@i
+        set out = out ++ "SEQUÊNCIA " ++ nf(i+1,2) ++ "\n============\n\nTEMPO   DIR   KMH + *\n-----   ---   --- - -\n"
+        loop j in #seq {
+            val golpe = seq@j
+            val ms = golpe@IDX_NOW - JOGO_TEMPO_INICIO
+            set out = out ++ nf(ms,6) ++ "   " ++ (if golpe@IDX_JOG==0 => "->" => "<-") ++ "   " ++
+                      nf(jogo_kmh(seq,j),3) ++ " " ++ (if golpe@IDX_INS==0 => " " => "+") ++ " " ++
+                      (if golpe@IDX_BAK==0 => " " => "*") ++ "\n"
+        }
+        set out = out ++ "\n\n"
+    }
+    out
+}
