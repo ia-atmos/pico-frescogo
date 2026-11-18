@@ -1,18 +1,54 @@
 ;; FrescoGO! in Atmos, over pico.
 ;;
 ;; The port of `placar/placar.pde` (v5.3.0, at `1d2edb8`), one to one with the
-;; original first (see `README.md`). Built and run with `atmos-pico`:
+;; original first (see `PORT.md`). Built and run with `atmos-pico`:
 ;;
 ;;      make run
+;;
+;; For the tests, with no person (see `tst/`):
+;;
+;;      FRESCOGO_TRACE=1        prints the sounds and the transitions
+;;      FRESCOGO_TS=<date>      the date of the names of the reports
+;;      FRESCOGO_REL=<dir>      the directory of the reports
+;;      FRESCOGO_CONF=<file>    another file of configuration
 
 include "jogo.atm"
+
+```:prelude
+#include <sys/stat.h>
+#include <time.h>
+
+// The date as the original builds it from `year()`, ..., `second()`.
+static const char* fresco_ts (void) {
+    static char buf[32];
+    time_t t = time(NULL);
+    strftime(buf, sizeof(buf), "%Y_%m_%d_%H_%M_%S", localtime(&t));
+    return buf;
+}
+```
 
 ;; The directory of the images, fonts, and sounds is still the one of the
 ;; original sketch, while the original is kept beside the port.
 val DIR = "placar/"
 
+val TRACE = os.getenv("FRESCOGO_TRACE") != nil
+val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
+
+var RADAR_ERR  = 0
+var RADAR_AUTO = false
+val RADAR_AUTO_TIMEOUT = 3500
+var RADAR_AUTO_INICIO = 0
+
+var KEY_TIMER = 0
+val KEY_TIMER_EXPIRE = 2000
+
+var INV  = false
+var ZER  = 0
+var ONE  = 1
+var BACK = 0
+
 ;; THE CONFIGURATION, as `setup` reads it
-val CONF = conf_load("data/conf.atm")
+val CONF = conf_load(os.getenv("FRESCOGO_CONF") || "data/conf.atm")
 
 ;; The size of the screen, as `fullScreen()` in the original. pico gives no
 ;; size of the display yet: TEMPORARY, a native literal over SDL, until pico
@@ -29,9 +65,464 @@ val H  = height /  8.0
 pico.set.dim ['!', w=width, h=height]
 pico.set.window [fullscreen=true]
 pico.set.expert(true, 60)       ;; the frame rate of Processing
+pico.set.aids(false)            ;; the keys with CTRL are of the scoreboard
+
+;; ----------------------------------------------------------------------------
+;; TIME
+;; ----------------------------------------------------------------------------
+
+;; `millis()`: the time since the start, which the clock of pico advances.
+var MICROS = 0
+func millis () {
+    MICROS // 1000
+}
+
+;; `delay(1000)` of `go_queda`, in the automatic mode: the original blocks for
+;; one second, and then serves. Here, the frames go on with nothing but the
+;; screen (`draw`), the keys wait in `FILA`, and `DELAY_DE` tells what resumes.
+var DELAY    = nil      ;; the time when it ends, or nil
+var DELAY_DE = nil      ;; :draw or :key
+pin FILA = []           ;; the keys that arrived meanwhile
+
+func trace (msg) {
+    if TRACE {
+        print("[" ++ nf(millis(),6) ++ "] " ++ msg)
+    }
+}
+
+;; ----------------------------------------------------------------------------
+;; SOUNDS
+;; ----------------------------------------------------------------------------
+
+val SNDS_NOMES = ["fall.wav", "restart.wav", "30s.wav", "queda2.wav", "undo.wav", "start.wav", "clap.wav", "bonus.wav"]
+val HITS_NOMES = [
+    "peteleco.mp3",         ;; 50--60
+    "agudo.wav",            ;; 60--70
+    "laser.wav",            ;; 70--80
+    "hit.wav",              ;; 80--90
+    "explosion_06.wav",     ;; 90--100
+    "ambulancia.wav",       ;; 100--
+    "double.wav",           ;; defesa
+]
+
+pin SNDS = []
+pin HITS = []
+loop _,nome in SNDS_NOMES {
+    set SNDS@+ = pico.sound.load(DIR ++ "data/snds/" ++ nome)
+}
+loop _,nome in HITS_NOMES {
+    set HITS@+ = pico.sound.load(DIR ++ "data/snds/" ++ nome)
+}
+
+func snds_play (i) {
+    trace("snd " ++ SNDS_NOMES@i)
+    pico.output.sound(SNDS@i)
+}
+
+func hits_play (i) {
+    trace("hit " ++ HITS_NOMES@i)
+    pico.output.sound(HITS@i)
+}
+
+func sound (kmh, prv) {
+    ifs {
+        kmh < CONF_VEL_MIN => {
+            if !conf_radar() {
+                hits_play(0)
+            }
+        }
+        prv > kmh => hits_play(6)
+        kmh < 60  => hits_play(0)
+        kmh < 70  => hits_play(1)
+        kmh < 80  => hits_play(2)
+        kmh < 90  => hits_play(3)
+        kmh < 100 => hits_play(4)
+        else      => hits_play(5)
+    }
+}
+
+;; ----------------------------------------------------------------------------
+;; THE FLOW
+;; ----------------------------------------------------------------------------
+
+func go_esquenta () {
+    trace("go esquenta")
+    set ESTADO = "ocioso"
+    vector.clear(JOGO)
+    set JOGO_DESCANSO_TOTAL     = 0
+    set JOGO_DESCANSO_PLAY      = false
+    set JOGO_TEMPO_RESTANTE_OLD = conf_tempo()
+    set JOGO_QUEDAS             = 0
+    set JOGO_QUEDAS_MANUAL      = 0
+    set JOGO_TEMPO_INICIO       = millis()
+    snds_play(1)
+}
+
+func go_reinicio () {
+    trace("go reinicio")
+    set ESTADO = "ocioso"
+    vector.clear(JOGO)
+    set JOGO_DESCANSO_TOTAL     = 0
+    set JOGO_DESCANSO_PLAY      = false
+    set JOGO_TEMPO_RESTANTE_OLD = conf_tempo()
+    set JOGO_QUEDAS             = 0
+    set JOGO_QUEDAS_MANUAL      = 0
+    set JOGO_TEMPO_INICIO       = millis()
+    set INSS_SOUND_NEW = 0
+    set INSS_SOUND_OLD = 0
+    snds_play(1)
+}
+
+func go_saque () {
+    trace("go saque")
+    set ESTADO = "jogando"
+    set ESTADO_JOGANDO = "sacando"
+    set JOGO_DESCANSO_INICIO = millis()
+    vector.insert(JOGO, [])
+    snds_play(5)
+    if RADAR != nil {
+        radar_clear()
+    }
+    if ESQUENTA {
+        set ESQUENTA_INICIO = NOW
+    }
+}
+
+;; `de` is who calls: :draw or :key (see `DELAY`).
+func go_queda (de) {
+    if ESQUENTA {
+        return
+    }
+    trace("go queda")
+    set ESTADO = "ocioso"
+    set JOGO_QUEDAS = JOGO_QUEDAS + 1
+    snds_play(0)
+    if RADAR_AUTO {
+        ;; delay(1000) ; go_saque()
+        set DELAY    = millis() + 1000
+        set DELAY_DE = de
+    }
+}
+
+func go_terminando () {
+    trace("go terminando")
+    set ESTADO = "terminando"
+}
+
+;; A number of hundredths as `float(n)/100` is written in the original.
+func f100 (n) {
+    val d = n % 100
+    (n // 100) ++ "." ++ ifs {
+        d == 0      => "0"
+        d % 10 == 0 => d // 10
+        else        => nf(d,2)
+    }
+}
+
+func go_termino () {
+    trace("go termino")
+    set ESTADO = "terminado"
+    snds_play(3)
+    if JOGO_TOTAL > CONF_RECORDE {
+        set CONF_RECORDE = JOGO_TOTAL
+    }
+
+    draw()
+
+    if ESQUENTA {
+        return
+    }
+
+    val ts = os.getenv("FRESCOGO_TS") || `:string fresco_ts()`
+    `mkdir(A_STR_OF($REL)->s, 0777);`
+    val nome = REL ++ "/frescogo-" ++ ts ++ "-" ++ CONF_NOMES@0 ++ "-" ++ CONF_NOMES@1
+
+    ;; placar.png
+    pico.output.screenshot(pico.layer.window, nome ++ "-placar.png")
+
+    ;; placar.txt
+    do {
+        pin f = io.open(nome ++ ".txt", "w")
+        io.write(f, jogo_relatorio(ts), "\n")      ;; `saveStrings` ends the line
+    }
+
+    ;; resultados.csv
+    do {
+        pin f = io.open(REL ++ "/resultados.csv", "a")
+        if f == nil {
+            print("Erro em 'resultados.csv'.")
+            exit()
+            return
+        }
+        val J0 = JOGO_JOGS@0
+        val J1 = JOGO_JOGS@1
+        io.write(f,
+            ts ++ " ; " ++ CONF_NOMES@3 ++ " ; " ++ JOGO_TOTAL ++ " ; " ++ jogo_quedas() ++ " ; " ++ (JOGO_DESCANSO_TOTAL // 1000) ++ " ; " ++
+            CONF_NOMES@0 ++ " ; " ++ J0@IDX_PTS ++ " ; " ++ J0@IDX_GLP ++ " ; " ++ f100(J0@IDX_MED) ++ " ; " ++
+            CONF_NOMES@1 ++ " ; " ++ J1@IDX_PTS ++ " ; " ++ J1@IDX_GLP ++ " ; " ++ f100(J1@IDX_MED) ++ " ; " ++
+            "\n"
+        )
+    }
+}
+
+;; ----------------------------------------------------------------------------
+;; THE RADAR (to be done: see the TODO)
+;; ----------------------------------------------------------------------------
+
+func radar_clear () {
+}
+
+func radar () {
+    0
+}
+
+func exit () {
+    pico.quit()
+}
+
+;; ----------------------------------------------------------------------------
+;; KEYBOARD
+;; ----------------------------------------------------------------------------
+
+;; A key event of pico has the name of the key (`key`, as SDL names it: 'A',
+;; 'Left', 'Backspace') and the modifiers. `keyCode` of the original is the
+;; name, and `key` is the character, which `key_char` builds.
+
+func key_char (e) {
+    val k = e.key
+    ifs {
+        (#k == 1) && (k >= "A") && (k <= "Z") => if e.shift => k => string.lower(k)
+        (k == "-") && e.shift => "_"
+        else => nil
+    }
+}
+
+func trata_nome (e, idx, campo) {
+    val k = e.key
+    ifs {
+        (k == "Return") || (k == "Keypad Enter") => {
+            set CONF@campo = CONF_NOMES@idx
+            set ESTADO_DIGITANDO = 255
+            set ESTADO = "ocioso"
+        }
+        k == "Backspace" => {
+            val nome = CONF_NOMES@idx
+            if #nome > 0 {
+                set CONF_NOMES@idx = string.sub(nome, 0, #nome-2)
+            }
+        }
+        else => {
+            val c = key_char(e)
+            if c != nil {
+                set CONF_NOMES@idx = CONF_NOMES@idx ++ c
+            }
+        }
+    }
+}
+
+func keyReleased (e) {
+    set KEY_TIMER = 0
+}
+
+func keyPressed (e) {
+    val now  = millis()
+    val key  = e.key
+    val ctrl = e.ctrl
+    val seta = (key == "Left") || (key == "Up") || (key == "Right") || (key == "Down")
+    var quit = false
+
+    if (!ctrl) || seta {
+        ;; OK, nao precisa segurar 3s
+    } else {
+        ifs {
+            KEY_TIMER == 0 => {
+                set KEY_TIMER = now
+                return                              ;; comeca a contar 2s
+            }
+            (KEY_TIMER + KEY_TIMER_EXPIRE) > now => {
+                return                              ;; ainda nao chegou
+            }
+            else => {
+                set KEY_TIMER = 0                   ;; OK, deixa continuar
+            }
+        }
+    }
+
+    if ctrl {
+        match key {
+            "Q" => set quit = true                  ;; CTRL-Q
+            "M" => set MODO = 1 - MODO              ;; CTRL-M
+            "A" => {                                ;; CTRL-A
+                set RADAR_AUTO = !RADAR_AUTO
+                set RADAR_AUTO_INICIO = now
+            }
+            "E" => {                                ;; CTRL-E
+                set ESQUENTA = true
+                go_esquenta()
+            }
+            "-" => {
+                if jogo_quedas() > 0 {
+                    snds_play(4)
+                    set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL - 1
+                }
+            }
+            "=" => {
+                snds_play(4)
+                set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL + 1
+            }
+            "R" => {                                ;; CTRL-R
+                set ESQUENTA = false
+                go_reinicio()
+            }
+            "S" => go_terminando()                  ;; CTRL-S
+            "I" => {                                ;; CTRL-I
+                set INV = !INV
+                set ZER = 1 - ZER
+                set ONE = 1 - ONE
+            }
+        }
+    }
+
+    ifs {
+        ctrl && (key == "Backspace") => {           ;; CTRL-BACKSPACE
+            ifs {
+                ESTADO == "terminado" => {
+                    set ESTADO = "ocioso"
+                    if #JOGO > 0 {
+                        vector.remove(JOGO)
+                        snds_play(4)
+                    }
+                }
+                ESTADO == "ocioso" => {
+                    if #JOGO > 0 {
+                        set JOGO_QUEDAS = JOGO_QUEDAS - 1
+                        vector.remove(JOGO)
+                        snds_play(4)
+                    }
+                }
+                (ESTADO == "jogando") && (ESTADO_JOGANDO == "sacando") => {
+                    set ESTADO = "ocioso"
+                    if #JOGO > 0 {
+                        vector.remove(JOGO)
+                        if #JOGO > 0 {
+                            set JOGO_QUEDAS = JOGO_QUEDAS - 1
+                            vector.remove(JOGO)
+                            snds_play(4)
+                        }
+                    }
+                }
+            }
+        }
+
+        ESTADO == "ocioso" => {
+            if ctrl {
+                match key {
+                    "0" => {                        ;; CTRL-0
+                        set ESTADO = "digitando"
+                        set ESTADO_DIGITANDO = 2
+                        set CONF_NOMES@2 = ""
+                    }
+                    "9" => {                        ;; CTRL-9
+                        set ESTADO = "digitando"
+                        set ESTADO_DIGITANDO = 3
+                        set CONF_NOMES@3 = ""
+                    }
+                    "1" => {                        ;; CTRL-1
+                        set ESTADO = "digitando"
+                        set ESTADO_DIGITANDO = 0
+                        set CONF_NOMES@0 = ""
+                    }
+                    "2" => {                        ;; CTRL-2
+                        set ESTADO = "digitando"
+                        set ESTADO_DIGITANDO = 1
+                        set CONF_NOMES@1 = ""
+                    }
+                    "Up" => go_saque()              ;; CTRL-UP
+                }
+            }
+        }
+
+        ESTADO == "digitando" => {
+            match ESTADO_DIGITANDO {
+                0 => trata_nome(e, 0, "atleta1")    ;; DIGITANDO ESQ
+                1 => trata_nome(e, 1, "atleta2")    ;; DIGITANDO DIR
+                2 => trata_nome(e, 2, "arbitro")    ;; DIGITANDO ARBITRO
+                3 => trata_nome(e, 3, "prefixo")    ;; DIGITANDO PREFIXO
+            }
+        }
+
+        ESTADO == "jogando" => {
+            ifs {
+                ctrl && (key == "Down") => {        ;; CTRL-DOWN
+                    go_queda(:key)
+                    if DELAY != nil {
+                        return                      ;; resumes in `draw`
+                    }
+                }
+                (key == "Left") || (key == "Right") => {    ;; LEFT/RIGHT
+                    set RADAR_AUTO_INICIO = NOW
+                    if ESTADO_JOGANDO == "sacando" {
+                        set ESTADO_JOGANDO = "jogando"
+                        set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
+                    }
+
+                    val jog = if key == "Left" => 0 => 1
+                    val seq = JOGO@#
+                    ;; golpe@2=0  -->  radar desligado
+                    val golpe = vector.insert(seq, [NOW, jog, (if conf_radar() => 30 => 0), 0, 0])
+                                                    ;; add before jogo_kmh
+                    var kmh = 0
+                    var prv = 0
+                    val n = #seq
+                    if n > 1 {
+                        set kmh = jogo_kmh(seq, n-2)
+                        if n > 2 {
+                            set prv = jogo_kmh(seq, n-3)
+                            val xxx = seq@(n-2)
+                            if (kmh >= CONF_VEL_MIN) && (kmh < prv) &&
+                               (golpe@IDX_JOG != xxx@IDX_JOG) && ((NOW-750) < xxx@IDX_NOW)
+                            {
+                            } else {
+                                set prv = 0
+                            }
+                        }
+                    }
+
+                    sound(kmh, prv)
+                }
+                (CONF_MAXIMAS != 0) && ((key == "Z") || (key == "M")) => {
+                    snds_play(6)
+                    set BACK = if key == "Z" => -NOW => NOW
+                    val seq = JOGO@#
+                    val n = #seq
+                    if n > 0 {
+                        val xxx = seq@(n-1)
+                        if (!conf_radar()) || ((xxx@IDX_JOG == 0) && (BACK < 0)) || ((xxx@IDX_JOG == 1) && (BACK > 0)) {
+                            if (math.abs(BACK) - 500) < xxx@IDX_NOW {
+                                set xxx@IDX_BAK = 1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    jogo_calc()
+
+    if quit {
+        exit()
+    }
+}
+
+;; ----------------------------------------------------------------------------
+;; DRAW
+;; ----------------------------------------------------------------------------
 
 func draw_logo (x, img) {
     pico.output.draw.image(DIR ++ img, ['!', x=x+2*W, y=H, h=height//8])
+}
+
+func draw_debug (kmh_) {
 }
 
 func draw_jogo () {
@@ -41,6 +532,169 @@ func draw_jogo () {
     draw_logo(7*W, CONF.imagem2)
 }
 
-loop on :draw {
+;; The end of the branch of `draw` in which a presentation is going on.
+func draw_jogando_fim () {
+    if (JOGO_TEMPO_RESTANTE_OLD > 30) && (JOGO_TEMPO_RESTANTE <= 30) {
+        snds_play(2)
+    }
+    set JOGO_TEMPO_RESTANTE_OLD = JOGO_TEMPO_RESTANTE
+    if JOGO_TEMPO_RESTANTE <= 0 {
+        go_terminando()
+    }
+}
+
+;; The end of `draw`.
+func draw_fim () {
+    jogo_calc()
+    if INSS_SOUND_NEW > INSS_SOUND_OLD {
+        set INSS_SOUND_OLD = INSS_SOUND_NEW
+        snds_play(7)
+    }
     draw_jogo()
+}
+
+func draw () {
+    if DELAY != nil {
+        if millis() < DELAY {
+            draw_jogo()
+            return
+        }
+        ;; the `delay(1000)` of `go_queda` ended: `go_saque`, and the rest of
+        ;; who called it
+        val de = DELAY_DE
+        set DELAY    = nil
+        set DELAY_DE = nil
+        go_saque()
+        if de == :draw {
+            draw_jogando_fim()
+            draw_fim()
+            return
+        }
+        jogo_calc()         ;; the end of `keyPressed`
+    }
+
+    ;; the keys that waited for the delay
+    loop {
+        while (#FILA > 0) && (DELAY == nil)
+        val e = vector.remove(FILA, 0)
+        if e.dn {
+            keyPressed(e)
+        } else {
+            keyReleased(e)
+        }
+    }
+    if DELAY != nil {
+        draw_jogo()
+        return
+    }
+
+    set NOW = millis()
+
+    ;; preciso chamar o radar pra ver se ele esta funcionando (sem travar)
+    var kmh_ = -1
+    var kmh  =  1
+    if conf_radar() {
+        set kmh_ = radar()
+        set kmh  = math.abs(kmh_)
+    }
+
+    if MODO == 1 {
+        draw_debug(kmh_)
+        return
+    }
+
+    ifs {
+        ESTADO == "jogando" => {
+            if conf_radar() {
+                if kmh > 1 {
+                    if (ESTADO_JOGANDO == "sacando") && (kmh >= CONF_SAQUE) {
+                        set ESTADO_JOGANDO = "jogando"
+                        set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
+                    }
+                    if ESTADO_JOGANDO == "jogando" {
+                        val jog = if kmh_ > 0 => LADO_RADAR => (1-LADO_RADAR)
+                        val back = (RADAR_MOCK && (math.random(5) == 0)) ||
+                                   ((BACK != 0) && ((math.abs(BACK)+500) >= NOW) &&
+                                    (((jog == 0) && (BACK < 0)) || ((jog == 1) && (BACK > 0))))
+                        set BACK = 0
+                        val seq = JOGO@#
+                        val n = #seq
+                        var prv = 0
+                        if n > 0 {
+                            val xxx = seq@(n-1)
+                            if (kmh >= CONF_VEL_MIN) && (kmh < xxx@IDX_KMH) &&
+                               (jog != xxx@IDX_JOG) && ((NOW-750) < xxx@IDX_NOW)
+                            {
+                                set prv = xxx@IDX_KMH
+                            }
+                        }
+                        sound(kmh, prv)
+                        ;; golpe@IDX_KMH!=0  -->  radar ligado
+                        vector.insert(seq, [NOW, jog, kmh, (if back => 1 => 0), 0])
+                    }
+                }
+                if RADAR_AUTO && (kmh_ != 0) {
+                    ;; zera o timeout com qq bola que não seja 0
+                    set RADAR_AUTO_INICIO = NOW
+                }
+            }
+            if (ESTADO_JOGANDO == "jogando") &&
+               RADAR_AUTO && (NOW >= (RADAR_AUTO_INICIO + RADAR_AUTO_TIMEOUT))
+            {
+                go_queda(:draw)
+                if DELAY != nil {
+                    draw_jogo()
+                    return          ;; resumes above
+                }
+            }
+            draw_jogando_fim()
+        }
+        ESTADO == "terminando" => go_termino()
+    }
+
+    draw_fim()
+}
+
+;; ----------------------------------------------------------------------------
+;; MAIN
+;; ----------------------------------------------------------------------------
+
+go_reinicio()
+
+;; `e.ctrl` comes from pico; the scripted keys of the tests have no
+;; modifiers, and press and release 'Left Ctrl' as a key instead.
+var CTRL = false
+
+func key (e, dn) {
+    if (e.key == "Left Ctrl") || (e.key == "Right Ctrl") {
+        set CTRL = dn
+    }
+    val k = [dn=dn, key=e.key, ctrl=(e.ctrl || CTRL), shift=e.shift]
+    ifs {
+        (DELAY != nil) || (#FILA > 0) => vector.insert(FILA, k)
+        dn   => keyPressed(k)
+        else => keyReleased(k)
+    }
+}
+
+spawn {
+    loop dt on :clock {
+        set MICROS = MICROS + dt
+    }
+}
+
+spawn {
+    loop e on :key.dn {
+        key(e, true)
+    }
+}
+
+spawn {
+    loop e on :key.up {
+        key(e, false)
+    }
+}
+
+loop on :draw {
+    draw()
 }
