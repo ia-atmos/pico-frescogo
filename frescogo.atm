@@ -291,7 +291,7 @@ func exit () {
 func key_char (e) {
     val k = e.key
     ifs {
-        (#k == 1) && (k >= "A") && (k <= "Z") => if e.shift => k => string.lower(k)
+        (#k == 1) && (k >= "A") && (k <= "Z") => if e.shift != e.caps => k => string.lower(k)
         (k == "-") && e.shift => "_"
         else => nil
     }
@@ -661,15 +661,8 @@ func draw () {
 
 go_reinicio()
 
-;; `e.ctrl` comes from pico; the scripted keys of the tests have no
-;; modifiers, and press and release 'Left Ctrl' as a key instead.
-var CTRL = false
-
 func key (e, dn) {
-    if (e.key == "Left Ctrl") || (e.key == "Right Ctrl") {
-        set CTRL = dn
-    }
-    val k = [dn=dn, key=e.key, ctrl=(e.ctrl || CTRL), shift=e.shift]
+    val k = [dn=dn, key=e.key, ctrl=e.ctrl, shift=e.shift, caps=e.caps]
     ifs {
         (DELAY != nil) || (#FILA > 0) => vector.insert(FILA, k)
         dn   => keyPressed(k)

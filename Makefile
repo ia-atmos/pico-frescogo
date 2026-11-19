@@ -12,7 +12,7 @@
 LANG_URL := https://github.com/ia-atmos/lang
 LANG_REV := ff5a6936ef4ab4644c6dd942cbec17276011e198
 PICO_URL := https://github.com/ia-atmos/env-pico
-PICO_REV := 6b5bc26649fce248dc100e3882a35f02b21dd209
+PICO_REV := ed63163e527f919804119f6ad6549678b0efc931
 
 DEPS  := $(CURDIR)/.deps
 ATMOS := $(DEPS)/env-pico/atmos-pico
