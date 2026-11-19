@@ -7,7 +7,7 @@
 ;;
 ;; For the tests, with no person (see `tst/`):
 ;;
-;;      FRESCOGO_TRACE=1        prints the sounds and the transitions
+;;      FRESCOGO_TRACE=1        prints each sound, with its time
 ;;      FRESCOGO_TS=<date>      the date of the names of the reports
 ;;      FRESCOGO_REL=<dir>      the directory of the reports
 ;;      FRESCOGO_CONF=<file>    another file of configuration
@@ -62,21 +62,27 @@ pico.set.aids(false)            ;; the keys with CTRL are of the scoreboard
 ;; TIME
 ;; ----------------------------------------------------------------------------
 
-;; `millis()`: the time since the start, which the clock of pico advances.
-var MICROS = 0
-func millis () {
-    MICROS // 1000
+;; In a test with fixed frames (PICO_ATM_FRAMES=n:ms), the time is that of
+;; the frames, and a delay only advances it. Otherwise it is the real time.
+val TESTE = do {
+    val v = os.getenv("PICO_ATM_FRAMES")
+    (v != nil) && (string.split(v, ":")@1 != "0")
 }
 
-;; `delay(1000)` of `go_queda`: the original blocks for one second, and then
-;; ends the presentation (the limit of falls) or serves (the automatic mode).
-;; Here, the frames go on with nothing but the screen (`draw`), the keys wait
-;; in `FILA`, and then `DELAY_O` tells what to do, and `DELAY_DE` who called
-;; `go_queda`, to do the rest of it.
-var DELAY    = nil      ;; the time when it ends, or nil
-var DELAY_O  = nil      ;; :termino or :saque
-var DELAY_DE = nil      ;; :draw or :key
-pin FILA = []           ;; the keys that arrived meanwhile
+var MICROS = 0      ;; the time of the frames
+
+func millis () {
+    if TESTE => (MICROS // 1000) => pico.get.now()
+}
+
+;; `delay` of Processing: blocks everything, and the keys wait in the system.
+func delay (ms) {
+    if TESTE {
+        set MICROS = MICROS + ms*1000
+    } else {
+        `SDL_Delay(a_dbl($ms));`
+    }
+}
 
 func trace (msg) {
     if TRACE {
@@ -113,7 +119,7 @@ func snds_play (i) {
 }
 
 func hits_play (i) {
-    trace("hit " ++ HITS_NOMES@i)
+    trace("snd " ++ HITS_NOMES@i)
     pico.output.sound(HITS@i)
 }
 
@@ -139,7 +145,6 @@ func sound (kmh) {
 ;; ----------------------------------------------------------------------------
 
 func go_esquenta () {
-    trace("go esquenta")
     set ESTADO = "ocioso"
     vector.clear(JOGO)
     set JOGO_DESCANSO_TOTAL     = 0
@@ -152,7 +157,6 @@ func go_esquenta () {
 }
 
 func go_reinicio () {
-    trace("go reinicio")
     set ESTADO = "ocioso"
     vector.clear(JOGO)
     set JOGO_DESCANSO_TOTAL     = 0
@@ -165,7 +169,6 @@ func go_reinicio () {
 }
 
 func go_saque () {
-    trace("go saque")
     set ESTADO = "jogando"
     set ESTADO_JOGANDO = "sacando"
     set JOGO_DESCANSO_INICIO = millis()
@@ -179,26 +182,20 @@ func go_saque () {
     }
 }
 
-;; `de` is who calls: :draw or :key (see `DELAY`).
-func go_queda (de) {
+func go_queda () {
     if ESQUENTA {
         return
     }
-    trace("go queda")
     set ESTADO = "ocioso"
     set JOGO_QUEDAS = JOGO_QUEDAS + 1
     if jogo_quedas() >= conf_aborta() {
-        ;; delay(1000) ; go_termino()
-        set DELAY    = millis() + 1000
-        set DELAY_O  = :termino
-        set DELAY_DE = de
+        delay(1000)
+        go_termino()
     } else {
         snds_play(0)
         if RADAR_AUTO {
-            ;; delay(1000) ; go_saque()
-            set DELAY    = millis() + 1000
-            set DELAY_O  = :saque
-            set DELAY_DE = de
+            delay(1000)
+            go_saque()
         }
     }
 }
@@ -214,7 +211,6 @@ func f100 (n) {
 }
 
 func go_termino () {
-    trace("go termino")
     set ESTADO = "terminado"
     snds_play(3)
     if JOGO_TOTAL > CONF_RECORDE {
@@ -278,50 +274,78 @@ func exit () {
 ;; KEYBOARD
 ;; ----------------------------------------------------------------------------
 
-;; A key event of pico has the name of the key (`key`, as SDL names it: 'A',
-;; 'Left', 'Backspace') and the modifiers. `keyCode` of the original is the
-;; name, and `key` is the character, which `key_char` builds.
+;; `key` and `keyCode` of Processing, from a key event of pico, which has
+;; the name of the key as SDL gives it ('A', 'Left', 'Backspace') and the
+;; modifiers. `keyCode` is the name. `key` is the code of the character, as
+;; Java gives it: with CTRL, a letter is its control code (CTRL-H is 8, as
+;; BACKSPACE), and a key with no character is CODED.
 
-func key_char (e) {
+val BACKSPACE = 8
+val ENTER     = 10
+val RETURN    = 13
+val ESC       = 27
+val CODED     = 0xFFFF
+
+var key     = 0
+var keyCode = ""
+
+func key_de (e) {
     val k = e.key
     ifs {
-        (#k == 1) && (k >= "A") && (k <= "Z") => if e.shift != e.caps => k => string.lower(k)
-        (k == "-") && e.shift => "_"
-        else => nil
+        (#k == 1) && (k >= "A") && (k <= "Z") => {
+            val c = string.byte(k)
+            ifs {
+                e.ctrl            => c - 64
+                e.shift != e.caps => c
+                else              => c + 32
+            }
+        }
+        (#k == 1) && (k >= "0") && (k <= "9") => string.byte(k)
+        k == "-"            => if e.shift => string.byte("_") => string.byte("-")
+        k == "="            => string.byte("=")
+        k == "Backspace"    => BACKSPACE
+        k == "Return"       => ENTER
+        k == "Keypad Enter" => ENTER
+        k == "Escape"       => ESC
+        else                => CODED
     }
 }
 
-func trata_nome (e, idx, campo) {
-    val k = e.key
+func letra (c) {
+    ((c >= string.byte("a")) && (c <= string.byte("z"))) ||
+    ((c >= string.byte("A")) && (c <= string.byte("Z"))) ||
+    (c == string.byte("_"))
+}
+
+func trata_nome (idx, json) {
     ifs {
-        (k == "Return") || (k == "Keypad Enter") => {
-            set CONF@campo = CONF_NOMES@idx
+        (key == ENTER) || (key == RETURN) => {
+            set CONF@json = CONF_NOMES@idx
             set ESTADO_DIGITANDO = 255
             set ESTADO = "ocioso"
         }
-        k == "Backspace" => {
+        key == BACKSPACE => {
             val nome = CONF_NOMES@idx
             if #nome > 0 {
                 set CONF_NOMES@idx = string.sub(nome, 0, #nome-2)
             }
         }
-        else => {
-            val c = key_char(e)
-            if c != nil {
-                set CONF_NOMES@idx = CONF_NOMES@idx ++ c
-            }
+        letra(key) => {
+            set CONF_NOMES@idx = CONF_NOMES@idx ++ string.char(key)
         }
     }
 }
 
 func keyPressed (e) {
-    val key  = e.key
     val ctrl = e.ctrl
-    var quit = false
+
+    if (key == ESC) && (!ctrl) {
+        set key = 0
+    }
 
     if ctrl {
-        match key {
-            "Q" => set quit = true                  ;; CTRL-Q
+        match keyCode {
+            "Q" => set key = ESC                    ;; CTRL-Q
             "A" => {                                ;; CTRL-A
                 set RADAR_AUTO = !RADAR_AUTO
                 set RADAR_AUTO_INICIO = millis()
@@ -346,7 +370,7 @@ func keyPressed (e) {
     }
 
     ifs {
-        ctrl && (key == "Backspace") => {           ;; CTRL-BACKSPACE
+        ctrl && (key == BACKSPACE) => {             ;; CTRL-BACKSPACE
             ifs {
                 ESTADO == "ocioso" => {
                     if #JOGO > 0 {
@@ -372,48 +396,45 @@ func keyPressed (e) {
         ESTADO == "ocioso" => {
             if ctrl {
                 ifs {
-                    key == "0" => {                 ;; CTRL-0
+                    keyCode == "0" => {             ;; CTRL-0
                         set ESTADO = "digitando"
                         set ESTADO_DIGITANDO = 2
                         set CONF_NOMES@2 = ""
                     }
-                    key == "1" => {                 ;; CTRL-1
+                    keyCode == "1" => {             ;; CTRL-1
                         set ESTADO = "digitando"
                         set ESTADO_DIGITANDO = 0
                         set CONF_NOMES@0 = ""
                     }
-                    key == "2" => {                 ;; CTRL-2
+                    keyCode == "2" => {             ;; CTRL-2
                         set ESTADO = "digitando"
                         set ESTADO_DIGITANDO = 1
                         set CONF_NOMES@1 = ""
                     }
-                    (key == "Up") || (key == "U") => go_saque()     ;; CTRL-UP
+                    (keyCode == "Up") || (keyCode == "U") => go_saque()     ;; CTRL-UP
                 }
             }
         }
 
         ESTADO == "digitando" => {
             match ESTADO_DIGITANDO {
-                0 => trata_nome(e, 0, "atleta1")    ;; DIGITANDO ESQ
-                1 => trata_nome(e, 1, "atleta2")    ;; DIGITANDO DIR
-                2 => trata_nome(e, 2, "arbitro")    ;; DIGITANDO ARBITRO
+                0 => trata_nome(0, "atleta1")       ;; DIGITANDO ESQ
+                1 => trata_nome(1, "atleta2")       ;; DIGITANDO DIR
+                2 => trata_nome(2, "arbitro")       ;; DIGITANDO ARBITRO
             }
         }
 
         ESTADO == "jogando" => {
             ifs {
-                ctrl && ((key == "Down") || (key == "J")) => {      ;; CTRL-DOWN
-                    go_queda(:key)
-                    if DELAY != nil {
-                        return                      ;; resumes in `draw`
-                    }
+                ctrl && ((keyCode == "Down") || (keyCode == "J")) => {      ;; CTRL-DOWN
+                    go_queda()
                 }
-                (key == "Left") || (key == "Right") => {            ;; LEFT/RIGHT
+                (keyCode == "Left") || (keyCode == "Right") => {            ;; LEFT/RIGHT
                     if ESTADO_JOGANDO == "sacando" {
                         set ESTADO_JOGANDO = "jogando"
                         set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
                     }
-                    val jog = if key == "Left" => ZER => ONE
+                    val jog = if keyCode == "Left" => ZER => ONE
                     val seq = JOGO@#
                     vector.insert(seq, [NOW, jog, 0])   ;; golpe@2=0  -->  radar desligado
                     var kmh = 0
@@ -426,15 +447,52 @@ func keyPressed (e) {
         }
     }
     jogo_calc()
-
-    if quit {
-        exit()
-    }
 }
 
 ;; ----------------------------------------------------------------------------
 ;; DRAW
 ;; ----------------------------------------------------------------------------
+
+func draw () {
+    set NOW = millis()
+
+    if ESTADO == "jogando" {
+        if conf_radar() {
+            val kmh  = radar()
+            val kmh_ = math.abs(kmh)
+            if kmh_ > 1 {
+                if (ESTADO_JOGANDO == "sacando") && (kmh_ >= CONF_SAQUE) {
+                    set ESTADO_JOGANDO = "jogando"
+                    set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
+                }
+                if ESTADO_JOGANDO == "jogando" {
+                    val jog = if kmh > 0 => LADO_RADAR => (1-LADO_RADAR)
+                    vector.insert(JOGO@#, [NOW, jog, kmh_])     ;; golpe@2!=0  -->  radar ligado
+                    sound(kmh)
+                }
+            }
+            if RADAR_AUTO && (kmh != 0) {
+                ;; zera o timeout com qq bola que não seja 0
+                set RADAR_AUTO_INICIO = NOW
+            }
+        }
+        if (ESTADO_JOGANDO == "jogando") &&
+           RADAR_AUTO && (NOW >= (RADAR_AUTO_INICIO + RADAR_AUTO_TIMEOUT))
+        {
+            go_queda()
+        }
+        if (JOGO_TEMPO_RESTANTE_OLD > 30) && (JOGO_TEMPO_RESTANTE <= 30) {
+            snds_play(2)
+        }
+        set JOGO_TEMPO_RESTANTE_OLD = JOGO_TEMPO_RESTANTE
+        if JOGO_TEMPO_RESTANTE <= 0 {
+            go_termino()
+        }
+    }
+
+    jogo_calc()
+    draw_draw()
+}
 
 func draw_logo (x, img) {
     pico.output.draw.image(img, ['!', x=x+2*W, y=H, h=height//8])
@@ -463,96 +521,6 @@ func draw_draw () {
     }
 }
 
-;; The end of the branch of `draw` in which a presentation is going on.
-func draw_jogando_fim () {
-    if (JOGO_TEMPO_RESTANTE_OLD > 30) && (JOGO_TEMPO_RESTANTE <= 30) {
-        snds_play(2)
-    }
-    set JOGO_TEMPO_RESTANTE_OLD = JOGO_TEMPO_RESTANTE
-    if JOGO_TEMPO_RESTANTE <= 0 {
-        go_termino()
-    }
-}
-
-;; The end of `draw`.
-func draw_fim () {
-    jogo_calc()
-    draw_draw()
-}
-
-func draw () {
-    if DELAY != nil {
-        if millis() < DELAY {
-            draw_draw()
-            return
-        }
-        ;; the `delay(1000)` of `go_queda` ended: what comes after it, and the
-        ;; rest of who called `go_queda`
-        val o  = DELAY_O
-        val de = DELAY_DE
-        set DELAY    = nil
-        set DELAY_O  = nil
-        set DELAY_DE = nil
-        if o == :termino {
-            go_termino()
-        } else {
-            go_saque()
-        }
-        if de == :draw {
-            draw_jogando_fim()
-            draw_fim()
-            return
-        }
-        jogo_calc()         ;; the end of `keyPressed`
-    }
-
-    ;; the keys that waited for the delay
-    loop {
-        while (#FILA > 0) && (DELAY == nil)
-        keyPressed(vector.remove(FILA, 0))
-    }
-    if DELAY != nil {
-        draw_draw()
-        return
-    }
-
-    set NOW = millis()
-
-    if ESTADO == "jogando" {
-        if conf_radar() {
-            val kmh  = radar()
-            val kmh_ = math.abs(kmh)
-            if kmh_ > 1 {
-                if (ESTADO_JOGANDO == "sacando") && (kmh_ >= CONF_SAQUE) {
-                    set ESTADO_JOGANDO = "jogando"
-                    set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
-                }
-                if ESTADO_JOGANDO == "jogando" {
-                    val jog = if kmh > 0 => LADO_RADAR => (1-LADO_RADAR)
-                    vector.insert(JOGO@#, [NOW, jog, kmh_])     ;; golpe@2!=0  -->  radar ligado
-                    sound(kmh)
-                }
-            }
-            if RADAR_AUTO && (kmh != 0) {
-                ;; zera o timeout com qq bola que não seja 0
-                set RADAR_AUTO_INICIO = NOW
-            }
-        }
-        if (ESTADO_JOGANDO == "jogando") &&
-           RADAR_AUTO && (NOW >= (RADAR_AUTO_INICIO + RADAR_AUTO_TIMEOUT))
-        {
-            go_queda(:draw)
-            if DELAY != nil {
-                draw_draw()
-                return          ;; resumes above
-            }
-        }
-        draw_jogando_fim()
-    }
-
-    draw_fim()
-}
-
 ;; ----------------------------------------------------------------------------
 ;; MAIN
 ;; ----------------------------------------------------------------------------
@@ -566,13 +534,15 @@ spawn {
     }
 }
 
+;; As Processing does for a key that is pressed: `key`, `keyCode`, the
+;; handler, and then ESC closes the program.
 spawn {
     loop e on :key.dn {
-        val k = [key=e.key, ctrl=e.ctrl, shift=e.shift, caps=e.caps]
-        if (DELAY != nil) || (#FILA > 0) {
-            vector.insert(FILA, k)
-        } else {
-            keyPressed(k)
+        set key     = key_de(e)
+        set keyCode = e.key
+        keyPressed(e)
+        if key == ESC {
+            exit()
         }
     }
 }
