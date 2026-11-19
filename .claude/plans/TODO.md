@@ -29,14 +29,15 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #9 | Replace the native literal of the size of the display by the query of pico | work | done on 2026-11-19 (pico `8d4d549`, `pico.get.app().screen`); with no window manager (Xvfb) a run needs `PICO_TESTS=1`, which the tests set | B.1 |
 | #10 | Move the data to `data/` and remove the original | work | the data is in `data/` since 2026-11-19; `placar/` keeps only the source and `conf.json` of v4.1.0 | B.2 |
 | #11 | F4: the screen (`draw_draw` of v4.1.0), against the screen of the original | work | done on 2026-11-19: `proc.atm` has the drawing of Processing over pico, and the drawing code is ported line by line. 10 screens of 6 states are compared with the original at the same frames (`tst/telas.sh`): mean difference of 2.5 to 3.1 in 255, which is the smoothing of the text; no difference of layout seen | B.5 |
-| #12 | F5: the radar: the filter, a scripted source, the serial line over POSIX | work | not started | B.6 |
+| #12 | F5: the radar | work | done on 2026-11-19: `serial.atm` (the line over POSIX: the list of ports, open at 9600 baud, a read that blocks as in v4.1.0), `radar_be` one to one. Three scripted radars (files of packets, read by the port and by the original: `tst/radar.py`) give identical sounds, accepted readings, reports and `radar.txt`, with the automatic falls and the limit of falls. The real line was tried over a pseudo-terminal at the pace of the radar (`tst/radar-pty.py`). The real device is for the author (`#13`) | B.6 |
 | #13 | F6: the remaining keys, the launcher, a full presentation by the author with the device | work | not started | B.7 |
 | #14 | F7: the same program written for expressiveness | work | after fidelity | B.8 |
 | #15 | Design a second environment (`env-posix`) from the case of the serial line | work, with the author | not started | B.9 |
 | #16 | In the original (v4.1.0), two hits by key in the same frame have the same time, and `jogo_kmh` divides by zero. Confirmed by running the original: `ArithmeticException` in `keyPressed`. The port ends with the same error | defect of the original | reported on 2026-11-19 | |
 | #17 | In v4.1.0 the automatic mode (`CTRL-A`) only restarts its 3.5 s with a reading of the radar: with the keyboard, the fall comes 3.5 s after `CTRL-A`, and then at the first hit of each sequence. The port does the same | remark | reported on 2026-11-19 | |
-| #18 | In v4.1.0 `radar_be` blocks the frame until a whole packet arrives (v5.3.0 polled and went on). The port will block in the same way | remark | reported on 2026-11-19 | |
+| #18 | In v4.1.0 `radar_be` blocks the frame until a whole packet arrives, and the port does the same: with a radar connected and silent, the screen stops while a sequence goes on | remark | reported on 2026-11-19 | |
 | #19 | pico draws text as Latin-1 and with no smoothing (`TTF_RenderText_Solid`), and in whole sizes: `proc.atm` converts the accents itself (TEMPORARY), and the text of the port is not smoothed as in the original. Told to `env-pico` on 2026-11-19 | work | waits for pico; then tighten the limit of `tst/telas.sh` | |
+| #20 | With `serial = ""`, the original takes the last serial port of the system, and the port does the same. On a machine with a port and no radar (here, `/dev/ttyS0`), both open it, show the radar as connected, and stop at the first serve, waiting for a packet. To run with no radar, the configuration must name a port that does not exist | remark | reported on 2026-11-19 | |
 
 ## Decided by the author
 

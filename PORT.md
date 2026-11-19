@@ -23,6 +23,7 @@ not the reference.
 |------|------|
 | `frescogo.atm` | The port: the screen, the keys, the flow |
 | `proc.atm` | The drawing of Processing that the sketch uses (fill, stroke, text, images), over pico |
+| `serial.atm` | The serial line of the radar, over POSIX |
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |
 | `placar/` | The original: `placar.pde` and `conf.json` of v4.1.0, as the reference |
 | `data/` | The images, fonts, and sounds of v4.1.0, and `conf.atm` |
@@ -41,6 +42,11 @@ make test       # needs a JDK and xvfb-run
 
 ## The radar
 
-The radar is read from a serial line, polled once per frame, as the
-original does: a small library over POSIX (`open`, `termios`, a read that
-does not block). Not done yet.
+`serial.atm` is the serial line, a small library over POSIX (the list of
+ports, `open` at 9600 baud, a read that blocks until a byte arrives, as the
+original reads). With `serial = ""` in `data/conf.atm`, the port is the last
+one of the system, as in the original; otherwise, the path given.
+
+It was tried with scripted radars (files of packets, which the original
+reads too) and over a pseudo-terminal (`tst/radar-pty.py`), not yet with
+the device. Windows is left out.
