@@ -4,3 +4,4 @@ relatorios/
 application.*/
 *win64*
 .deps/
+radar.txt
