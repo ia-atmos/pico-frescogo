@@ -1,2 +1,0 @@
-# <name> <frames> <frame of the shot> [<PICO_ATM_KEYS>]
-00-logos 10 9

@@ -1,0 +1,206 @@
+;; The drawing of Processing that the scoreboard uses, over pico: a state of
+;; fill, stroke, and text, and the primitives that read it, so that the
+;; drawing code of the original is ported line by line.
+;;
+;; As in the sketch: `imageMode(CENTER)`, `ellipseMode(CENTER)`, the corner
+;; mode for `rect`, and `tint(255, 128)`, which draws every image at half
+;; opacity.
+
+val LEFT     = :LEFT
+val CENTER   = :CENTER
+val RIGHT    = :RIGHT
+val TOP      = :TOP
+val BOTTOM   = :BOTTOM
+val BASELINE = :BASELINE
+
+pin P = [
+    fill   = ['!', r=255, g=255, b=255],    ;; or nil, for `noFill`
+    stroke = ['!', r=0,   g=0,   b=0],      ;; or nil, for `noStroke`
+    weight = 1,
+    size   = 18,
+    ax     = LEFT,
+    ay     = BASELINE,
+]
+
+;; `fill(v)` is a gray, and `fill(r,g,b)` a color.
+func cor (r, g, b) {
+    if g == nil => ['!', r=r, g=r, b=r] => ['!', r=r, g=g, b=b]
+}
+
+func fill (r, g, b) {
+    set P.fill = cor(r, g, b)
+}
+
+func noFill () {
+    set P.fill = nil
+}
+
+func stroke (r, g, b) {
+    set P.stroke = cor(r, g, b)
+}
+
+func noStroke () {
+    set P.stroke = nil
+}
+
+func strokeWeight (w) {
+    set P.weight = w
+}
+
+func background (r, g, b) {
+    pico.set.effect [color=cor(r,g,b)]
+    pico.output.clear()
+}
+
+func rect (x, y, w, h) {
+    if P.fill != nil {
+        pico.set.pencil [color=P.fill, style='fill']
+        pico.output.draw.rect ['!', x=x, y=y, w=w, h=h, anchor='NW']
+    }
+    if P.stroke != nil {
+        ;; the line of the border is centered on the edge
+        pico.set.pencil [color=P.stroke, style='stroke']
+        pico.output.draw.rect ['!', x=x, y=y, w=w+1, h=h+1, anchor='NW']
+    }
+}
+
+func ellipse (x, y, w, h) {
+    if P.fill != nil {
+        pico.set.pencil [color=P.fill, style='fill']
+        pico.output.draw.oval ['!', x=x, y=y, w=w, h=h]
+    }
+    if P.stroke != nil {
+        pico.set.pencil [color=P.stroke, style='stroke']
+        pico.output.draw.oval ['!', x=x, y=y, w=w, h=h]
+    }
+}
+
+;; A line with the weight of the stroke, and round caps.
+func line (x1, y1, x2, y2) {
+    if P.stroke == nil {
+        return
+    }
+    val w = P.weight
+    if w <= 1 {
+        pico.set.pencil [color=P.stroke, style='stroke']
+        pico.output.draw.line(['!', x=x1, y=y1], ['!', x=x2, y=y2])
+        return
+    }
+    val vx = x2 - x1
+    val vy = y2 - y1
+    val d  = math.sqrt(vx*vx + vy*vy)
+    val nx = (-vy / d) * (w / 2)
+    val ny = ( vx / d) * (w / 2)
+    pico.set.pencil [color=P.stroke, style='fill']
+    pico.output.draw.poly [
+        ['!', x=x1+nx, y=y1+ny], ['!', x=x2+nx, y=y2+ny],
+        ['!', x=x2-nx, y=y2-ny], ['!', x=x1-nx, y=y1-ny],
+    ]
+    pico.output.draw.oval ['!', x=x1, y=y1, w=w, h=w]
+    pico.output.draw.oval ['!', x=x2, y=y2, w=w, h=w]
+}
+
+;; TEXT
+
+;; The font of the sketch (LiberationSans-Bold): its ascent and descent, as
+;; fractions of the size.
+val P_ASCENT  = 0.9053
+val P_DESCENT = 0.2119
+
+func textFont (path) {
+    pico.set.pencil [font=path]
+}
+
+func textSize (s) {
+    set P.size = s
+}
+
+func textAlign (ax, ay) {
+    set P.ax = ax
+    set P.ay = ay || BASELINE
+}
+
+;; The size that pico draws: a whole number of pixels.
+func text_h () {
+    math.floor(P.size + 0.5)
+}
+
+func textAscent () {
+    math.floor(P_ASCENT * P.size + 0.5)
+}
+
+func textDescent () {
+    math.floor(P_DESCENT * P.size + 0.5)
+}
+
+func textWidth (str) {
+    val s = tostring(str)
+    if #s == 0 => 0 => pico.get.text(['!', h=text_h()], latin1(s)).w
+}
+
+;; pico draws a text as Latin-1 (one byte per character), and the strings
+;; here are UTF-8: the characters of two bytes up to U+00FF become one.
+;; TEMPORARY, until pico draws UTF-8 (see the TODO).
+func latin1 (s) {
+    var out = ""
+    var i = 0
+    loop {
+        while i < #s
+        val c = string.byte(s, i)
+        if ((c == 0xC2) || (c == 0xC3)) && ((i+1) < #s) {
+            set out = out ++ string.char(((c & 0x03) << 6) | (string.byte(s, i+1) & 0x3F))
+            set i = i + 2
+        } else {
+            set out = out ++ string.char(c)
+            set i = i + 1
+        }
+    }
+    out
+}
+
+;; The alignments other than LEFT, CENTER, RIGHT (horizontal) and TOP,
+;; CENTER, BOTTOM (vertical) are the left and the baseline, as in Processing
+;; (the sketch has a `textAlign(TOP, LEFT)`).
+func text (str, x, y) {
+    val s = tostring(str)
+    if (#s == 0) || (P.fill == nil) {
+        return
+    }
+    val base = match P.ay {
+        CENTER => y + textAscent()/2
+        TOP    => y + textAscent()
+        BOTTOM => y - textDescent()
+        else   => y
+    }
+    val h   = text_h()
+    val top = base - math.ceil(P_ASCENT * h)    ;; the box of pico starts at the ascent
+    val anc = match P.ax {
+        CENTER => 'N'
+        RIGHT  => 'NE'
+        else   => 'NW'
+    }
+    pico.set.pencil [color=P.fill]
+    pico.output.draw.text(latin1(s), ['!', x=x, y=top, h=h, anchor=anc])
+}
+
+;; IMAGES
+
+;; `loadImage`: a layer at half opacity, with its size.
+func loadImage (path) {
+    val d = pico.get.image(path)
+    val l = pico.layer.image [path=path]
+    val old = pico.set.layer(l)
+    pico.set.effect [alpha=128]
+    pico.set.layer(old)
+    [layer=l, w=d.w, h=d.h]
+}
+
+;; `img.resize(0, h)`: the height, and the width in proportion.
+func resize (img, h) {
+    set img.w = math.floor(img.w * (h / img.h))
+    set img.h = h
+}
+
+func image (img, x, y) {
+    pico.output.draw.layer(img.layer, ['!', x=x, y=y, w=img.w, h=img.h])
+}
