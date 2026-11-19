@@ -16,7 +16,7 @@ trap 'rm -rf "$OUT"' EXIT
 err=0
 while read -r name frames shot keys; do
     case "$name" in ''|'#'*) continue ;; esac
-    SDL_AUDIODRIVER=dummy PICO_ATM_FRAMES="$frames:16" \
+    PICO_TESTS=1 SDL_AUDIODRIVER=dummy PICO_ATM_FRAMES="$frames:16" \
     PICO_ATM_SHOT="$shot:$OUT/$name.png" PICO_ATM_KEYS="$keys" \
         xvfb-run -a -s "-screen 0 1300x900x24" $ATMOS frescogo.atm \
         > "$OUT/$name.log" 2>&1

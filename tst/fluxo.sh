@@ -28,7 +28,7 @@ for k in tst/fluxo/*.keys; do
     conf="tst/fluxo/$name.conf"
     [ -f "$conf" ] || conf="data/conf.atm"
     FRESCOGO_TRACE=1 FRESCOGO_TS=TESTE FRESCOGO_REL="$rel" FRESCOGO_CONF="$conf" \
-    SDL_AUDIODRIVER=dummy PICO_ATM_FRAMES="$frames:16" PICO_ATM_KEYS="$keys" \
+    PICO_TESTS=1 SDL_AUDIODRIVER=dummy PICO_ATM_FRAMES="$frames:16" PICO_ATM_KEYS="$keys" \
         xvfb-run -a -s "-screen 0 1300x900x24" $ATMOS frescogo.atm \
         > "$OUT/$name.out" 2>&1
     if [ $? -ne 0 ]; then
