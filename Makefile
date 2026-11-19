@@ -46,7 +46,7 @@ test: $(ATMOS)
 	oracle/run.sh
 	tst/jogo.sh
 	tst/fluxo.sh
-	tst/run.sh
+	tst/telas.sh
 
 $(ORIG):
 	@mkdir -p $(DEPS)

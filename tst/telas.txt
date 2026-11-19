@@ -1,0 +1,13 @@
+# The screens that are compared with the original: a scripted presentation
+# of tst/fluxo/, the number of frames to run, and the frame of the screenshot.
+# <name> <frames> <frame of the shot>
+01-manual    10   9
+01-manual    70  65
+01-manual   130 128
+01-manual   700 690
+01-manual  2382 2375
+02-auto      40  30
+04-esquenta 300 290
+05-nomes     35  30
+05-nomes    320 300
+06-aborta  1826 1820
