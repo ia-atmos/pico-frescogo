@@ -1,14 +1,21 @@
 # FrescoGO! in Atmos
 
-The scoreboard of FrescoGO! (`placar/placar.pde`, a Processing sketch,
-v5.3.0 at `1d2edb8`) ported to [Atmos](https://github.com/ia-atmos/lang),
+The scoreboard of FrescoGO! (`placar/placar.pde`, a Processing sketch)
+ported to [Atmos](https://github.com/ia-atmos/lang),
 over the environment [pico](https://github.com/ia-atmos/env-pico).
 
 **The port is made with AI** (Claude, in Claude Code), under the direction
 of the author of FrescoGO! and of Atmos.
 
-It is first one to one with the original, and only then rewritten for
-expressiveness. The rules and the operation are those of `README.md`.
+**The reference is v4.1.0**, the version in real use: the source that comes
+in its release package
+(<https://github.com/frescogo/frescogo/releases/tag/v4.1.0>), kept here as
+`placar/placar.pde`. The port is first one to one with it, exact, and only
+then rewritten for expressiveness. The rule is that of the readme of
+`frescogo/frescogo` at the tag `v4.1.0`.
+
+`README.md` and `README-v5.3.0` describe later versions (5.x), which are
+not the reference.
 
 ## Files
 
@@ -16,8 +23,8 @@ expressiveness. The rules and the operation are those of `README.md`.
 |------|------|
 | `frescogo.atm` | The port: the screen, the keys, the flow |
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |
-| `data/conf.atm` | The configuration, a table of Atmos with comments (the original has `conf.json`) |
-| `placar/` | The original, kept as the reference while the port is checked; it will be removed. The port still reads its data (`placar/data/`) |
+| `placar/` | The original: `placar.pde` and `conf.json` of v4.1.0, as the reference |
+| `data/` | The images, fonts, and sounds of v4.1.0, and `conf.atm` |
 | `oracle/` | The functions of the score of the original in plain Java, and scripts of hits with the numbers they give: the tests of the score |
 | `tst/` | The tests: the score against the oracle (`jogo.sh`), scripted presentations with their traces and reports (`fluxo.sh`), and the screen at fixed frames, with no display (`run.sh`) |
 | `.claude/plans/TODO.md` | What waits for a decision, and what is not done |
