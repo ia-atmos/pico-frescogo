@@ -14,7 +14,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 
 | # | Item | Kind | State | Was |
 |---|------|------|-------|-----|
-| #1 | Fullscreen: keep reading the size of the display (recommended, as the original), or a fixed logical size of 16:9 | decision | open, asked on 2026-11-18 | |
+| #1 | Fullscreen: the size of the display, as the original (decided by the author in `env-pico`, its `#1c`: in fullscreen the window layer follows the display) | decision | closed on 2026-11-19 | |
 | #2 | The original divides by zero in the `trinca` mode | defect of the original | reported, not acknowledged | C.1 |
 | #3 | The rule of `frescogo/frescogo` against the code: the 6th strongest of 10 continuous hits doubles (the rule says the 5th), and others | remark | reported, not acknowledged | C.3 |
 | #4 | Known differences of the port in the flow (the `delay` of the automatic fall, `millis`; Caps Lock was solved by pico) | remark | reported, not acknowledged | C.4 |
@@ -22,7 +22,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #6 | Adopt the rule of 6 minutes, with the discount of time per fall | work, after fidelity | asked by the author | B.11 |
 | #7 | Windows: the serial line over POSIX leaves it out | decision | open; recommended: accept for now | A.5 |
 | #8 | The oracle of the screen: install Processing to run the original under `Xvfb` and compare screenshots | decision | open; recommended: try it during F4 | A.6 |
-| #9 | Replace the native literal of the size of the display when pico has the query | work | waits for pico | B.1 |
+| #9 | Replace the native literal of the size of the display by the query of pico | work | done on 2026-11-19 (pico `3436fcf`); with no window manager (Xvfb) a run needs `PICO_TESTS=1`, which the tests set | B.1 |
 | #10 | Move `placar/data/` to `data/` and remove the original | work | waits for fidelity | B.2 |
 | #11 | F4: the screen, the game mode and the debug mode | work | next | B.5 |
 | #12 | F5: the radar: the filter, a scripted source, the serial line over POSIX | work | not started | B.6 |
@@ -53,7 +53,6 @@ One at a time, each with a recommended option.
 
 | # | Work | Note |
 |---|------|------|
-| 1 | Fullscreen: pico gives no size of the display. `pico-sdl` answered on 2026-11-17 that it will propose a query to the author; meanwhile the port reads the size with a native literal over SDL (`SDL_GetCurrentDisplayMode`), marked TEMPORARY in `frescogo.atm`. Replace it when pico has the query | Waits for pico |
 | 2 | Move `placar/data/` to `data/` when the original is removed (the constant `DIR` of `frescogo.atm`) | |
 | 5 | F4: the screen, the game mode and the debug mode | |
 | 6 | F5: the radar: the filter over a scripted source of packets, then the serial line (option A), tested here over a pseudo-terminal | The real device is tested by the author |
