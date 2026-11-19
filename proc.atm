@@ -135,27 +135,7 @@ func textDescent () {
 
 func textWidth (str) {
     val s = tostring(str)
-    if #s == 0 => 0 => pico.get.text(['!', h=text_h()], latin1(s)).w
-}
-
-;; pico draws a text as Latin-1 (one byte per character), and the strings
-;; here are UTF-8: the characters of two bytes up to U+00FF become one.
-;; TEMPORARY, until pico draws UTF-8 (see the TODO).
-func latin1 (s) {
-    var out = ""
-    var i = 0
-    loop {
-        while i < #s
-        val c = string.byte(s, i)
-        if ((c == 0xC2) || (c == 0xC3)) && ((i+1) < #s) {
-            set out = out ++ string.char(((c & 0x03) << 6) | (string.byte(s, i+1) & 0x3F))
-            set i = i + 2
-        } else {
-            set out = out ++ string.char(c)
-            set i = i + 1
-        }
-    }
-    out
+    if #s == 0 => 0 => pico.get.text(['!', h=text_h()], s).w
 }
 
 ;; The alignments other than LEFT, CENTER, RIGHT (horizontal) and TOP,
@@ -180,7 +160,7 @@ func text (str, x, y) {
         else   => 'NW'
     }
     pico.set.pencil [color=P.fill]
-    pico.output.draw.text(latin1(s), ['!', x=x, y=top, h=h, anchor=anc])
+    pico.output.draw.text(s, ['!', x=x, y=top, h=h, anchor=anc])
 }
 
 ;; IMAGES
