@@ -1,0 +1,56 @@
+# generated once, with a fixed seed
+radar 0
+nome 0 Ana
+nome 1 Bia_C
+inicio 1000
+seq
+hit 7005 0 0
+hit 7474 0 0
+hit 8360 1 0
+hit 9777 0 0
+now 9901
+estado jogando jogando
+calc
+hit 11097 1 0
+hit 12276 0 0
+hit 13049 1 0
+hit 14253 1 0
+hit 15112 0 0
+hit 16038 1 0
+hit 17389 0 0
+now 18941
+estado jogando jogando
+calc
+hit 18001 1 0
+quedas 1
+descanso 6367
+now 21501
+estado ocioso
+calc
+seq
+hit 26667 0 0
+hit 27267 1 0
+hit 28340 0 0
+hit 28896 1 0
+now 31012
+estado jogando jogando
+calc
+hit 29701 0 0
+hit 30372 1 0
+hit 31857 0 0
+hit 33237 1 0
+hit 33920 0 0
+hit 35485 1 0
+hit 37061 0 0
+now 38231
+estado jogando jogando
+calc
+hit 38582 1 0
+quedas 2
+descanso 27926
+now 42082
+estado ocioso
+calc
+estado terminado
+calc
+report 2026_11_19_10_00_00

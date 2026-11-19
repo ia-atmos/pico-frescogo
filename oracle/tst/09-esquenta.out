@@ -1,0 +1,2 @@
+calc tempo=15,45,45 total=316 equ=229,87 pct=0 aborta=4 jog0=229,2,7550,70,81/30 jog1=87,1,6600,66,66/30
+calc tempo=65,0,0 total=316 equ=229,87 pct=0 aborta=4 jog0=229,2,7550,70,81/30 jog1=87,1,6600,66,66/30

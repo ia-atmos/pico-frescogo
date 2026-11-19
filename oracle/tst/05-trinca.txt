@@ -1,0 +1,113 @@
+# generated once, with a fixed seed
+radar 1
+conf trinca true
+conf lado_pivo 2
+inicio 1000
+seq
+hit 10216 0 97
+hit 10655 1 61
+hit 11141 0 44
+hit 12282 1 61
+now 13841
+estado jogando jogando
+calc
+hit 13775 1 61
+hit 14181 0 82
+hit 15133 1 79
+hit 15839 0 39
+hit 16503 1 86
+hit 17142 0 30
+hit 17950 1 51
+now 18631
+estado jogando jogando
+calc
+hit 18922 0 55
+hit 20406 1 56
+hit 21158 0 55
+hit 22322 1 76
+hit 23551 0 48
+hit 24471 0 68
+hit 26086 1 73
+now 26356
+estado jogando jogando
+calc
+hit 27100 0 69
+hit 28464 1 53
+quedas 1
+descanso 31537
+now 31964
+estado ocioso
+calc
+seq
+hit 39331 1 32
+hit 40443 0 32
+hit 41947 1 76
+hit 43097 0 31
+now 44951
+estado jogando jogando
+calc
+hit 43572 1 55
+hit 44195 0 89
+hit 45280 1 97
+hit 46173 0 43
+hit 47760 1 77
+hit 48745 1 41
+hit 49551 0 76
+now 50158
+estado jogando jogando
+calc
+hit 50627 1 99
+hit 51195 0 70
+hit 52202 1 40
+hit 53865 0 69
+hit 55235 1 36
+hit 55780 0 98
+hit 56991 0 74
+now 58015
+estado jogando jogando
+calc
+hit 58304 1 48
+hit 58798 0 34
+quedas 2
+descanso 32346
+now 62298
+estado ocioso
+calc
+seq
+hit 68682 1 102
+hit 69333 0 82
+hit 69931 1 77
+hit 70616 1 83
+now 71823
+estado jogando jogando
+calc
+hit 71285 0 51
+hit 72734 1 92
+hit 73764 0 67
+hit 75106 1 48
+hit 75716 0 98
+hit 76463 1 93
+hit 77536 0 92
+now 78651
+estado jogando jogando
+calc
+hit 78971 1 94
+hit 80090 1 75
+hit 81673 0 69
+hit 82797 1 65
+hit 84171 0 67
+hit 85247 1 104
+hit 85650 0 62
+now 86984
+estado jogando jogando
+calc
+hit 86590 1 94
+hit 87700 0 74
+quedas 3
+descanso 26769
+now 91200
+estado ocioso
+calc
+estado terminado
+calc
+report 2026_11_19_10_00_00

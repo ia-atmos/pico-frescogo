@@ -1,0 +1,118 @@
+# random: rules, hits, falls and moments of calc, generated once
+radar 1
+conf equilibrio 141
+conf minima 40
+conf tempo 257
+conf ataques 15
+inicio 500
+seq
+hit 3979 0 60
+hit 4750 1 85
+hit 5545 1 67
+hit 6568 0 91
+hit 7269 1 24
+now 7670
+estado jogando sacando
+calc
+hit 8753 0 89
+hit 9251 1 49
+hit 10236 0 34
+hit 11774 1 56
+hit 12563 0 53
+hit 14020 0 59
+hit 15129 1 86
+hit 16670 1 46
+hit 17488 0 91
+now 17550
+estado jogando jogando
+calc
+hit 18908 1 30
+now 21002
+estado jogando sacando
+calc
+hit 20100 0 24
+hit 21719 1 106
+hit 23469 0 60
+hit 24950 1 64
+hit 26666 0 80
+hit 27227 0 92
+hit 28330 0 76
+now 28831
+estado jogando sacando
+calc
+hit 28767 1 53
+now 29509
+estado jogando sacando
+calc
+hit 29478 0 83
+hit 30932 1 108
+now 31548
+estado jogando sacando
+calc
+hit 32533 0 99
+hit 32958 1 22
+now 33178
+estado jogando sacando
+calc
+hit 33747 0 88
+now 36121
+estado jogando sacando
+calc
+hit 35314 1 93
+now 37326
+estado jogando sacando
+calc
+hit 36753 1 34
+hit 37777 0 92
+hit 39078 1 28
+hit 39617 0 103
+hit 39953 1 92
+quedas 1
+manual -2
+now 42953
+estado ocioso
+calc
+seq
+hit 48683 1 51
+hit 49661 0 22
+hit 51335 1 78
+hit 52941 0 108
+hit 53289 1 44
+hit 54176 1 53
+hit 55261 1 33
+hit 57013 0 81
+hit 58054 1 72
+hit 58773 0 31
+hit 59283 1 59
+hit 60264 0 66
+hit 60754 1 74
+hit 61770 0 27
+hit 63368 1 52
+hit 64096 0 104
+hit 65009 1 76
+hit 66690 1 94
+hit 67046 0 78
+hit 68603 1 52
+hit 69523 1 41
+hit 70841 0 50
+hit 72192 1 91
+now 74686
+estado jogando sacando
+calc
+hit 73709 0 96
+hit 74954 1 42
+hit 76026 0 43
+hit 76697 1 82
+hit 77456 0 96
+hit 79034 0 29
+hit 79335 1 78
+hit 81131 1 71
+now 82852
+estado jogando sacando
+calc
+quedas 2
+manual 2
+now 84131
+estado ocioso
+calc
+report 2026_11_19_10_00_00

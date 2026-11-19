@@ -1,0 +1,149 @@
+# one athlete much stronger: the balance, which starts at 30 hits
+radar 1
+inicio 1000
+seq
+hit 6524 0 116
+hit 7221 0 57
+hit 8423 1 67
+hit 8923 0 120
+now 10398
+estado jogando jogando
+calc
+hit 9869 1 43
+hit 10785 0 58
+hit 12477 1 64
+hit 13253 0 92
+hit 14917 1 77
+hit 15474 0 98
+quedas 1
+descanso 25423
+now 18974
+estado ocioso
+calc
+seq
+hit 26862 1 65
+hit 27424 0 120
+hit 28418 0 92
+hit 29970 1 69
+now 32052
+estado jogando jogando
+calc
+hit 30749 0 91
+hit 32011 1 59
+hit 33015 0 60
+hit 33561 0 90
+hit 35003 1 90
+hit 36085 0 80
+hit 36601 1 55
+now 38407
+estado jogando jogando
+calc
+hit 37546 0 110
+hit 39131 1 101
+hit 39917 0 67
+hit 40423 1 65
+hit 41995 0 85
+hit 42625 1 52
+hit 43600 0 60
+now 45062
+estado jogando jogando
+calc
+quedas 2
+descanso 5413
+now 47100
+estado ocioso
+calc
+seq
+hit 52857 0 96
+hit 53550 1 82
+hit 55200 0 64
+hit 56180 1 86
+now 57376
+estado jogando jogando
+calc
+hit 56839 0 75
+hit 57897 1 76
+hit 58368 0 101
+hit 59490 1 103
+hit 60068 0 81
+hit 61316 1 44
+hit 61817 1 51
+now 64256
+estado jogando jogando
+calc
+hit 62503 0 120
+hit 63887 1 71
+hit 64339 0 120
+hit 65318 1 82
+hit 66108 0 85
+hit 67386 1 34
+hit 68214 0 86
+now 69966
+estado jogando jogando
+calc
+hit 69035 1 34
+hit 69490 0 86
+hit 70946 1 59
+hit 72180 0 73
+hit 73225 0 95
+hit 74762 0 120
+hit 75967 1 35
+now 77991
+estado jogando jogando
+calc
+quedas 3
+descanso 25393
+now 79467
+estado ocioso
+calc
+seq
+hit 84039 0 120
+hit 84757 1 90
+hit 86452 0 108
+hit 87913 1 64
+now 89299
+estado jogando jogando
+calc
+hit 89096 0 64
+hit 90049 1 54
+hit 90520 0 71
+hit 91451 1 37
+hit 92173 0 114
+hit 93718 1 81
+hit 94897 0 55
+now 95762
+estado jogando jogando
+calc
+hit 95598 0 87
+hit 96215 1 78
+hit 97050 0 80
+hit 97761 1 72
+hit 99292 0 115
+hit 100750 1 40
+hit 101200 0 69
+now 103202
+estado jogando jogando
+calc
+hit 102728 1 47
+hit 103192 0 120
+hit 103593 1 74
+hit 104126 1 99
+hit 105435 0 94
+hit 106610 1 92
+hit 107809 1 44
+now 109307
+estado jogando jogando
+calc
+hit 109238 0 108
+hit 110527 0 80
+hit 112211 1 91
+hit 113456 1 101
+hit 114178 0 75
+quedas 4
+descanso 11557
+now 117678
+estado ocioso
+calc
+estado terminado
+calc
+report 2026_11_19_10_00_00

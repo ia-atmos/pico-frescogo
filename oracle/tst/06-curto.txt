@@ -1,0 +1,355 @@
+# generated once, with a fixed seed
+radar 1
+conf tempo 60
+conf ataques 20
+conf aborta 10
+conf quedas 3000
+inicio 1000
+seq
+hit 10073 1 34
+hit 10453 0 90
+hit 11597 1 32
+hit 12535 0 55
+now 14230
+estado jogando jogando
+calc
+hit 14017 1 42
+hit 14792 0 63
+hit 16421 1 84
+hit 17488 0 76
+hit 18707 1 86
+hit 19279 0 67
+hit 19858 1 55
+now 21334
+estado jogando jogando
+calc
+hit 21234 0 54
+hit 22668 1 94
+hit 23106 0 61
+hit 24718 1 75
+hit 26304 1 94
+hit 27759 0 64
+hit 28778 1 78
+now 30759
+estado jogando jogando
+calc
+hit 29614 0 56
+hit 31063 0 51
+hit 31477 1 101
+hit 33127 0 77
+hit 34279 1 67
+hit 34918 0 92
+hit 35408 1 80
+now 35801
+estado jogando jogando
+calc
+quedas 1
+descanso 28917
+now 38908
+estado ocioso
+calc
+seq
+hit 45532 1 87
+hit 46827 0 78
+hit 47363 1 90
+hit 48364 0 82
+now 48715
+estado jogando jogando
+calc
+hit 49137 1 64
+hit 50441 0 52
+hit 50858 0 45
+hit 51752 1 76
+hit 52516 0 87
+hit 53570 1 62
+hit 54790 0 83
+now 56778
+estado jogando jogando
+calc
+hit 55718 1 91
+hit 57105 0 78
+hit 58502 1 89
+hit 59544 0 50
+hit 61192 1 64
+hit 62227 0 92
+hit 62930 1 67
+now 65223
+estado jogando jogando
+calc
+hit 63322 0 37
+hit 64075 0 102
+hit 64684 1 77
+hit 65805 0 93
+hit 67392 0 54
+hit 68088 1 31
+hit 69332 0 97
+now 71345
+estado jogando jogando
+calc
+quedas 2
+descanso 4968
+now 72832
+estado ocioso
+calc
+seq
+hit 80258 1 48
+hit 81919 0 70
+hit 82594 0 42
+hit 83189 0 91
+now 85084
+estado jogando jogando
+calc
+hit 83710 1 100
+hit 84350 0 40
+hit 85059 1 63
+hit 86364 0 32
+hit 88049 1 54
+hit 89331 0 86
+hit 90626 1 91
+now 92998
+estado jogando jogando
+calc
+hit 91136 0 67
+hit 92260 1 34
+hit 92811 0 65
+hit 93764 1 90
+hit 95026 0 77
+hit 95471 1 61
+hit 97089 0 98
+now 97222
+estado jogando jogando
+calc
+hit 97823 1 34
+hit 98309 0 56
+hit 99575 1 39
+hit 100277 0 44
+hit 101475 1 89
+hit 102867 0 46
+hit 103398 1 33
+now 104158
+estado jogando jogando
+calc
+quedas 3
+descanso 34434
+now 106898
+estado ocioso
+calc
+seq
+hit 116454 1 49
+hit 117872 0 79
+hit 118708 1 102
+hit 119345 0 50
+now 120641
+estado jogando jogando
+calc
+hit 120217 1 30
+hit 121762 0 71
+hit 122922 1 31
+hit 124116 0 97
+hit 125624 1 47
+hit 126482 0 77
+hit 127418 1 49
+now 128090
+estado jogando jogando
+calc
+hit 129078 0 39
+hit 129583 0 90
+hit 130084 0 99
+hit 130669 1 34
+hit 131171 0 82
+hit 132012 1 67
+hit 132581 0 103
+now 132821
+estado jogando jogando
+calc
+hit 133306 1 86
+hit 133931 0 52
+hit 134413 1 33
+hit 135664 0 66
+hit 136567 1 55
+hit 138043 0 57
+hit 138991 1 62
+now 141149
+estado jogando jogando
+calc
+quedas 4
+descanso 21690
+now 142491
+estado ocioso
+calc
+seq
+hit 151306 1 34
+hit 152427 0 44
+hit 153270 1 33
+hit 154388 0 73
+now 156172
+estado jogando jogando
+calc
+hit 154873 1 33
+hit 155273 0 92
+hit 155658 1 63
+hit 156217 0 64
+hit 157068 1 83
+hit 158565 0 79
+hit 160161 1 96
+now 162128
+estado jogando jogando
+calc
+hit 161094 0 68
+hit 161541 1 87
+hit 162135 0 103
+hit 162737 1 30
+hit 164168 0 49
+hit 165761 1 92
+hit 167228 0 99
+now 169154
+estado jogando jogando
+calc
+hit 168049 1 79
+hit 168745 0 88
+hit 169146 1 62
+hit 170180 0 77
+hit 171764 1 76
+hit 172601 1 69
+hit 173342 1 59
+now 173707
+estado jogando jogando
+calc
+quedas 5
+descanso 12729
+now 176842
+estado ocioso
+calc
+seq
+hit 183595 0 48
+hit 185039 1 36
+hit 186484 0 92
+hit 187610 1 72
+now 190033
+estado jogando jogando
+calc
+hit 188788 0 38
+hit 189703 1 44
+hit 191289 0 49
+hit 192703 1 41
+hit 193260 0 45
+hit 194082 1 50
+hit 194962 0 53
+now 195885
+estado jogando jogando
+calc
+hit 196629 1 91
+hit 197946 0 47
+hit 199258 1 55
+hit 200809 0 48
+hit 201869 1 38
+hit 202810 0 37
+hit 203251 1 88
+now 204553
+estado jogando jogando
+calc
+hit 203756 1 42
+hit 204922 0 73
+hit 205510 1 77
+hit 206180 0 48
+hit 207318 1 90
+hit 208526 0 98
+hit 209214 0 87
+now 210743
+estado jogando jogando
+calc
+quedas 6
+descanso 816
+now 212714
+estado ocioso
+calc
+seq
+hit 217681 1 45
+hit 218878 0 99
+hit 219606 1 62
+hit 221095 0 67
+now 223326
+estado jogando jogando
+calc
+hit 222034 1 35
+hit 223439 0 30
+hit 224898 1 93
+hit 226418 0 51
+hit 226870 1 56
+hit 228418 0 49
+hit 229367 0 68
+now 230899
+estado jogando jogando
+calc
+hit 230192 1 51
+hit 231789 1 75
+hit 233350 0 53
+hit 234707 1 58
+hit 236061 0 100
+hit 237715 1 41
+hit 238975 1 56
+now 241469
+estado jogando jogando
+calc
+hit 240254 0 37
+hit 241622 1 94
+hit 243081 0 64
+hit 244772 1 68
+hit 246024 0 42
+hit 247520 1 50
+hit 248468 1 94
+now 249771
+estado jogando jogando
+calc
+quedas 7
+descanso 33274
+now 251968
+estado ocioso
+calc
+seq
+hit 256046 0 85
+hit 257518 0 63
+hit 258618 0 64
+hit 259631 1 81
+now 262060
+estado jogando jogando
+calc
+hit 260170 0 66
+hit 261564 1 62
+hit 262579 0 31
+hit 263063 1 99
+hit 264222 0 67
+hit 265914 1 31
+hit 266513 0 47
+now 268801
+estado jogando jogando
+calc
+hit 267136 0 62
+hit 268517 1 65
+hit 269256 0 49
+hit 269838 1 57
+hit 271436 0 83
+hit 272789 1 92
+hit 274093 0 88
+now 274883
+estado jogando jogando
+calc
+hit 274836 1 58
+hit 275501 0 75
+hit 276834 1 65
+hit 278427 0 54
+hit 279973 1 33
+hit 281186 0 103
+hit 281810 1 34
+now 283100
+estado jogando jogando
+calc
+quedas 8
+descanso 23851
+now 285310
+estado ocioso
+calc
+manual -1
+estado terminado
+calc
+report 2026_11_19_10_00_00

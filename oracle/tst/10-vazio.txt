@@ -1,0 +1,15 @@
+# no hit at all, then sequences with 0, 1 and 2 hits
+radar 1
+inicio 0
+now 100
+calc
+seq
+calc
+hit 500 0 60
+calc
+seq
+hit 900 1 55
+hit 1500 0 101
+now 1600
+calc
+report 2026_11_19_10_00_00
