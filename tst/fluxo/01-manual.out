@@ -1,0 +1,151 @@
+[000000] go reinicio
+[000000] snd restart.wav
+[000080] go saque
+[000080] snd start.wav
+[000944] hit peteleco.mp3
+[001360] hit agudo.wav
+[001984] hit peteleco.mp3
+[002608] hit peteleco.mp3
+[003088] hit peteleco.mp3
+[003472] hit laser.wav
+[004048] hit peteleco.mp3
+[004432] hit laser.wav
+[004944] hit peteleco.mp3
+[005440] hit peteleco.mp3
+[005872] hit agudo.wav
+[006256] hit laser.wav
+[006640] hit laser.wav
+[007216] hit peteleco.mp3
+[007808] hit peteleco.mp3
+[008448] hit peteleco.mp3
+[009056] hit peteleco.mp3
+[009552] hit peteleco.mp3
+[010048] hit peteleco.mp3
+[010576] hit peteleco.mp3
+[011168] hit peteleco.mp3
+[011600] hit agudo.wav
+[012128] hit peteleco.mp3
+[012672] hit peteleco.mp3
+[013328] go queda
+[013328] snd fall.wav
+[013648] go saque
+[013648] snd start.wav
+[020112] hit peteleco.mp3
+[020704] hit peteleco.mp3
+[021184] hit peteleco.mp3
+[021808] hit peteleco.mp3
+[022448] hit peteleco.mp3
+[022848] hit agudo.wav
+[023424] hit peteleco.mp3
+[023888] hit peteleco.mp3
+[024448] hit peteleco.mp3
+[025088] hit peteleco.mp3
+[025552] hit peteleco.mp3
+[026128] hit peteleco.mp3
+[026528] go queda
+[026528] snd fall.wav
+[026608] snd undo.wav
+[026688] go saque
+[026688] snd start.wav
+[027232] hit peteleco.mp3
+[027584] hit laser.wav
+[028016] hit agudo.wav
+[028400] hit laser.wav
+[028720] hit hit.wav
+[029008] hit hit.wav
+[029424] hit agudo.wav
+[029840] hit agudo.wav
+[030256] hit agudo.wav
+[030688] hit agudo.wav
+[031056] go queda
+[031056] snd fall.wav
+[031216] go saque
+[031216] snd start.wav
+[031760] hit peteleco.mp3
+[032224] hit peteleco.mp3
+[032544] hit hit.wav
+[032992] hit agudo.wav
+[033440] hit agudo.wav
+[033808] hit laser.wav
+[034128] hit hit.wav
+[034528] hit agudo.wav
+[034896] hit laser.wav
+[035312] hit agudo.wav
+[035712] hit agudo.wav
+[036032] hit hit.wav
+[036496] hit peteleco.mp3
+[036896] hit agudo.wav
+[037312] go queda
+[037312] snd fall.wav
+[037392] go saque
+[037392] snd start.wav
+[037632] snd undo.wav
+[037712] go termino
+[037712] snd queda2.wav
+=== frescogo-TESTE-Atleta 1-Atleta 2.txt
+Data:          TESTE
+Versão:        v4.1.0 / dupla / 750cm / 300s
+
+Descanso:      1
+Quedas:        3 (2+1)
+
+Atleta 1:      01001 pontos / 012 golpes / 64.08 km/h
+Atleta 2:      00911 pontos / 011 golpes / 63.81 km/h
+
+Parcial:       01912 pontos
+Desequilibrio: 00000 (-)
+Quedas:        00000 (-)
+
+FINAL:         01912 pontos
+
+SEQUÊNCIA 01
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+000944   <-   064
+001360   ->   043
+001984   <-   043
+002608   ->   056
+003088   ->   070
+003472   <-   046
+004048   ->   070
+004432   <-   052
+004944   ->   054
+005440   <-   062
+005872   ->   070
+006256   ->   070
+006640   <-   046
+007216   ->   045
+007808   <-   042
+008448   ->   044
+009056   <-   054
+009552   ->   054
+010048   <-   051
+010576   ->   045
+011168   <-   062
+011600   ->   051
+012128   <-   049
+012672   ->   000
+
+
+SEQUÊNCIA 02
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+027232   <-   076
+027584   ->   062
+028016   <-   070
+028400   ->   084
+028720   <-   085
+029008   ->   064
+029424   <-   064
+029840   ->   064
+030256   <-   062
+030688   ->   000
+
+
+
+=== resultados.csv
+TESTE ; 1912 ; 3 ; 1 ; Atleta 1 ; 1001 ; 12 ; 64.08 ; Atleta 2 ; 911 ; 11 ; 63.81 ; 

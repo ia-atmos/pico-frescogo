@@ -1,0 +1,50 @@
+[000000] go reinicio
+[000000] snd restart.wav
+[001472] go saque
+[001472] snd start.wav
+[001856] hit peteleco.mp3
+[002416] hit peteleco.mp3
+[003056] hit peteleco.mp3
+[003664] hit peteleco.mp3
+[004160] hit peteleco.mp3
+[004624] hit peteleco.mp3
+[005248] hit peteleco.mp3
+[005824] hit peteleco.mp3
+[006336] go queda
+[006336] snd fall.wav
+[006416] go termino
+[006416] snd queda2.wav
+=== frescogo-TESTE-Ana_-BIa.txt
+Data:          TESTE
+Versão:        v4.1.0 / dupla / 750cm / 300s
+
+Descanso:      0
+Quedas:        1
+
+Ana_:          00067 pontos / 001 golpes / 58.00 km/h
+BIa:           00058 pontos / 001 golpes / 54.00 km/h
+
+Parcial:       00125 pontos
+Desequilibrio: 00000 (-)
+Quedas:        00000 (-)
+
+FINAL:         00125 pontos
+
+SEQUÊNCIA 01
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+001856   <-   048
+002416   ->   042
+003056   ->   044
+003664   <-   054
+004160   ->   058
+004624   <-   043
+005248   ->   046
+005824   <-   000
+
+
+
+=== resultados.csv
+TESTE ; 125 ; 1 ; 0 ; Ana_ ; 67 ; 1 ; 58.0 ; BIa ; 58 ; 1 ; 54.0 ; 

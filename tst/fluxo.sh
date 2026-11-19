@@ -48,22 +48,31 @@ for k in tst/fluxo/*.keys; do
         echo "FAIL $name"; err=1
     fi
 
-    # the report against the oracle: its hits as a script (with no radar, the
-    # speeds come from the times), and the falls of the csv
+    # each report against the oracle: its hits as a script (with no radar,
+    # the speeds come from the times), with its falls, rest, and names
     for f in "$rel"/*.txt; do
         [ -f "$f" ] || continue
-        quedas=$(tail -1 "$rel/resultados.csv" | awk -F' ; ' '{print $4}')
         {
             echo "radar 0"
             [ -f "tst/fluxo/$name.oracle" ] && cat "tst/fluxo/$name.oracle"
             echo "inicio 0"
             awk '
-                /^SEQU/ { print "seq" }
-                /^[0-9][0-9][0-9][0-9][0-9][0-9]   / {
-                    print "hit", $1+0, ($2=="->" ? 0 : 1), 0, (substr($0,21,1)=="*" ? 1 : 0)
+                /^Descanso:/ { print "descanso", $2*1000 }
+                /^Quedas:/ && !q {
+                    q = 1
+                    if (NF >= 3) {
+                        s = $3; gsub(/[()]/, "", s)
+                        n = split(s, p, /[+-]/)
+                        print "quedas", p[1]
+                        print "manual", (index(s,"+") ? p[2] : -p[2])
+                    } else {
+                        print "quedas", $2
+                    }
                 }
+                / pontos \/ / { i++; nm = $1; sub(/:$/, "", nm); if ($2 ~ /^[0-9]+$/) print "nome", i-1, nm }
+                /^SEQU/ { print "seq" }
+                /^[0-9][0-9][0-9][0-9][0-9][0-9]   / { print "hit", $1+0, ($2=="->" ? 0 : 1), 0 }
             ' "$f"
-            echo "quedas $quedas"
             echo "estado terminado"
             echo "calc"
             echo "report TESTE"
@@ -71,9 +80,9 @@ for k in tst/fluxo/*.keys; do
         java -cp oracle/build Oracle < "$OUT/$name.script" | grep -v "^calc" > "$OUT/$name.oracle"
         echo >> "$OUT/$name.oracle"
         if cmp -s "$OUT/$name.oracle" "$f"; then
-            echo "ok   $name (oracle)"
+            echo "ok   $name (oracle: $(basename "$f"))"
         else
-            echo "FAIL $name (oracle)"; diff "$OUT/$name.oracle" "$f" | head -5; err=1
+            echo "FAIL $name (oracle: $(basename "$f"))"; diff "$OUT/$name.oracle" "$f" | head -5; err=1
         fi
     done
 done
