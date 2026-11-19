@@ -1,0 +1,153 @@
+;; A serial line, over POSIX: what the scoreboard uses of the serial library
+;; of Processing (`Serial.list`, `new Serial`, `read`, `readBytes`, `clear`).
+;;
+;; A line is read as the sketch reads it, blocking: `serial.byte` waits for a
+;; byte. The path may also be a regular file, for the tests: its bytes are
+;; the bytes that arrive, and its end is an error.
+
+```:prelude
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <termios.h>
+#include <sys/stat.h>
+
+// Opens the line raw, 8N1, at 9600 baud (the only speed in use). A path
+// that is not a terminal (a file of the tests) is only opened.
+static int fresco_serial_open (const char* path) {
+    int fd = open(path, O_RDWR | O_NOCTTY);
+    if (fd < 0) {
+        fd = open(path, O_RDONLY | O_NOCTTY);
+    }
+    if (fd < 0) {
+        return -1;
+    }
+    struct termios t;
+    if (tcgetattr(fd, &t) == 0) {
+        cfmakeraw(&t);
+        cfsetispeed(&t, B9600);
+        cfsetospeed(&t, B9600);
+        t.c_cflag |= (CLOCAL | CREAD);
+        t.c_cflag &= ~(PARENB | CSTOPB | CRTSCTS);
+        t.c_cc[VMIN]  = 1;
+        t.c_cc[VTIME] = 0;
+        tcsetattr(fd, TCSANOW, &t);
+        tcflush(fd, TCIFLUSH);
+    }
+    return fd;
+}
+
+// One byte, waiting for it; -1 at the end of a file, or on an error.
+static int fresco_serial_byte (int fd) {
+    unsigned char c;
+    for (;;) {
+        ssize_t n = read(fd, &c, 1);
+        if (n == 1) {
+            return c;
+        }
+        if (n < 0 && errno == EINTR) {
+            continue;
+        }
+        return -1;
+    }
+}
+
+// The ports as the library of Processing lists them on Linux: the devices
+// of these families that open as a terminal, in the order of their names
+// (the numbers as numbers). Writes the last one, or returns 0.
+static int fresco_serial_num (const char* s) {
+    while (*s && (*s < '0' || *s > '9')) s++;
+    return atoi(s);
+}
+static int fresco_serial_cmp (const char* a, const char* b) {
+    size_t na = strcspn(a, "0123456789");
+    size_t nb = strcspn(b, "0123456789");
+    if (na != nb || strncmp(a, b, na) != 0) {
+        return strcmp(a, b);
+    }
+    return fresco_serial_num(a) - fresco_serial_num(b);
+}
+static int fresco_serial_last (char* out, size_t max) {
+    static const char* fams[] = { "ttyS", "ttyUSB", "ttyACM", "ttyAMA", "rfcomm", "ttyO" };
+    DIR* d = opendir("/dev");
+    if (d == NULL) {
+        return 0;
+    }
+    char best[256] = "";
+    struct dirent* e;
+    while ((e = readdir(d)) != NULL) {
+        int ok = 0;
+        for (size_t i=0; i<sizeof(fams)/sizeof(fams[0]); i++) {
+            size_t n = strlen(fams[i]);
+            if (strncmp(e->d_name, fams[i], n) == 0 && e->d_name[n] >= '0' && e->d_name[n] <= '9') {
+                ok = 1;
+            }
+        }
+        if (!ok) {
+            continue;
+        }
+        char path[300];
+        snprintf(path, sizeof(path), "/dev/%s", e->d_name);
+        int fd = open(path, O_RDWR | O_NOCTTY | O_NONBLOCK);
+        if (fd < 0) {
+            continue;
+        }
+        struct termios t;
+        int tty = (tcgetattr(fd, &t) == 0);
+        close(fd);
+        if (tty && (best[0] == '\0' || fresco_serial_cmp(path, best) > 0)) {
+            snprintf(best, sizeof(best), "%s", path);
+        }
+    }
+    closedir(d);
+    if (best[0] == '\0') {
+        return 0;
+    }
+    snprintf(out, max, "%s", best);
+    return 1;
+}
+```
+
+pin serial = []
+
+;; The last port of the list, or nil if there is none.
+func serial.last () {
+    `:value ({ char p[300]; fresco_serial_last(p, sizeof(p)) ? a_strz(p) : a_nil(); })`
+}
+
+;; Opens the line, and evaluates to it (a number), or to nil.
+func serial.open (path) {
+    val fd = `:number fresco_serial_open(A_STR_OF($path)->s)`
+    if fd < 0 => nil => fd
+}
+
+;; The next byte, waiting for it.
+func serial.byte (fd) {
+    val c = `:number fresco_serial_byte((int)a_dbl($fd))`
+    if c < 0 {
+        throw "serial : the line was closed"
+    }
+    c
+}
+
+;; The next `n` bytes, as a vector of numbers.
+func serial.bytes (fd, n) {
+    val v = []
+    loop i in n {
+        vector.insert(v, serial.byte(fd))
+    }
+    v
+}
+
+;; Discards what arrived and was not read.
+func serial.clear (fd) {
+    `tcflush((int)a_dbl($fd), TCIFLUSH);`
+}
+
+func serial.close (fd) {
+    `close((int)a_dbl($fd));`
+}
