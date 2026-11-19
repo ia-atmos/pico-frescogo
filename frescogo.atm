@@ -13,6 +13,7 @@
 ;;      FRESCOGO_CONF=<file>    another file of configuration
 
 include "jogo.atm"
+include "proc.atm"
 
 ```:prelude
 #include <sys/stat.h>
@@ -57,6 +58,30 @@ val H  = height /  8.0
 
 pico.set.expert(true, 60)       ;; the frame rate of Processing
 pico.set.aids(false)            ;; the keys with CTRL are of the scoreboard
+
+pin IMG1         = loadImage(CONF.imagem1)
+pin IMG2         = loadImage(CONF.imagem2)
+pin IMG_SPEED    = loadImage("data/icos/speed-03.png")
+pin IMG_GOLPES   = loadImage("data/icos/raq-03.png")
+pin IMG_BAND     = loadImage("data/icos/flag.png")
+pin IMG_APITO    = loadImage("data/icos/apito-04.png")
+pin IMG_TROFEU   = loadImage("data/icos/trophy-02.png")
+pin IMG_DESCANSO = loadImage("data/icos/timeout-03.png")
+pin IMG_RADAR    = loadImage("data/icos/radar.png")
+pin IMG_RAQUETE  = loadImage("data/icos/raq.png")
+
+resize(IMG1,         height // 8)
+resize(IMG2,         height // 8)
+resize(IMG_SPEED,    math.floor(45*dy))
+resize(IMG_GOLPES,   math.floor(50*dy))
+resize(IMG_BAND,     math.floor(40*dy))
+resize(IMG_APITO,    math.floor(30*dy))
+resize(IMG_TROFEU,   math.floor(30*dy))
+resize(IMG_DESCANSO, math.floor(25*dy))
+resize(IMG_RADAR,    math.floor(30*dy))
+resize(IMG_RAQUETE,  math.floor(40*dy))
+
+textFont("data/LiberationSans-Bold.ttf")
 
 ;; ----------------------------------------------------------------------------
 ;; TIME
@@ -198,6 +223,11 @@ func go_queda () {
             go_saque()
         }
     }
+}
+
+;; `float(n)/100` as Java writes it, in a string.
+func float_str (n, d) {
+    f100(n)
 }
 
 ;; A number of hundredths as `float(n)/100` is written in the original.
@@ -494,31 +524,342 @@ func draw () {
     draw_draw()
 }
 
-func draw_logo (x, img) {
-    pico.output.draw.image(img, ['!', x=x+2*W, y=H, h=height//8])
-}
-
 func draw_draw () {
-    pico.set.effect [color='white']
-    pico.output.clear()
-    draw_logo(0*W, CONF.imagem1)
-    draw_logo(7*W, CONF.imagem2)
+    background(255,255,255)
+
+    draw_logo(0*W, IMG1)
+    draw_logo(7*W, IMG2)
+
+    draw_nome(0*W, ZER, ESTADO_DIGITANDO==ZER)
+    draw_nome(7*W, ONE, ESTADO_DIGITANDO==ONE)
 
     ;; TEMPO
-    if !ESQUENTA {
-        var descanso = JOGO_DESCANSO_TOTAL
-        if (ESTADO == "jogando") && (ESTADO_JOGANDO == "sacando") {
-            set descanso = descanso + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
+    do {
+        val show = max(0, JOGO_TEMPO_RESTANTE_SHOW)
+        val mins = nf(show // 60, 2)
+        val segs = nf(show % 60, 2)
+
+        if ESTADO == "terminado" {
+            fill(255,0,0)
+        } else {
+            fill(0)
         }
-        set descanso = descanso // 1000
-        set descanso = CONF_DESCANSO - descanso
-        if descanso < 0 {
-            if !JOGO_DESCANSO_PLAY {
-                set JOGO_DESCANSO_PLAY = true
-                snds_play(2)
+        rect(4*W, 0, 3*W, 3*H)
+
+        fill(255)
+        textSize(140*dy)
+        textAlign(CENTER, CENTER)
+        text(mins ++ ":" ++ segs, width/2, 1.25*H-10*dy)
+
+        if ESQUENTA {
+            fill(255,0,0)
+            textSize(35*dy)
+            textAlign(CENTER, CENTER)
+            text("AQUECIMENTO", width/2, 2.50*H)
+        } else {
+            var descanso = JOGO_DESCANSO_TOTAL
+            if (ESTADO == "jogando") && (ESTADO_JOGANDO == "sacando") {
+                set descanso = descanso + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
+            }
+            set descanso = descanso // 1000
+            set descanso = CONF_DESCANSO - descanso
+
+            ifs {
+                descanso < 0 => {
+                    fill(255,0,0)
+                    if !JOGO_DESCANSO_PLAY {
+                        set JOGO_DESCANSO_PLAY = true
+                        snds_play(2)
+                    }
+                }
+                ESTADO == "terminado" => fill(255)
+                else => fill(150,150,150)
+            }
+            textSize(35*dy)
+            textAlign(CENTER, CENTER)
+            text(math.abs(descanso) ++ " s", width/2, 2.50*H)
+            image(IMG_DESCANSO, width/2-50*dx, 2.50*H)
+            if descanso < 0 {
+                textSize(20*dy)
+                text("(ESGOTADO)", width/2, 2.5*H+30*dy)
             }
         }
     }
+
+    ;; PARS / INVERTIDO?
+    if ESTADO == "terminado" {
+        fill(255)
+    } else {
+        fill(150,150,150)
+    }
+    textSize(18*dy)
+    textAlign(CENTER, TOP)
+    text("(" ++ CONF_PARS ++ ")", width/2, 0)
+    if INV {
+        text("inv", width/2, 30*dy)
+    }
+
+    ;; MEIO
+    stroke(0)
+    fill(255)
+    rect(0, 3*H, 11*W, 2*H-1)
+
+    ;; QUEDAS
+    do {
+        fill(255, 0, 0)
+        ellipse(width/2, height/2, 1.5*H, 1.5*H)
+
+        fill(255)
+        textAlign(CENTER, CENTER)
+        textSize(110*dy)
+        text(jogo_quedas(), width/2, height/2-15*dy)
+    }
+
+    if ESTADO == "jogando" {
+        val seq = JOGO@#
+        var jog = 255
+        loop i in (1,2) {
+            if #seq < i {
+                skip
+            }
+
+            val golpe = seq@(#seq-i)    ;; millis/jog/kmh
+            if golpe@1 == jog {
+                ;; mesmo jogador deu os ultimos dois golpes
+            } else {
+                set jog = golpe@1
+                if NOW <= (golpe@0 + GOLPE_DELAY) {
+                    var kmh = golpe@2
+                    if kmh == 0 {
+                        val xxx = #seq - i - 1
+                        if xxx >= 0 {
+                            set kmh = jogo_kmh(seq, #seq-i-1)
+                            if jog == ONE {
+                                draw_ultima(1.5*W, kmh)
+                            } else {
+                                draw_ultima(9.5*W, kmh)
+                            }
+                        }
+                    } else {
+                        if jog == ZER {
+                            draw_ultima(1.5*W, kmh)
+                        } else {
+                            draw_ultima(9.5*W, kmh)
+                        }
+                    }
+                }
+                if NOW <= (golpe@0 + 500) {
+                    stroke(0,0,255)
+                    strokeWeight(10*dy)
+                    if jog == ZER {
+                        line(2.5*W, 4*H, 2.5*W+60*dy, 4*H)
+                        line(2.5*W+60*dy, 4*H, 2.5*W+45*dy, 4*H+20*dy)
+                        line(2.5*W+60*dy, 4*H, 2.5*W+45*dy, 4*H-20*dy)
+                    } else {
+                        line(8.5*W, 4*H, 8.5*W-60*dy, 4*H)
+                        line(8.5*W-60*dy, 4*H, 8.5*W-45*dy, 4*H-20*dy)
+                        line(8.5*W-60*dy, 4*H, 8.5*W-45*dy, 4*H+20*dy)
+                    }
+                    strokeWeight(1)
+                }
+            }
+        }
+    }
+
+    if conf_radar() {
+        if LADO_RADAR == 0 {
+            image(IMG_RADAR, 20*dx,       4*H)
+        } else {
+            image(IMG_RADAR, width-20*dx, 4*H)
+        }
+    }
+
+    if CONF_TRINCA {
+        if LADO_PIVO == 0 {
+            image(IMG_RAQUETE, 4*W-20*dx,       2.5*H)
+            image(IMG_RAQUETE, 7*W+20*dx,       2.5*H-10*dy)
+            image(IMG_RAQUETE, 7*W+20*dx+10*dx, 2.5*H+10*dy)
+        } else {
+            image(IMG_RAQUETE, 4*W-20*dx-10*dx, 2.5*H-10*dy)
+            image(IMG_RAQUETE, 4*W-20*dx,       2.5*H+10*dy)
+            image(IMG_RAQUETE, 7*W+20*dx,       2.5*H)
+        }
+    }
+
+    draw_lado(true,  1.25*W, ZER)
+    draw_lado(false, 7.75*W, ONE)
+
+    textSize(15*dy)
+    fill(150,150,150)
+    loop i in 2 {
+        val off = if i == 0 => 1*W => 10*W
+        noStroke()
+        noFill()
+
+        image(IMG_GOLPES, off, 5.5*H+5*dy)
+
+        image(IMG_SPEED, off, 6.5*H+5*dy)
+        textAlign(CENTER, CENTER)
+        fill(100,100,100)
+        textSize(10*dy)
+        text("km/h", off, 6.5*H+25*dy)
+
+        image(IMG_BAND, off, 7.5*H+10*dy)
+    }
+
+    do {
+        noStroke()
+        fill(0)
+        rect(4*W, 5*H, 3*W, 3*H)
+
+        ;; juiz
+        var nome = CONF_NOMES@2
+        if ESTADO_DIGITANDO != 2 {
+            fill(150,150,150)
+        } else {
+            fill(255,0,0)
+            set nome = nome ++ "_"
+        }
+        textSize(20*dy)
+        textAlign(CENTER, TOP)
+        text(nome, width/2, 5*H+12*dy)
+        val w1 = textWidth(nome)
+        image(IMG_APITO, width/2-w1/2-15*dx, 5*H+20*dy)
+
+        ;; auto
+        ifs {
+            ESQUENTA => {
+                fill(200, 200, 0)
+                ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
+            }
+            RADAR_AUTO => {
+                fill(0, 150, 0)
+                ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
+            }
+        }
+
+        ;; recorde
+        if JOGO_TOTAL >= CONF_RECORDE {
+            fill(150,150,150)
+        } else {
+            fill(200,100,100)
+        }
+        textSize(35*dy)
+        textAlign(CENTER, CENTER)
+        text(CONF_RECORDE, width/2, 6*H-15*dy)
+        val w2 = textWidth(CONF_RECORDE)
+        image(IMG_TROFEU, width/2-w2/2-25*dx, 6*H-10*dy)
+
+        ;; TOTAL
+        fill(255)
+        textSize(140*dy)
+        textAlign(CENTER, CENTER)
+        text(JOGO_TOTAL, width/2, 7*H-15*dy)
+
+        ;; conta
+        val ps = jogo_equ()
+        fill(150,150,150)
+        textSize(15*dy)
+        val conta = "(" ++ ps@0 ++ " + " ++ ps@1 ++ ") - " ++ float_str(jogo_quedas_pct(), 100) ++ "%"
+        text(conta, width/2, 7.5*H+20*dy)
+    }
+}
+
+func draw_logo (x, img) {
+    noStroke()
+    fill(255)
+    rect(x, 0, 4*W, 2*H)
+    image(img, x+2*W, H)
+}
+
+func draw_nome (x, jog, digitando) {
+    var nome = CONF_NOMES@jog
+    stroke(0)
+    fill(255)
+    rect(x, 2*H, 4*W, H)
+    if digitando {
+        set nome = nome ++ "_"
+        fill(255, 0, 0)
+    } else {
+        noStroke()
+        fill(0,0,255)
+    }
+    textSize(90*dy)
+    textAlign(CENTER, CENTER)
+    text(nome, x+2*W, 2.5*H-10*dy)
+}
+
+func draw_ultima (x, kmh) {
+    if kmh == 0 {
+        return
+    }
+    if kmh >= CONF_VEL_MIN {
+        fill(0)
+    } else {
+        fill(200,200,200)
+    }
+    textAlign(CENTER, BOTTOM)
+    textSize(120*dy)
+    text(kmh, x, 4*H+45*dy)
+    textAlign(CENTER, TOP)
+    textSize(30*dy)
+    text("km/h", x, 4*H+35*dy)
+}
+
+func draw_lado (isesq, x, jog) {
+    val JOG = JOGO_JOGS@jog
+    noStroke()
+    fill(255,255,255)
+    rect(x, 5*H, 2*W, 3*H)
+
+    fill(0)
+    textAlign(CENTER, CENTER)
+    textSize(65*dy)
+    val atas = conf_ataques(jog)
+    if (atas > 0) && (JOG@1 >= atas) {      ;; golpes vs limite
+        fill(255,0,0)
+    }
+    text(JOG@1, x+W, 5.5*H)                 ;; golpes
+    fill(150,150,150)
+    textSize(20*dy)
+    val w1 = textWidth(JOG@1)               ;; golpes
+    textAlign(TOP, LEFT)
+    text("/" ++ conf_ataques(jog), x+W+w1+10*dx, 5.5*H+30*dy)  ;; limite
+
+    fill(0)
+    textAlign(CENTER, CENTER)
+
+    ;; media
+    textSize(65*dy)
+    text(JOG@2 // 100, x+W, 6.5*H)
+    textSize(25*dy)
+    text("." ++ nf(JOG@2 % 100,2), x+W+30*dx, 6.5*H+15*dy)
+
+    ;; min / max
+    fill(150,150,150)
+    if isesq {
+        textSize(30*dy)
+        text(JOG@4, x+2*W+30*dx, 6.5*H-H/6)
+        text(JOG@3, x+2*W+30*dx, 6.5*H+H/4)
+        textSize(15*dy)
+        text("máx", x+2*W, 6.5*H-H/6)
+        text("min", x+2*W, 6.5*H+H/4)
+    } else {
+        textSize(30*dy)
+        text(JOG@4, x-W/3, 6.5*H-H/6)
+        text(JOG@3, x-W/3, 6.5*H+H/4)
+        textSize(15*dy)
+        text("máx", x-W/3+30*dx, 6.5*H-H/6)
+        text("min", x-W/3+30*dx, 6.5*H+H/4)
+    }
+
+    ;; pontos
+    fill(0)
+    textSize(65*dy)
+    if (CONF_EQUILIBRIO != 0) && (JOGO_JOGS@(1-jog)@0 > (JOG@0*CONF_EQUILIBRIO // 100)) {
+        fill(255,0,0)
+    }
+    text(JOG@0, x+W, 7.5*H)
 }
 
 ;; ----------------------------------------------------------------------------
