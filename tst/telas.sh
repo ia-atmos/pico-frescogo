@@ -24,7 +24,9 @@ while read -r name frames shot; do
     case "$name" in ''|'#'*) continue ;; esac
     conf="tst/fluxo/$name.conf"
     [ -f "$conf" ] || conf="data/conf.atm"
-    FRESCOGO_TS=TESTE FRESCOGO_REL="$OUT/rel" FRESCOGO_CONF="$conf" \
+    serial="tst/fluxo/$name.radar"      # the packets of the radar, or no radar
+    [ -f "$serial" ] || serial=/nenhuma
+    FRESCOGO_SERIAL="$serial" FRESCOGO_RADAR="$OUT/radar.txt" FRESCOGO_TS=TESTE FRESCOGO_REL="$OUT/rel" FRESCOGO_CONF="$conf" \
     PICO_TESTS=1 SDL_AUDIODRIVER=dummy PICO_ATM_FRAMES="$frames:16" \
     PICO_ATM_KEYS="$(sed -n 2p "tst/fluxo/$name.keys")" PICO_ATM_SHOT="$shot:$OUT/$name-$shot.png" \
         xvfb-run -a -s "-screen 0 1300x900x24" $ATMOS frescogo.atm > "$OUT/log" 2>&1

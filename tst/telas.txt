@@ -11,3 +11,5 @@
 05-nomes     35  30
 05-nomes    320 300
 06-aborta  1826 1820
+07-radar    200 190
+08-radar-auto 400 390
