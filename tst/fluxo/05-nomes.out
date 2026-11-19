@@ -1,18 +1,14 @@
-[000000] go reinicio
 [000000] snd restart.wav
-[001472] go saque
 [001472] snd start.wav
-[001856] hit peteleco.mp3
-[002416] hit peteleco.mp3
-[003056] hit peteleco.mp3
-[003664] hit peteleco.mp3
-[004160] hit peteleco.mp3
-[004624] hit peteleco.mp3
-[005248] hit peteleco.mp3
-[005824] hit peteleco.mp3
-[006336] go queda
+[001856] snd peteleco.mp3
+[002416] snd peteleco.mp3
+[003056] snd peteleco.mp3
+[003664] snd peteleco.mp3
+[004160] snd peteleco.mp3
+[004624] snd peteleco.mp3
+[005248] snd peteleco.mp3
+[005824] snd peteleco.mp3
 [006336] snd fall.wav
-[006416] go termino
 [006416] snd queda2.wav
 === frescogo-TESTE-Ana_-BIa.txt
 Data:          TESTE

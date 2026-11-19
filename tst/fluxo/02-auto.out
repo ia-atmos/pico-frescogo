@@ -1,39 +1,29 @@
-[000000] go reinicio
 [000000] snd restart.wav
-[000160] go saque
 [000160] snd start.wav
-[000864] hit peteleco.mp3
-[001264] hit agudo.wav
-[001824] hit peteleco.mp3
-[002352] hit peteleco.mp3
-[002832] hit peteleco.mp3
-[003296] hit peteleco.mp3
-[003584] go queda
+[000864] snd peteleco.mp3
+[001264] snd agudo.wav
+[001824] snd peteleco.mp3
+[002352] snd peteleco.mp3
+[002832] snd peteleco.mp3
+[003296] snd peteleco.mp3
 [003584] snd fall.wav
-[004592] go saque
-[004592] snd start.wav
-[005792] hit peteleco.mp3
-[005808] go queda
-[005808] snd fall.wav
-[006816] go saque
-[006816] snd start.wav
-[007232] hit peteleco.mp3
-[007248] go queda
-[007248] snd fall.wav
-[008256] go saque
-[008256] snd start.wav
-[010192] hit peteleco.mp3
-[010832] hit peteleco.mp3
-[011440] hit peteleco.mp3
-[011840] hit agudo.wav
-[012400] hit peteleco.mp3
-[012944] hit peteleco.mp3
-[013536] hit peteleco.mp3
-[014176] hit peteleco.mp3
-[014656] go queda
-[014656] snd fall.wav
-[014736] go termino
-[014736] snd queda2.wav
+[004584] snd start.wav
+[006792] snd peteleco.mp3
+[006808] snd fall.wav
+[007808] snd start.wav
+[009232] snd peteleco.mp3
+[009248] snd fall.wav
+[010248] snd start.wav
+[013192] snd peteleco.mp3
+[013832] snd peteleco.mp3
+[014440] snd peteleco.mp3
+[014840] snd agudo.wav
+[015400] snd peteleco.mp3
+[015944] snd peteleco.mp3
+[016536] snd peteleco.mp3
+[017176] snd peteleco.mp3
+[017656] snd fall.wav
+[017736] snd queda2.wav
 === frescogo-TESTE-Atleta 1-Atleta 2.txt
 Data:          TESTE
 Versão:        v4.1.0 / dupla / 750cm / 300s
@@ -68,7 +58,7 @@ SEQUÊNCIA 02
 
 TEMPO   DIR   KMH
 -----   ---   ---
-005792   ->   000
+006792   ->   000
 
 
 SEQUÊNCIA 03
@@ -76,7 +66,7 @@ SEQUÊNCIA 03
 
 TEMPO   DIR   KMH
 -----   ---   ---
-007232   <-   000
+009232   <-   000
 
 
 SEQUÊNCIA 04
@@ -84,14 +74,14 @@ SEQUÊNCIA 04
 
 TEMPO   DIR   KMH
 -----   ---   ---
-010192   <-   042
-010832   ->   044
-011440   <-   067
-011840   ->   048
-012400   <-   049
-012944   ->   045
-013536   <-   042
-014176   ->   000
+013192   <-   042
+013832   ->   044
+014440   <-   067
+014840   ->   048
+015400   <-   049
+015944   ->   045
+016536   <-   042
+017176   ->   000
 
 
 
