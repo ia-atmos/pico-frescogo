@@ -28,7 +28,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #8 | The oracle: run the original | decision | done on 2026-11-19: the original runs here from the jars of its release package, not changed, with stand-ins for sound and serial (`oracle/Roteiro.java`, `oracle/stub/`, `make orig`). It writes the expected outputs of the tests of the flow, and its screen is the reference for `#11` | A.6 |
 | #9 | Replace the native literal of the size of the display by the query of pico | work | done on 2026-11-19 (pico `8d4d549`, `pico.get.app().screen`); with no window manager (Xvfb) a run needs `PICO_TESTS=1`, which the tests set | B.1 |
 | #10 | Move the data to `data/` and remove the original | work | the data is in `data/` since 2026-11-19; `placar/` keeps only the source and `conf.json` of v4.1.0 | B.2 |
-| #11 | F4: the screen (`draw_draw` of v4.1.0, which has no debug mode), checked against the original run from the release package | work | next | B.5 |
+| #11 | F4: the screen (`draw_draw` of v4.1.0), against the screen of the original | work | done on 2026-11-19: `proc.atm` has the drawing of Processing over pico, and the drawing code is ported line by line. 10 screens of 6 states are compared with the original at the same frames (`tst/telas.sh`): mean difference of 2.5 to 3.1 in 255, which is the smoothing of the text; no difference of layout seen | B.5 |
 | #12 | F5: the radar: the filter, a scripted source, the serial line over POSIX | work | not started | B.6 |
 | #13 | F6: the remaining keys, the launcher, a full presentation by the author with the device | work | not started | B.7 |
 | #14 | F7: the same program written for expressiveness | work | after fidelity | B.8 |
@@ -36,6 +36,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #16 | In the original (v4.1.0), two hits by key in the same frame have the same time, and `jogo_kmh` divides by zero. Confirmed by running the original: `ArithmeticException` in `keyPressed`. The port ends with the same error | defect of the original | reported on 2026-11-19 | |
 | #17 | In v4.1.0 the automatic mode (`CTRL-A`) only restarts its 3.5 s with a reading of the radar: with the keyboard, the fall comes 3.5 s after `CTRL-A`, and then at the first hit of each sequence. The port does the same | remark | reported on 2026-11-19 | |
 | #18 | In v4.1.0 `radar_be` blocks the frame until a whole packet arrives (v5.3.0 polled and went on). The port will block in the same way | remark | reported on 2026-11-19 | |
+| #19 | pico draws text as Latin-1 and with no smoothing (`TTF_RenderText_Solid`), and in whole sizes: `proc.atm` converts the accents itself (TEMPORARY), and the text of the port is not smoothed as in the original. Told to `env-pico` on 2026-11-19 | work | waits for pico; then tighten the limit of `tst/telas.sh` | |
 
 ## Decided by the author
 

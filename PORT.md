@@ -22,11 +22,12 @@ not the reference.
 | Path | What |
 |------|------|
 | `frescogo.atm` | The port: the screen, the keys, the flow |
+| `proc.atm` | The drawing of Processing that the sketch uses (fill, stroke, text, images), over pico |
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |
 | `placar/` | The original: `placar.pde` and `conf.json` of v4.1.0, as the reference |
 | `data/` | The images, fonts, and sounds of v4.1.0, and `conf.atm` |
 | `oracle/` | The oracles. `Oracle.java`: the functions of the score of the original in plain Java, with scripts of hits. `Roteiro.java`: the original itself (the class of the release package, not changed) run with scripted keys and a fixed clock, which writes the expected outputs of the tests of the flow (`make orig`) |
-| `tst/` | The tests: the score against `Oracle.java` (`jogo.sh`), scripted presentations against the original (`fluxo.sh`), and the screen at fixed frames (`run.sh`), all with no display |
+| `tst/` | The tests: the score against `Oracle.java` (`jogo.sh`), scripted presentations against the original (`fluxo.sh`), and the screen against the screen of the original at the same frames (`telas.sh`), all with no display |
 | `.claude/plans/TODO.md` | What waits for a decision, and what is not done |
 
 ## Build and run
