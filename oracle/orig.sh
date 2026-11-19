@@ -31,6 +31,9 @@ pasta () {
         [ "$(basename "$f")" = conf.json ] || ln -s "$f" "$2/data/"
     done
     cp placar/conf.json "$2/data/conf.json"
+    if [ -f "tst/fluxo/$1.radar" ]; then
+        sed -i -E "s#(\"serial\": *)\"[^\"]*\"#\\1\"$ROOT/tst/fluxo/$1.radar\"#" "$2/data/conf.json"
+    fi
     if [ -f "tst/fluxo/$1.oracle" ]; then
         while read -r _ key val; do
             sed -i -E "s/(\"$key\": *)[^,]*/\1$val/" "$2/data/conf.json"
@@ -62,8 +65,8 @@ for k in tst/fluxo/*.keys; do
         PICO_ATM_KEYS="$(sed -n 2p "$ROOT/$k")" \
         xvfb-run -a -s "-screen 0 1300x900x24" java -cp "$CP" Roteiro > out.txt 2>&1 )
     {
-        grep '^\[' "$OUT/$name/out.txt"
-        for f in "$OUT/$name"/relatorios/*.txt "$OUT/$name"/relatorios/resultados.csv; do
+        grep -a '^\[\|^>>>' "$OUT/$name/out.txt"
+        for f in "$OUT/$name"/relatorios/*.txt "$OUT/$name"/relatorios/resultados.csv "$OUT/$name"/radar.txt; do
             [ -f "$f" ] || continue
             echo "=== $(basename "$f")"
             cat "$f"
