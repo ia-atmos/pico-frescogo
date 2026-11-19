@@ -16,6 +16,7 @@ cd "$(dirname "$0")/.." || exit 1
 ATMOS=.deps/env-pico/atmos-pico
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
+$ATMOS -o "$OUT/frescogo" frescogo.atm || exit 1      # built once
 
 err=0
 for k in tst/fluxo/*.keys; do
@@ -30,7 +31,7 @@ for k in tst/fluxo/*.keys; do
     [ -f "$serial" ] || serial=/nenhuma
     FRESCOGO_TRACE=1 FRESCOGO_SERIAL="$serial" FRESCOGO_RADAR="$OUT/radar.txt" FRESCOGO_TS=TESTE FRESCOGO_REL="$rel" FRESCOGO_CONF="$conf" \
     PICO_TESTS=1 SDL_AUDIODRIVER=dummy PICO_ATM_FRAMES="$frames:16" PICO_ATM_KEYS="$keys" \
-        xvfb-run -a -s "-screen 0 1300x900x24" $ATMOS frescogo.atm \
+        xvfb-run -a -s "-screen 0 1300x900x24" "$OUT/frescogo" \
         > "$OUT/$name.log" 2>&1
     if [ $? -ne 0 ]; then
         echo "FAIL $name (exit)"; tail -5 "$OUT/$name.log"; err=1; continue
