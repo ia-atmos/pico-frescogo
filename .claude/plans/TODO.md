@@ -17,7 +17,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #1 | Fullscreen: keep reading the size of the display (recommended, as the original), or a fixed logical size of 16:9 | decision | open, asked on 2026-11-18 | |
 | #2 | The original divides by zero in the `trinca` mode | defect of the original | reported, not acknowledged | C.1 |
 | #3 | The rule of `frescogo/frescogo` against the code: the 6th strongest of 10 continuous hits doubles (the rule says the 5th), and others | remark | reported, not acknowledged | C.3 |
-| #4 | Known differences of the port in the flow (the `delay` of the automatic fall, Caps Lock, `millis`) | remark | reported, not acknowledged | C.4 |
+| #4 | Known differences of the port in the flow (the `delay` of the automatic fall, `millis`; Caps Lock was solved by pico) | remark | reported, not acknowledged | C.4 |
 | #5 | Remove the `trinca` mode | work, after fidelity | asked by the author | B.10 |
 | #6 | Adopt the rule of 6 minutes, with the discount of time per fall | work, after fidelity | asked by the author | B.11 |
 | #7 | Windows: the serial line over POSIX leaves it out | decision | open; recommended: accept for now | A.5 |
@@ -79,11 +79,11 @@ For the future, asked by the author on 2026-11-16 (after the faithful port):
 The differences in the flow (C.4):
 
 - **`delay(1000)` of the automatic fall.** The original blocks the whole sketch for one second, with the previous frame on the screen, and then serves. The port goes on drawing: the state is the same at every moment, the keys wait as they do in the original, but the screen shows the fall one second earlier.
-- **Caps Lock** is not seen in the typing of the names (pico gives `shift` only): a letter is upper case only with SHIFT.
+- (solved on 2026-11-19, `env-pico#3`) Caps Lock: pico now gives `caps` in the key events, and the names follow it as in the original.
 - **`millis()`** is the clock of pico (the sum of the frames), not the time of the machine: it starts at 0, and the original starts at the time that `setup` took.
 - **The keys held for 2 seconds** depend on the repetition of keys of the system, as in the original (`keyPressed` is called at each repetition).
 - **`CONF.setString`** of the names changes only the table in memory, as in the original (it never saved `conf.json`).
-- The scripted keys of pico (`PICO_ATM_KEYS`) have no modifiers: the port also tracks `Left Ctrl` and `Right Ctrl` as keys. To tell `pico-sdl`.
+- (solved on 2026-11-19, `env-pico#3`) The scripted keys of pico now carry the modifiers: the port no longer tracks `Left Ctrl` itself. With that version of pico the scripted keys arrive one frame earlier: the expected traces moved by 16 ms, and nothing else changed.
 - Performance: `jogo_calc` at every frame, as the original, costs about 2 ms with 576 hits: fine for 60 frames per second.
 
 The rule against the code (C.3):
