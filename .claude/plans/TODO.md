@@ -22,7 +22,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #6 | Adopt the rule of 6 minutes, with the discount of time per fall | work, after fidelity | asked by the author | B.11 |
 | #7 | Windows: the serial line over POSIX leaves it out | decision | open; recommended: accept for now | A.5 |
 | #8 | The oracle of the screen: install Processing to run the original under `Xvfb` and compare screenshots | decision | open; recommended: try it during F4 | A.6 |
-| #9 | Replace the native literal of the size of the display by the query of pico | work | done on 2026-11-19 (pico `3436fcf`); with no window manager (Xvfb) a run needs `PICO_TESTS=1`, which the tests set | B.1 |
+| #9 | Replace the native literal of the size of the display by the query of pico | work | done on 2026-11-19 (pico `8d4d549`, `pico.get.app().screen`); with no window manager (Xvfb) a run needs `PICO_TESTS=1`, which the tests set | B.1 |
 | #10 | Move `placar/data/` to `data/` and remove the original | work | waits for fidelity | B.2 |
 | #11 | F4: the screen, the game mode and the debug mode | work | next | B.5 |
 | #12 | F5: the radar: the filter, a scripted source, the serial line over POSIX | work | not started | B.6 |

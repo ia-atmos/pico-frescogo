@@ -50,15 +50,12 @@ var BACK = 0
 ;; THE CONFIGURATION, as `setup` reads it
 val CONF = conf_load(os.getenv("FRESCOGO_CONF") || "data/conf.atm")
 
-;; The size of the screen, as `fullScreen()` in the original: in fullscreen,
-;; the window layer of pico has the size of the display.
+;; The size of the screen, as `fullScreen()` in the original.
 pico.open [title="FrescoGO! " ++ VERSAO]
-pico.set.window [fullscreen=true]
-pico.set.layer(pico.layer.window)
-val width  = pico.get.scene().dim.w
-val height = pico.get.scene().dim.h
-pico.set.layer(pico.layer.world)
-pico.set.scene [dim=['!', w=width, h=height]]
+val width  = pico.get.app().screen.w
+val height = pico.get.app().screen.h
+pico.set.dim ['!', w=width, h=height]
+pico.set.app [fullscreen=true]
 
 val dy = 0.001 * height     ;; 0.001 height
 val dx = 0.001 * width      ;; 0.001 width
