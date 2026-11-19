@@ -10,22 +10,21 @@ conf_load("data/conf.atm")
 func conf (key, v) {
     val n = tonumber(v)
     match key {
-        "trinca"     => set CONF_TRINCA      = (v == "true")
-        "tempo"      => set CONF_TEMPO       = n
-        "distancia"  => set CONF_DISTANCIA   = n
-        "golpes"     => set CONF_GOLPES      = n
-        "continuos"  => set CONF_INTENSIDADE = n
-        "potentes"   => set CONF_MAXIMAS     = n
-        "equilibrio" => set CONF_EQUILIBRIO  = n
-        "minima"     => set CONF_VEL_MIN     = n
-        "maxima"     => set CONF_VEL_MAX     = n
-        "tregua"     => set CONF_TREGUA      = n
-        "quedas"     => set CONF_QUEDAS      = n
-        "saque"      => set CONF_SAQUE       = n
-        "esquenta"   => set CONF_ESQUENTA    = n
-        "descanso"   => set CONF_DESCANSO    = n
-        "lado_radar" => set LADO_RADAR       = n - 1
-        "lado_pivo"  => set LADO_PIVO        = n - 1
+        "trinca"     => set CONF_TRINCA     = (v == "true")
+        "tempo"      => set CONF_TEMPO      = n
+        "distancia"  => set CONF_DISTANCIA  = n
+        "ataques"    => set CONF_ATAQUES    = n
+        "equilibrio" => set CONF_EQUILIBRIO = n
+        "minima"     => set CONF_VEL_MIN    = n
+        "maxima"     => set CONF_VEL_MAX    = n
+        "tregua"     => set CONF_TREGUA     = n
+        "quedas"     => set CONF_QUEDAS     = n
+        "aborta"     => set CONF_ABORTA     = n
+        "saque"      => set CONF_SAQUE      = n
+        "esquenta"   => set CONF_ESQUENTA   = n
+        "descanso"   => set CONF_DESCANSO   = n
+        "lado_radar" => set LADO_RADAR      = n - 1
+        "lado_pivo"  => set LADO_PIVO       = n - 1
         else         => throw "conf : invalid key : " ++ key
     }
     if CONF_TRINCA {        ;; as `setup` does
@@ -35,22 +34,14 @@ func conf (key, v) {
 
 func print_calc () {
     val ps = jogo_equ()
-    var ins = ""
-    loop i in #JOGO {
-        val seq = JOGO@i
-        set ins = ins ++ (if i == 0 => "" => "|")
-        loop j in #seq {
-            set ins = ins ++ seq@j@IDX_INS
-        }
-    }
     io.write("calc" ++
         " tempo="  ++ JOGO_TEMPO_PASSADO ++ "," ++ JOGO_TEMPO_RESTANTE ++ "," ++ JOGO_TEMPO_RESTANTE_SHOW ++
         " total="  ++ JOGO_TOTAL ++
         " equ="    ++ ps@0 ++ "," ++ ps@1 ++
-        " jog0="   ++ vector.join(JOGO_JOGS@0, ",") ++
-        " jog1="   ++ vector.join(JOGO_JOGS@1, ",") ++
-        " snd="    ++ INSS_SOUND_NEW ++
-        " ins="    ++ ins ++ "\n")
+        " pct="    ++ jogo_quedas_pct() ++
+        " aborta=" ++ conf_aborta() ++
+        " jog0="   ++ vector.join(JOGO_JOGS@0, ",") ++ "/" ++ conf_ataques(0) ++
+        " jog1="   ++ vector.join(JOGO_JOGS@1, ",") ++ "/" ++ conf_ataques(1) ++ "\n")
 }
 
 loop {
@@ -77,15 +68,20 @@ loop {
             }
         }
         "now"      => set NOW = tonumber(w@1)
+        "nome"     => set CONF_NOMES@(tonumber(w@1)) = w@2
         "seq"      => vector.insert(JOGO, [])
-        "hit"      => vector.insert(JOGO@#, [tonumber(w@1), tonumber(w@2), tonumber(w@3), tonumber(w@4), 0])
+        "hit"      => vector.insert(JOGO@#, [tonumber(w@1), tonumber(w@2), tonumber(w@3)])
         "quedas"   => set JOGO_QUEDAS = tonumber(w@1)
         "manual"   => set JOGO_QUEDAS_MANUAL = tonumber(w@1)
+        "descanso" => set JOGO_DESCANSO_TOTAL = tonumber(w@1)
         "calc"     => {
             jogo_calc()
             print_calc()
         }
-        "report"   => io.write(jogo_relatorio(w@1))
+        "report"   => {
+            conf_pars()
+            io.write(jogo_relatorio(w@1))
+        }
         else       => throw "invalid command : " ++ w@0
     }
 }
