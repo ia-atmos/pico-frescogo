@@ -21,11 +21,11 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #1 | Fullscreen: the size of the display, as the original (decided by the author in `env-pico`, its `#1c`: in fullscreen the window layer follows the display) | decision | closed on 2026-11-19 | |
 | #2 | The original (v5.3.0) divides by zero in the `trinca` mode | defect of v5.3.0 | closed on 2026-11-19: the author allowed removing it; v4.1.0, the reference, has no such defect, and its `trinca` is kept one to one | C.1 |
 | #3 | The rule of the readme against the code of v5.3.0 | remark | closed on 2026-11-19: the author said that rule is wrong, and the reference is v4.1.0. The readme of `frescogo/frescogo` at `v4.1.0` and the code of v4.1.0 agree (5 minutes, 150 hits, 30%, 5 falls of truce, 3% per fall, the 20th ends it) | C.3 |
-| #4 | Known differences of the port in the flow | remark | checked against v4.1.0 on 2026-11-19, as the author asked: both remain. `delay(1000)` of `go_queda` exists there (before the end by the limit of falls, and before the serve of the automatic mode), and the port shows the fall on the screen during that second; `millis` starts at 0 | C.4 |
+| #4 | Known differences of the port in the flow | remark | closed on 2026-11-19: `delay(1000)` now blocks as in the original (`SDL_Delay`: the screen stays, and the keys wait in the system), and `millis` is the real time (`pico.get.now`). Only in the tests, with fixed frames, the time is that of the frames and a delay just advances it, as the harness of the original does | C.4 |
 | #5 | Remove the `trinca` mode | work, after fidelity | allowed by the author; not needed for v4.1.0 | B.10 |
 | #6 | Adopt the rule of 6 minutes, with the discount of time per fall | work | **only at the very end** (author, 2026-11-19), after v4.1.0 is exact and working | B.11 |
 | #7 | Windows: the serial line over POSIX leaves it out | decision | closed on 2026-11-19: accepted for now | A.5 |
-| #8 | The oracle of the screen: run the original and compare screenshots | decision | closed on 2026-11-19: approved. The release package has the jars of Processing: to try with them under `Xvfb` | A.6 |
+| #8 | The oracle: run the original | decision | done on 2026-11-19: the original runs here from the jars of its release package, not changed, with stand-ins for sound and serial (`oracle/Roteiro.java`, `oracle/stub/`, `make orig`). It writes the expected outputs of the tests of the flow, and its screen is the reference for `#11` | A.6 |
 | #9 | Replace the native literal of the size of the display by the query of pico | work | done on 2026-11-19 (pico `8d4d549`, `pico.get.app().screen`); with no window manager (Xvfb) a run needs `PICO_TESTS=1`, which the tests set | B.1 |
 | #10 | Move the data to `data/` and remove the original | work | the data is in `data/` since 2026-11-19; `placar/` keeps only the source and `conf.json` of v4.1.0 | B.2 |
 | #11 | F4: the screen (`draw_draw` of v4.1.0, which has no debug mode), checked against the original run from the release package | work | next | B.5 |
@@ -33,7 +33,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #13 | F6: the remaining keys, the launcher, a full presentation by the author with the device | work | not started | B.7 |
 | #14 | F7: the same program written for expressiveness | work | after fidelity | B.8 |
 | #15 | Design a second environment (`env-posix`) from the case of the serial line | work, with the author | not started | B.9 |
-| #16 | In the original (v4.1.0), two hits by key in the same frame have the same time, and `jogo_kmh` divides by zero (`ArithmeticException`). It also happens with two hits typed during the second of `delay(1000)`. The port reproduces it (an error that ends the program) | defect of the original | reported on 2026-11-19 | |
+| #16 | In the original (v4.1.0), two hits by key in the same frame have the same time, and `jogo_kmh` divides by zero. Confirmed by running the original: `ArithmeticException` in `keyPressed`. The port ends with the same error | defect of the original | reported on 2026-11-19 | |
 | #17 | In v4.1.0 the automatic mode (`CTRL-A`) only restarts its 3.5 s with a reading of the radar: with the keyboard, the fall comes 3.5 s after `CTRL-A`, and then at the first hit of each sequence. The port does the same | remark | reported on 2026-11-19 | |
 | #18 | In v4.1.0 `radar_be` blocks the frame until a whole packet arrives (v5.3.0 polled and went on). The port will block in the same way | remark | reported on 2026-11-19 | |
 
@@ -111,6 +111,7 @@ To adopt the rule of 6 minutes (B.11): `tempo` 360 with no truce (`tregua` 0) an
 
 | # | Work | Where |
 |---|------|-------|
+| v4.1.0, exact | The tests of the flow compare the port with THE ORIGINAL run over the same scripted keys (`make orig`): the sounds with their times, the reports and `resultados.csv` are identical in the 6 presentations. Keys as Java gives them (`key` and `keyCode`: with CTRL a letter is its control code, so CTRL-H is BACKSPACE as there) | 2026-11-19 |
 | v4.1.0 | The original of v4.1.0 in `placar/`, its data in `data/`; the oracle (12 scripts), the score (`jogo.atm`, identical in all), the flow and the keyboard (`frescogo.atm`: 6 scripted presentations, each report given back to the oracle). 37 tests | 2026-11-19 |
 | F0 | The setup (`Makefile`: the compiler and pico at fixed commits), `PORT.md`, a window with the logos, the test of the screen | `Makefile`, `frescogo.atm`, `tst/` |
 | F3 | The flow (`go_*`), the keyboard (`keyPressed`, the keys held for 2 s, the names), the sounds, the report, the screenshot and `resultados.csv`. Five scripted presentations, each report given back to the oracle | `frescogo.atm`, `tst/fluxo.sh` |

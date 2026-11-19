@@ -25,8 +25,8 @@ not the reference.
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |
 | `placar/` | The original: `placar.pde` and `conf.json` of v4.1.0, as the reference |
 | `data/` | The images, fonts, and sounds of v4.1.0, and `conf.atm` |
-| `oracle/` | The functions of the score of the original in plain Java, and scripts of hits with the numbers they give: the tests of the score |
-| `tst/` | The tests: the score against the oracle (`jogo.sh`), scripted presentations with their traces and reports (`fluxo.sh`), and the screen at fixed frames, with no display (`run.sh`) |
+| `oracle/` | The oracles. `Oracle.java`: the functions of the score of the original in plain Java, with scripts of hits. `Roteiro.java`: the original itself (the class of the release package, not changed) run with scripted keys and a fixed clock, which writes the expected outputs of the tests of the flow (`make orig`) |
+| `tst/` | The tests: the score against `Oracle.java` (`jogo.sh`), scripted presentations against the original (`fluxo.sh`), and the screen at fixed frames (`run.sh`), all with no display |
 | `.claude/plans/TODO.md` | What waits for a decision, and what is not done |
 
 ## Build and run
