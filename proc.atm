@@ -58,20 +58,30 @@ func rect (x, y, w, h) {
         pico.output.draw.rect ['!', x=x, y=y, w=w, h=h, anchor='NW']
     }
     if P.stroke != nil {
-        ;; the line of the border is centered on the edge
+        ;; a line of one pixel at each edge, in the pixel that holds the
+        ;; coordinate (as the original shows it)
+        val x0 = math.floor(x)
+        val y0 = math.floor(y)
+        val x1 = math.floor(x+w)
+        val y1 = math.floor(y+h)
         pico.set.pencil [color=P.stroke, style='stroke']
-        pico.output.draw.rect ['!', x=x, y=y, w=w+1, h=h+1, anchor='NW']
+        pico.output.draw.rect ['!', x=x0, y=y0, w=x1-x0+1, h=y1-y0+1, anchor='NW']
     }
 }
 
 func ellipse (x, y, w, h) {
+    ;; all the pixels that the ellipse touches
+    val x0 = math.floor(x - w/2)
+    val y0 = math.floor(y - h/2)
+    val x1 = math.ceil(x + w/2)
+    val y1 = math.ceil(y + h/2)
     if P.fill != nil {
         pico.set.pencil [color=P.fill, style='fill']
-        pico.output.draw.oval ['!', x=x, y=y, w=w, h=h]
+        pico.output.draw.oval ['!', x=x0, y=y0, w=x1-x0, h=y1-y0, anchor='NW']
     }
     if P.stroke != nil {
         pico.set.pencil [color=P.stroke, style='stroke']
-        pico.output.draw.oval ['!', x=x, y=y, w=w, h=h]
+        pico.output.draw.oval ['!', x=x0, y=y0, w=x1-x0, h=y1-y0, anchor='NW']
     }
 }
 
@@ -108,7 +118,7 @@ val P_ASCENT  = 0.9053
 val P_DESCENT = 0.2119
 
 func textFont (path) {
-    pico.set.pencil [font=path]
+    pico.set.pencil [font=path, smooth=true]     ;; smoothed, as in Processing
 }
 
 func textSize (s) {

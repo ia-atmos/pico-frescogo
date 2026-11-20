@@ -14,7 +14,7 @@
 LANG_URL := https://github.com/ia-atmos/lang
 LANG_REV := ff5a6936ef4ab4644c6dd942cbec17276011e198
 PICO_URL := https://github.com/ia-atmos/env-pico
-PICO_REV := 332bbd911df365b447f7f9ea2060338ebe2bc275
+PICO_REV := 0bba50d4cc3d1615112399b3a23f34dd506cac7a
 
 ORIG_URL := https://github.com/frescogo/frescogo/releases/download/v4.1.0/frescogo-v4.1.0-win64.zip
 
