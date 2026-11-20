@@ -480,7 +480,7 @@ func trata_nome (idx, json) {
         key == BACKSPACE => {
             val nome = CONF_NOMES@idx
             if #nome > 0 {
-                set CONF_NOMES@idx = string.sub(nome, 0, #nome-2)
+                set CONF_NOMES@idx = if #nome == 1 => "" => string.sub(nome, 0, #nome-2)
             }
         }
         letra(key) => {
