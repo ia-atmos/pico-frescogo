@@ -1,68 +1,56 @@
 ;; The configuration and the score of FrescoGO!, as `placar.pde` of v4.1.0
-;; computes them (the variables of the configuration and of the game,
-;; `conf_*`, `jogo_*`, and the text of the report).
+;; computes them.
 ;;
 ;; It does not depend on pico: `frescogo.atm` includes it, and so does the
 ;; test of the score (`tst/jogo.atm`), which compares it with the oracle.
 
-val MAJOR    = 4
-val MINOR    = 1
-val REVISION = 0
-val VERSAO   = MAJOR ++ "." ++ MINOR ++ "." ++ REVISION
+val VERSAO = "4.1.0"
 
-var NOW = 0
+var NOW = 0             ;; the time, in milliseconds
 
-var RADAR      = nil    ;; the serial line of the radar, or nil
-val RADAR_MOCK = false
+;; THE CONFIGURATION: the table of `data/conf.atm` (see `conf_load`).
+pin var CONF = []
 
-var ESQUENTA = false
-var ESQUENTA_INICIO = 0
+;; THE STATE of the scoreboard, which the screen reads:
+;;
+;;      :ocioso         between sequences
+;;      :nome           a name is being typed (`NOME` tells which)
+;;      :seq.saque      a sequence: served, with no hit yet
+;;      :seq.golpes     a sequence: the hits
+;;      :fim            the presentation ended
+;;
+;; `ESTADO ?? :seq` holds in a sequence, in any of its two parts.
+var ESTADO = :ocioso
+var NOME   = nil        ;; 0=esq, 1=dir, 2=arbitro
 
-var CONF_TEMPO
-var CONF_DISTANCIA
-var CONF_ATAQUES
-var CONF_EQUILIBRIO
-var CONF_VEL_MIN
-var CONF_VEL_MAX
-var CONF_SAQUE
-var CONF_TRINCA
-var CONF_TREGUA
-var CONF_QUEDAS
-var CONF_ABORTA
-var CONF_ESQUENTA
-var CONF_DESCANSO
+pin NOMES = [ "Atleta 1", "Atleta 2", "" ]      ;; 0=esq, 1=dir, 2=arbitro
 
-var LADO_RADAR
-var LADO_PIVO
-var RADAR_REPS
-var RADAR_IGUAL
-var RADAR_OPOSI
+var RADAR = nil         ;; the serial line of the radar, or nil
 
-var CONF_RECORDE
-pin CONF_NOMES = [ "Atleta 1", "Atleta 2", "" ]    ;; 0=esq, 1=dir, 2=arbitro
-var CONF_SERIAL
-var CONF_PARS
+;; THE GAME: what happened in a presentation, and what `jogo_calc` computes
+;; from it.
+pin J = [
+    esquenta = false,   ;; a warm-up: the time runs, and there are no falls
+    seqs     = [],      ;; the sequences: vectors of hits [t=, jog=, kmh=]
+    quedas   = 0,       ;; the falls
+    manual   = 0,       ;; the falls that the referee added or removed
+    descanso = 0,       ;; the rest that was used, in ms
+    inicio   = 0,       ;; the time of the start
+    saque    = 0,       ;; the time of the last serve
 
-var ESTADO = "ocioso"           ;; ocioso, digitando, jogando, terminado
-var ESTADO_DIGITANDO = 255      ;; 0=esq, 1=dir, 2=arbitro
-var ESTADO_JOGANDO = nil        ;; sacando, jogando
-
-var JOGO_DESCANSO_TOTAL = 0
-var JOGO_DESCANSO_INICIO = 0
-var JOGO_TOTAL = 0
-var JOGO_QUEDAS = 0
-var JOGO_QUEDAS_MANUAL = 0
-var JOGO_TEMPO_INICIO = 0
-var JOGO_TEMPO_PASSADO = 0
-var JOGO_TEMPO_RESTANTE = 0
-var JOGO_TEMPO_RESTANTE_SHOW = 0
-
-pin JOGO_JOGS = [       ;; pts, golpes, med, min, max
-    [0,0,0,0,0],
-    [0,0,0,0,0],
+    ;; computed:
+    passado  = 0,       ;; the time played, in seconds
+    restante = 0,       ;; the time left
+    mostra   = 0,       ;; the time left to show, which runs between hits
+    total    = 0,       ;; the points of the presentation
+    atletas  = [        ;; of each athlete, by its side (0=esq, 1=dir)
+        [pontos=0, golpes=0, media=0, min=0, max=0],
+        [pontos=0, golpes=0, media=0, min=0, max=0],
+    ],
 ]
 
-pin JOGO = []           ;; [ [ [now,jog,kmh] ] ]: sequences of hits
+val min = math.min
+val max = math.max
 
 ;; The number of characters of a string, as `String.length` (the strings
 ;; are UTF-8 here: the bytes that continue a character do not count).
@@ -77,200 +65,23 @@ func len (str) {
     n
 }
 
+;; `str` with spaces up to `n` characters.
 func ns (str, n) {
-    var s = str
-    loop i in (n - len(str)) {
-        set s = s ++ " "
-    }
-    s
+    str ++ string.rep(" ", max(0, n - len(str)))
 }
 
-;; `nf(n, digits)` of Processing: at least `digits` digits, with zeros.
+;; `n` with at least `digits` digits, with zeros.
 func nf (n, digits) {
     if n < 0 {
         "-" ++ nf(-n, digits)
     } else {
-        var s = tostring(n)
-        loop {
-            while #s < digits
-            set s = "0" ++ s
-        }
-        s
+        val s = tostring(n)
+        string.rep("0", max(0, digits - #s)) ++ s
     }
 }
 
-func min (a, b) { math.min(a, b) }
-func max (a, b) { math.max(a, b) }
-
-;; The order of `IntList.sortReverse`.
-func sort_reverse (t) {
-    vector.sort(t, \(a,b) { a > b })
-}
-
-;; ----------------------------------------------------------------------------
-
-;; The configuration of `setup`, from the table of `data/conf.atm`.
-func conf_load (path) {
-    val CONF = do {
-        pin f = io.open(path)
-        X.load(io.read(f, :all))
-    }
-    set CONF_TEMPO      = CONF.tempo            ;; 300s  = 5mins
-    set CONF_DISTANCIA  = CONF.distancia        ;; 750cm = 7.5m
-    set CONF_ATAQUES    = CONF.ataques          ;; 60 ataques por minuto para a dupla
-    set CONF_EQUILIBRIO = CONF.equilibrio       ;; 130=30% de diferenca maxima entre os atletas (0=desligado)
-    set CONF_VEL_MIN    = CONF.minima           ;; 50km/h menor velocidade contabilizada
-    set CONF_VEL_MAX    = CONF.maxima           ;; 85km/h maior velocidade contabilizada no modo manual
-    set CONF_SAQUE      = CONF.saque            ;; 45km/h menor velocidade que considera saque no modo autonomo
-    set CONF_TRINCA     = CONF.trinca
-    set CONF_TREGUA     = CONF.tregua
-    set CONF_QUEDAS     = CONF.quedas
-    set CONF_ABORTA     = CONF.aborta
-    set CONF_ESQUENTA   = CONF.esquenta
-    set CONF_DESCANSO   = CONF.descanso
-    set LADO_RADAR      = CONF.lado_radar - 1
-    set LADO_PIVO       = CONF.lado_pivo  - 1
-    set RADAR_REPS      = CONF.radar_reps
-    set RADAR_IGUAL     = CONF.radar_igual
-    set RADAR_OPOSI     = CONF.radar_oposi
-    set CONF_RECORDE    = CONF.recorde
-    set CONF_NOMES@0    = "Atleta 1"
-    set CONF_NOMES@1    = "Atleta 2"
-    set CONF_NOMES@2    = CONF.arbitro
-    set CONF_SERIAL     = CONF.serial
-
-    if CONF_TRINCA {
-        set CONF_EQUILIBRIO = 0
-    }
-
-    CONF
-}
-
-;; `CONF_PARS`, which `setup` builds after it opens the radar.
-func conf_pars () {
-    set CONF_PARS = "v" ++ VERSAO ++ " / " ++
-                    (if CONF_TRINCA => "trinca" => "dupla") ++ " / " ++
-                    (if conf_radar() => "radar" => (CONF_DISTANCIA ++ "cm")) ++ " / " ++
-                    CONF_TEMPO ++ "s"
-}
-
-func conf_tempo () {
-    if ESQUENTA => CONF_ESQUENTA => CONF_TEMPO
-}
-
-func conf_ataques (jog) {
-    if CONF_TRINCA {
-        if jog == LADO_PIVO => 0 => max(1, conf_tempo() * CONF_ATAQUES // 60)
-    } else {
-        max(1, conf_tempo() * CONF_ATAQUES // 60 // 2)
-    }
-}
-
-func conf_quedas_base () {
-    CONF_TREGUA * conf_tempo() // 60        ;; 1 / 60s
-}
-
-func conf_quedas_pena () {
-    CONF_QUEDAS * 60 // conf_tempo()        ;; 12% / 60s
-}
-
-func conf_aborta () {
-    conf_tempo() // CONF_ABORTA             ;; 1 queda / 15s
-}
-
-func conf_radar () {
-    (RADAR != nil) || RADAR_MOCK
-}
-
-;; ----------------------------------------------------------------------------
-
-func _jogo_tempo () {
-    var ret = 0
-    var last = NOW
-
-    if ESQUENTA {
-        if ESTADO != "ocioso" {
-            set ret = NOW - ESQUENTA_INICIO
-        }
-    } else {
-        loop i in #JOGO {
-            val seq = JOGO@i
-            val S = #seq
-            if S > 0 {
-                set last = seq@(S-1)@0
-                if S >= 2 {
-                    set ret = ret + (seq@(S-1)@0 - seq@0@0)
-                }
-            }
-        }
-    }
-
-    set JOGO_TEMPO_PASSADO = ret // 1000
-    set JOGO_TEMPO_RESTANTE = max(0, conf_tempo()-JOGO_TEMPO_PASSADO)
-    set JOGO_TEMPO_RESTANTE_SHOW = JOGO_TEMPO_RESTANTE
-
-    if (ESTADO == "jogando") && (ESTADO_JOGANDO == "jogando") {
-        set JOGO_TEMPO_RESTANTE_SHOW = JOGO_TEMPO_RESTANTE_SHOW - ((NOW - last) // 1000)
-    }
-}
-
-func _jogo_lado (jog) {
-    val kmhs = []
-    loop i in #JOGO {
-        val seq = JOGO@i
-        loop j in (#seq - 1) {      ;; -1: ignora ultimo golpe
-            val golpe = seq@j
-            if golpe@1 == jog {
-                val kmh = jogo_kmh(seq,j)
-                if kmh >= CONF_VEL_MIN {
-                    vector.insert(kmhs, kmh)
-                }
-            }
-        }
-    }
-    sort_reverse(kmhs)
-    val N = min(conf_ataques(jog), #kmhs)
-    var sum1 = 0    ;; simples
-    var sum2 = 0    ;; quadrado
-    loop i in N {
-        val cur = kmhs@i
-        set sum1 = sum1 + cur
-        set sum2 = sum2 + (cur*cur // 50)
-    }
-    val J = JOGO_JOGS@jog
-    set J@0 = sum2
-    set J@1 = #kmhs
-    set J@2 = sum1 * 100 // max(1,N)
-    set J@3 = if N == 0 => 0 => kmhs@(N-1)
-    set J@4 = if N == 0 => 0 => kmhs@0
-}
-
-func jogo_kmh (seq, i) {
-    val cur = seq@i
-    val kmh = cur@2
-    if kmh != 0 {       ;; radar ligado
-        kmh
-    } else {            ;; radar desligado
-        if #seq < (i+2) {
-            0
-        } else {
-            val nxt = seq@(i+1)
-            min(CONF_VEL_MAX, 36 * CONF_DISTANCIA // (nxt@0 - cur@0))
-        }
-    }
-}
-
-;; The rest that is left, in seconds: what the athletes took to serve, beyond
-;; 5 seconds each time, is taken from `descanso`. Negative when it ran out.
-func descanso_resta () {
-    var ms = JOGO_DESCANSO_TOTAL
-    if (ESTADO == "jogando") && (ESTADO_JOGANDO == "sacando") {
-        set ms = ms + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
-    }
-    CONF_DESCANSO - (ms // 1000)
-}
-
-;; A number of hundredths as `float(n)/100` is written by Java.
+;; A number of hundredths as a decimal number, with one digit at least
+;; (`float(n)/100` of Java, as a string).
 func f100 (n) {
     val d = n % 100
     (n // 100) ++ "." ++ ifs {
@@ -280,27 +91,172 @@ func f100 (n) {
     }
 }
 
-func jogo_quedas () {
-    JOGO_QUEDAS + JOGO_QUEDAS_MANUAL
+;; ----------------------------------------------------------------------------
+;; THE CONFIGURATION
+;; ----------------------------------------------------------------------------
+
+;; Reads the table of the configuration. The sides become 0=esq, 1=dir, and
+;; the `trinca` mode has no balance between the athletes.
+func conf_load (path) {
+    set CONF = do {
+        pin f = io.open(path)
+        X.load(io.read(f, :all))
+    }
+    set CONF.lado_radar = CONF.lado_radar - 1
+    set CONF.lado_pivo  = CONF.lado_pivo  - 1
+    set NOMES@2 = CONF.arbitro
+    conf_trinca()
 }
 
+func conf_trinca () {
+    if CONF.trinca {
+        set CONF.equilibrio = 0
+    }
+}
+
+;; The parameters of a presentation, as the screen and the report show them.
+func conf_pars () {
+    "v" ++ VERSAO ++ " / " ++
+    (if CONF.trinca => "trinca" => "dupla") ++ " / " ++
+    (if RADAR != nil => "radar" => (CONF.distancia ++ "cm")) ++ " / " ++
+    CONF.tempo ++ "s"
+}
+
+func conf_tempo () {
+    if J.esquenta => CONF.esquenta => CONF.tempo
+}
+
+;; The hits of an athlete that count, at most: in the `trinca` mode, those of
+;; the pivot do not count.
+func conf_ataques (jog) {
+    ifs {
+        !CONF.trinca          => max(1, conf_tempo() * CONF.ataques // 60 // 2)
+        jog == CONF.lado_pivo => 0
+        else                  => max(1, conf_tempo() * CONF.ataques // 60)
+    }
+}
+
+;; The falls that cost nothing: one per minute.
+func conf_quedas_base () {
+    CONF.tregua * conf_tempo() // 60
+}
+
+;; What each fall costs after them, in hundredths of percent.
+func conf_quedas_pena () {
+    CONF.quedas * 60 // conf_tempo()
+}
+
+;; The falls that end a presentation: one for each 15 seconds.
+func conf_aborta () {
+    conf_tempo() // CONF.aborta
+}
+
+;; ----------------------------------------------------------------------------
+;; THE SCORE
+;; ----------------------------------------------------------------------------
+
+;; The speed of the hit `i` of a sequence: that of the radar, or, with no
+;; radar, the distance over the time until the next hit (0 for the last one).
+func jogo_kmh (seq, i) {
+    val cur = seq@i
+    ifs {
+        cur.kmh != 0    => cur.kmh
+        #seq < (i+2)    => 0
+        else            => min(CONF.maxima, 36 * CONF.distancia // ((seq@(i+1)).t - cur.t))
+    }
+}
+
+func jogo_quedas () {
+    J.quedas + J.manual
+}
+
+;; What the falls take from the points, in hundredths of percent.
 func jogo_quedas_pct () {
     max(0, jogo_quedas()-conf_quedas_base()) * conf_quedas_pena()
 }
 
+;; The rest that is left, in seconds: what the athletes took to serve, beyond
+;; 5 seconds each time, is taken from `descanso`. Negative when it ran out.
+func descanso_resta () {
+    var ms = J.descanso
+    if ESTADO == :seq.saque {
+        set ms = ms + max(0, NOW-J.saque-5000)
+    }
+    CONF.descanso - (ms // 1000)
+}
+
+;; The points of the two athletes with the balance: from 30 hits on, none
+;; has more than a percentage of the other.
 func jogo_equ () {
-    var p0 = JOGO_JOGS@0@0
-    var p1 = JOGO_JOGS@1@0
+    val a0 = J.atletas@0
+    val a1 = J.atletas@1
+    var p0 = a0.pontos
+    var p1 = a1.pontos
+    if (CONF.equilibrio != 0) && ((a0.golpes + a1.golpes) >= 30) {
+        set p0 = min(p0, p1*CONF.equilibrio // 100)
+        set p1 = min(p1, p0*CONF.equilibrio // 100)
+    }
+    [p0, p1]
+}
 
-    val n0 = JOGO_JOGS@0@1
-    val n1 = JOGO_JOGS@1@1
+;; The time played is the time of the sequences, each from its first hit to
+;; its last one. In a warm-up, it is the time since the serve.
+func _jogo_tempo () {
+    var ms   = 0
+    var last = NOW
 
-    if (CONF_EQUILIBRIO != 0) && ((n0+n1) >= 30) {
-        set p0 = min(p0, p1*CONF_EQUILIBRIO // 100)
-        set p1 = min(p1, p0*CONF_EQUILIBRIO // 100)
+    if J.esquenta {
+        if ESTADO != :ocioso {
+            set ms = NOW - J.saque
+        }
+    } else {
+        loop _,seq in J.seqs {
+            if #seq > 0 {
+                set last = (seq@#).t
+                set ms   = ms + (last - (seq@0).t)
+            }
+        }
     }
 
-    [p0, p1]
+    set J.passado  = ms // 1000
+    set J.restante = max(0, conf_tempo()-J.passado)
+    set J.mostra   = J.restante
+
+    if ESTADO == :seq.golpes {
+        set J.mostra = J.mostra - ((NOW - last) // 1000)
+    }
+}
+
+;; The numbers of an athlete: its strongest hits count, by `kmh*kmh/50`; the
+;; last hit of each sequence, which made the ball fall, does not.
+func _jogo_lado (jog) {
+    val kmhs = []
+    loop _,seq in J.seqs {
+        loop j in (#seq - 1) {
+            if (seq@j).jog == jog {
+                val kmh = jogo_kmh(seq,j)
+                if kmh >= CONF.minima {
+                    vector.insert(kmhs, kmh)
+                }
+            }
+        }
+    }
+    vector.sort(kmhs, \(a,b) { a > b })
+
+    val N = min(conf_ataques(jog), #kmhs)
+    var soma   = 0
+    var pontos = 0
+    loop i in N {
+        set soma   = soma + kmhs@i
+        set pontos = pontos + (kmhs@i * kmhs@i // 50)
+    }
+
+    val a = J.atletas@jog
+    set a.pontos = pontos
+    set a.golpes = #kmhs
+    set a.media  = soma * 100 // max(1,N)       ;; in hundredths
+    set a.min    = if N == 0 => 0 => kmhs@(N-1)
+    set a.max    = if N == 0 => 0 => kmhs@0
 }
 
 func jogo_calc () {
@@ -309,52 +265,65 @@ func jogo_calc () {
     _jogo_lado(1)
 
     val ps = jogo_equ()
-    set JOGO_TOTAL = (ps@0+ps@1) * (10000-jogo_quedas_pct()) // 10000
+    set J.total = (ps@0+ps@1) * (10000-jogo_quedas_pct()) // 10000
 }
 
-;; The text of the report (`placar.txt` of `go_termino`), with the date `ts`.
+;; ----------------------------------------------------------------------------
+;; THE REPORT
+;; ----------------------------------------------------------------------------
+
+;; The text of the report of a presentation, with the date `ts`.
 func jogo_relatorio (ts) {
-    var manual = ""
-    if JOGO_QUEDAS_MANUAL != 0 {
-        val plus = if JOGO_QUEDAS_MANUAL > 0 => "+" => ""
-        set manual = " (" ++ JOGO_QUEDAS ++ plus ++ JOGO_QUEDAS_MANUAL ++ ")"
+    val manual = ifs {
+        J.manual == 0 => ""
+        J.manual  > 0 => " (" ++ J.quedas ++ "+" ++ J.manual ++ ")"
+        else          => " (" ++ J.quedas ++ J.manual ++ ")"
     }
 
-    val jogs = ["", ""]
-    loop i in 2 {
-        val J = JOGO_JOGS@i
-        set jogs@i = ns(CONF_NOMES@i ++ ":",15) ++ nf(J@0,5) ++ " pontos / " ++
-                     nf(J@1,3) ++ " golpes / " ++
-                     nf(J@2 // 100,2) ++ "." ++ nf(J@2 % 100,2) ++ " km/h" ++ "\n"
+    var atletas = ""
+    loop i,a in J.atletas {
+        set atletas = atletas ++
+            ns(NOMES@i ++ ":",15) ++ nf(a.pontos,5) ++ " pontos / " ++
+            nf(a.golpes,3) ++ " golpes / " ++
+            nf(a.media // 100,2) ++ "." ++ nf(a.media % 100,2) ++ " km/h\n"
     }
 
-    val ps = jogo_equ()
-    val p0 = JOGO_JOGS@0@0
-    val p1 = JOGO_JOGS@1@0
+    val ps      = jogo_equ()
+    val parcial = (J.atletas@0).pontos + (J.atletas@1).pontos
+    val equ     = ps@0 + ps@1
 
     var out = ns("Data:",          15) ++ ts ++ "\n" ++
-              ns("Versão:",        15) ++ CONF_PARS ++ "\n" ++
+              ns("Versão:",        15) ++ conf_pars() ++ "\n" ++
               "\n" ++
-              ns("Descanso:",      15) ++ (JOGO_DESCANSO_TOTAL // 1000) ++ "\n" ++
+              ns("Descanso:",      15) ++ (J.descanso // 1000) ++ "\n" ++
               ns("Quedas:",        15) ++ jogo_quedas() ++ manual ++ "\n" ++
               "\n" ++
-              jogs@0 ++ jogs@1 ++
+              atletas ++
               "\n" ++
-              ns("Parcial:",       15) ++ nf(p0+p1,5) ++ " pontos\n" ++
-              ns("Desequilibrio:", 15) ++ nf((p0+p1) - (ps@0+ps@1), 5) ++ " (-)\n" ++
-              ns("Quedas:",        15) ++ nf((ps@0+ps@1) - JOGO_TOTAL, 5) ++ " (-)\n" ++
+              ns("Parcial:",       15) ++ nf(parcial,5) ++ " pontos\n" ++
+              ns("Desequilibrio:", 15) ++ nf(parcial - equ, 5) ++ " (-)\n" ++
+              ns("Quedas:",        15) ++ nf(equ - J.total, 5) ++ " (-)\n" ++
               "\n" ++
-              ns("FINAL:",         15) ++ nf(JOGO_TOTAL,5) ++ " pontos\n" ++
+              ns("FINAL:",         15) ++ nf(J.total,5) ++ " pontos\n" ++
               "\n"
-    loop i in #JOGO {
-        val seq = JOGO@i
+
+    loop i,seq in J.seqs {
         set out = out ++ "SEQUÊNCIA " ++ nf(i+1,2) ++ "\n============\n\nTEMPO   DIR   KMH\n-----   ---   ---\n"
-        loop j in #seq {
-            val golpe = seq@j
-            val ms = golpe@0 - JOGO_TEMPO_INICIO
-            set out = out ++ nf(ms,6) ++ "   " ++ (if golpe@1==0 => "->" => "<-") ++ "   " ++ nf(jogo_kmh(seq,j),3) ++ "\n"
+        loop j,golpe in seq {
+            set out = out ++ nf(golpe.t - J.inicio, 6) ++ "   " ++
+                      (if golpe.jog == 0 => "->" => "<-") ++ "   " ++
+                      nf(jogo_kmh(seq,j),3) ++ "\n"
         }
         set out = out ++ "\n\n"
     }
     out
+}
+
+;; The line of a presentation in `resultados.csv`.
+func jogo_csv (ts) {
+    var out = ts ++ " ; " ++ J.total ++ " ; " ++ jogo_quedas() ++ " ; " ++ (J.descanso // 1000) ++ " ; "
+    loop i,a in J.atletas {
+        set out = out ++ NOMES@i ++ " ; " ++ a.pontos ++ " ; " ++ a.golpes ++ " ; " ++ f100(a.media) ++ " ; "
+    }
+    out ++ "\n"
 }
