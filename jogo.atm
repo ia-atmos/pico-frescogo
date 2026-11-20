@@ -157,12 +157,17 @@ func conf_aborta () {
 
 ;; The speed of the hit `i` of a sequence: that of the radar, or, with no
 ;; radar, the distance over the time until the next hit (0 for the last one).
+;; Two hits at the same instant give the highest speed that is accepted (the
+;; original divides by zero there).
 func jogo_kmh (seq, i) {
     val cur = seq@i
     ifs {
-        cur.kmh != 0    => cur.kmh
-        #seq < (i+2)    => 0
-        else            => min(CONF.maxima, 36 * CONF.distancia // ((seq@(i+1)).t - cur.t))
+        cur.kmh != 0 => cur.kmh
+        #seq < (i+2) => 0
+        else => {
+            val dt = (seq@(i+1)).t - cur.t
+            if dt <= 0 => CONF.maxima => min(CONF.maxima, 36 * CONF.distancia // dt)
+        }
     }
 }
 
