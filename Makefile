@@ -3,6 +3,8 @@
 #   make            fetches the compiler and pico at fixed commits, and
 #                   builds `atmos-pico` (in .deps/)
 #   make run        runs the scoreboard
+#   make frescogo   builds the scoreboard as the program `./frescogo`, which
+#                   the launcher runs (`launcher/`)
 #   make test       the tests, with no display (needs xvfb-run)
 #   make orig       fetches the release package of the original (v4.1.0,
 #                   85 MB), runs it over the scripted presentations, and
@@ -12,7 +14,7 @@
 # JDK for the oracle.
 
 LANG_URL := https://github.com/ia-atmos/lang
-LANG_REV := ff5a6936ef4ab4644c6dd942cbec17276011e198
+LANG_REV := c4e99c4be7c6aae19d345f03e2d645fdd5246b84
 PICO_URL := https://github.com/ia-atmos/env-pico
 PICO_REV := 0bba50d4cc3d1615112399b3a23f34dd506cac7a
 
@@ -23,6 +25,8 @@ ORIG  := $(DEPS)/frescogo-v4.1.0-win64
 ATMOS := $(DEPS)/env-pico/atmos-pico
 
 .PHONY: all run test orig clean
+
+FONTES := frescogo.atm jogo.atm tela.atm desenho.atm radar.atm serial.atm
 
 all: $(ATMOS)
 
@@ -42,6 +46,9 @@ $(ATMOS): $(DEPS)/lang/atmos
 run: $(ATMOS)
 	$(ATMOS) frescogo.atm
 
+frescogo: $(ATMOS) $(FONTES)
+	$(ATMOS) -o frescogo frescogo.atm
+
 test: $(ATMOS)
 	oracle/run.sh
 	tst/jogo.sh
@@ -57,4 +64,4 @@ orig: $(ORIG)
 	oracle/orig.sh $(ORIG)
 
 clean:
-	rm -rf $(DEPS)
+	rm -rf $(DEPS) frescogo
