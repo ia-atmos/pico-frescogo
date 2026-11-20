@@ -1,7 +1,9 @@
 ;; FrescoGO! in Atmos, over pico.
 ;;
-;; The port of `placar/placar.pde` (v4.1.0, the source of the release package), one to one with the
-;; original first (see `PORT.md`). Built and run with `atmos-pico`:
+;; The scoreboard of `placar/placar.pde` (v4.1.0), written for Atmos: the flow
+;; of a presentation is a hierarchy of tasks, and each state is a place in
+;; the code. The branch `fidelity` has the port that is one to one with the
+;; original (see `PORT.md`). Built and run with `atmos-pico`:
 ;;
 ;;      make run
 ;;
@@ -36,223 +38,326 @@ static const char* fresco_ts (void) {
 val TRACE = os.getenv("FRESCOGO_TRACE") != nil
 val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
 
-var RADAR_AUTO = false
+var RADAR_AUTO = false              ;; the automatic mode: falls by silence
 val RADAR_AUTO_TIMEOUT = 3500
-var RADAR_AUTO_INICIO = 0
+var RADAR_AUTO_INICIO = 0           ;; the time of the last reading
 
 val GOLPE_DELAY = 1500
 
-var INV = false
+var INV = false                     ;; the athletes changed sides
 var ZER = 0
 var ONE = 1
 
-;; THE CONFIGURATION, as `setup` reads it
 val CONF = conf_load(os.getenv("FRESCOGO_CONF") || "data/conf.atm")
-
-;; The size of the screen, as `fullScreen()` in the original.
-pico.open [title="FrescoGO! " ++ VERSAO]
-val width  = pico.get.app().screen.w
-val height = pico.get.app().screen.h
-pico.set.dim ['!', w=width, h=height]
-pico.set.app [fullscreen=true]
-
-val dy = 0.001 * height     ;; 0.001 height
-val dx = 0.001 * width      ;; 0.001 width
-val W  = width  / 11.0
-val H  = height /  8.0
-
-pico.set.expert(true, 60)       ;; the frame rate of Processing
-pico.set.aids(false)            ;; the keys with CTRL are of the scoreboard
-
-pin IMG1         = loadImage(CONF.imagem1)
-pin IMG2         = loadImage(CONF.imagem2)
-pin IMG_SPEED    = loadImage("data/icos/speed-03.png")
-pin IMG_GOLPES   = loadImage("data/icos/raq-03.png")
-pin IMG_BAND     = loadImage("data/icos/flag.png")
-pin IMG_APITO    = loadImage("data/icos/apito-04.png")
-pin IMG_TROFEU   = loadImage("data/icos/trophy-02.png")
-pin IMG_DESCANSO = loadImage("data/icos/timeout-03.png")
-pin IMG_RADAR    = loadImage("data/icos/radar.png")
-pin IMG_RAQUETE  = loadImage("data/icos/raq.png")
-
-resize(IMG1,         height // 8)
-resize(IMG2,         height // 8)
-resize(IMG_SPEED,    math.floor(45*dy))
-resize(IMG_GOLPES,   math.floor(50*dy))
-resize(IMG_BAND,     math.floor(40*dy))
-resize(IMG_APITO,    math.floor(30*dy))
-resize(IMG_TROFEU,   math.floor(30*dy))
-resize(IMG_DESCANSO, math.floor(25*dy))
-resize(IMG_RADAR,    math.floor(30*dy))
-resize(IMG_RAQUETE,  math.floor(40*dy))
-
-textFont("data/LiberationSans-Bold.ttf")
 
 ;; ----------------------------------------------------------------------------
 ;; TIME
 ;; ----------------------------------------------------------------------------
 
-;; In a test with fixed frames (PICO_ATM_FRAMES=n:ms), the time is that of
-;; the frames, and a delay only advances it. Otherwise it is the real time.
-val TESTE = do {
-    val v = os.getenv("PICO_ATM_FRAMES")
-    (v != nil) && (string.split(v, ":")@1 != "0")
-}
+;; `NOW` is the time since the start, in milliseconds, which the clock of
+;; pico advances: once per frame, and also at the instant of each timer that
+;; expires in between.
 
-var MICROS = 0      ;; the time of the frames
+var MICROS = 0
+
+spawn {
+    loop dt on :clock {
+        set MICROS = MICROS + dt
+        set NOW    = MICROS // 1000
+    }
+}
 
 func millis () {
-    if TESTE => (MICROS // 1000) => pico.get.now()
-}
-
-;; `delay` of Processing: blocks everything, and the keys wait in the system.
-func delay (ms) {
-    if TESTE {
-        set MICROS = MICROS + ms*1000
-    } else {
-        `SDL_Delay(a_dbl($ms));`
-    }
+    NOW
 }
 
 func trace (msg) {
     if TRACE {
-        print("[" ++ nf(millis(),6) ++ "] " ++ msg)
+        print("[" ++ nf(NOW,6) ++ "] " ++ msg)
     }
 }
+
+include "tela.atm"
+include "radar.atm"
 
 ;; ----------------------------------------------------------------------------
 ;; SOUNDS
 ;; ----------------------------------------------------------------------------
 
-val SNDS_NOMES = ["fall.wav", "restart.wav", "30s.wav", "queda2.wav", "undo.wav", "start.wav"]
-val HITS_NOMES = [
-    "peteleco.mp3",         ;; 50--60
-    "agudo.wav",            ;; 60--70
-    "laser.wav",            ;; 70--80
-    "hit.wav",              ;; 80--90
-    "trophaser.wav",        ;; 90--100
-    "ambulancia.wav",       ;; 100--
+val SONS = [
+    queda    = "fall.wav",
+    reinicio = "restart.wav",
+    aviso    = "30s.wav",
+    fim      = "queda2.wav",
+    desfaz   = "undo.wav",
+    saque    = "start.wav",
 ]
 
-pin SNDS = []
-pin HITS = []
-loop _,nome in SNDS_NOMES {
-    set SNDS@+ = pico.sound.load("data/snds/" ++ nome)
+;; The sound of a hit, by its speed.
+val GOLPES = [
+    [ 60, "peteleco.mp3" ],
+    [ 70, "agudo.wav" ],
+    [ 80, "laser.wav" ],
+    [ 90, "hit.wav" ],
+    [ 100, "trophaser.wav" ],
+    [ math.huge, "ambulancia.wav" ],
+]
+
+pin SOM = []            ;; the sounds, by the names of their files
+loop _,arq in SONS {
+    set SOM@arq = pico.sound.load("data/snds/" ++ arq)
 }
-loop _,nome in HITS_NOMES {
-    set HITS@+ = pico.sound.load("data/snds/" ++ nome)
+loop _,g in GOLPES {
+    set SOM@(g@1) = pico.sound.load("data/snds/" ++ g@1)
 }
 
-func snds_play (i) {
-    trace("snd " ++ SNDS_NOMES@i)
-    pico.output.sound(SNDS@i)
+func toca (arq) {
+    trace("snd " ++ arq)
+    pico.output.sound(SOM@arq)
 }
 
-func hits_play (i) {
-    trace("snd " ++ HITS_NOMES@i)
-    pico.output.sound(HITS@i)
+func som (nome) {
+    toca(SONS@nome)
 }
 
-func sound (kmh) {
-    val kmh_ = math.abs(kmh)
-    ifs {
-        kmh_ < 50 => {
-            if !conf_radar() {
-                hits_play(0)
-            }
+;; A hit below 50 km/h only sounds with no radar.
+func som_golpe (kmh) {
+    if (kmh < 50) && conf_radar() {
+        return
+    }
+    loop _,g in GOLPES {
+        if kmh < g@0 {
+            toca(g@1)
+            break
         }
-        kmh_ < 60  => hits_play(0)
-        kmh_ < 70  => hits_play(1)
-        kmh_ < 80  => hits_play(2)
-        kmh_ < 90  => hits_play(3)
-        kmh_ < 100 => hits_play(4)
-        else       => hits_play(5)
+    }
+}
+
+;; ----------------------------------------------------------------------------
+;; KEYS
+;; ----------------------------------------------------------------------------
+
+;; CTRL with one of the given keys (the names of SDL).
+func ctrl (e, k1, k2) {
+    e.ctrl && ((e.key == k1) || (e.key == k2))
+}
+
+;; The character of a key in a name: a letter, or `_`.
+func letra (e) {
+    val k = e.key
+    ifs {
+        e.ctrl => nil
+        (#k == 1) && (k >= "A") && (k <= "Z") => if e.shift != e.caps => k => string.lower(k)
+        (k == "-") && e.shift => "_"
+        else => nil
     }
 }
 
 ;; ----------------------------------------------------------------------------
 ;; THE FLOW
+;;
+;;  Apresentacao        from a restart (CTRL-R, CTRL-E) to the next one
+;;      Jogo            sequences, until the time or the limit of falls
+;;          Ocioso      the referee serves (CTRL-UP), undoes, edits names
+;;              Nome    a name being typed
+;;          Sequencia   from a serve to a fall
+;;      the end         the report; CTRL-S ends at any moment, and saves again
+;;
+;; The events of a frame, in this order, are `:radar.vez` (the radar reads),
+;; and `:quadro` (the conditions over the time are checked). The score is
+;; computed again at the end of each frame, and after each key that changes
+;; it: the conditions see what the last frame left.
 ;; ----------------------------------------------------------------------------
 
-func go_esquenta () {
-    set ESTADO = "ocioso"
-    vector.clear(JOGO)
-    set JOGO_DESCANSO_TOTAL     = 0
-    set JOGO_DESCANSO_PLAY      = false
-    set JOGO_TEMPO_RESTANTE_OLD = conf_tempo()
-    set JOGO_QUEDAS             = 0
-    set JOGO_QUEDAS_MANUAL      = 0
-    set JOGO_TEMPO_INICIO       = millis()
-    snds_play(1)
+;; Discards the last sequence, and the fall that ended it.
+func desfaz () {
+    if #JOGO > 0 {
+        set JOGO_QUEDAS = JOGO_QUEDAS - 1
+        vector.remove(JOGO)
+        som(:desfaz)
+    }
 }
 
-func go_reinicio () {
-    set ESTADO = "ocioso"
-    vector.clear(JOGO)
-    set JOGO_DESCANSO_TOTAL     = 0
-    set JOGO_DESCANSO_PLAY      = false
-    set JOGO_TEMPO_RESTANTE_OLD = conf_tempo()
-    set JOGO_QUEDAS             = 0
-    set JOGO_QUEDAS_MANUAL      = 0
-    set JOGO_TEMPO_INICIO       = millis()
-    snds_play(1)
+;; A name, typed until ENTER.
+task Nome (idx, campo) {
+    set ESTADO = "digitando"
+    set ESTADO_DIGITANDO = idx
+    set CONF_NOMES@idx = ""
+    defer {
+        set ESTADO_DIGITANDO = 255
+    }
+    loop {
+        val e = await :key.dn
+        val c = letra(e)
+        ifs {
+            (e.key == "Return") || (e.key == "Keypad Enter") => break
+            (e.key == "Backspace") && (!e.ctrl) => {
+                val nome = CONF_NOMES@idx
+                set CONF_NOMES@idx = string.sub(nome, 0, #nome-2)
+            }
+            c != nil => {
+                set CONF_NOMES@idx = CONF_NOMES@idx ++ c
+            }
+        }
+    }
+    set CONF@campo = CONF_NOMES@idx
 }
 
-func go_saque () {
+;; Between sequences: until the referee serves.
+task Ocioso () {
+    loop {
+        set ESTADO = "ocioso"
+        val e = await :key.dn until it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"])
+        match e.key {
+            "Backspace" => {
+                desfaz()
+                jogo_calc()
+            }
+            "1"  => await Nome(0, "atleta1")
+            "2"  => await Nome(1, "atleta2")
+            "0"  => await Nome(2, "arbitro")
+            else => break
+        }
+    }
+}
+
+;; A hit, of the keyboard or of the radar, in the sequence that goes on.
+func golpe (seq, g) {
+    vector.insert(seq, [NOW, g.jog, g.kmh])
+    if g.radar {
+        som_golpe(g.kmh)
+    } else {
+        ;; with no radar, the speed of a hit is only known at the next one
+        som_golpe(if #seq >= 2 => jogo_kmh(seq, #seq-2) => 0)
+        jogo_calc()
+    }
+}
+
+;; A sequence, from the serve on. Evaluates to how it ended: `:queda` (the
+;; ball fell), `:tempo` (the time is over), or `:desfeita` (the referee
+;; undid the serve).
+task Sequencia () {
     set ESTADO = "jogando"
     set ESTADO_JOGANDO = "sacando"
-    set JOGO_DESCANSO_INICIO = millis()
-    vector.insert(JOGO, [])
-    snds_play(5)
+    set JOGO_DESCANSO_INICIO = NOW
+    val seq = vector.insert(JOGO, [])
+    som(:saque)
     if RADAR != nil {
         radar_clear()
     }
     if ESQUENTA {
         set ESQUENTA_INICIO = NOW
     }
-}
+    jogo_calc()
 
-func go_queda () {
-    if ESQUENTA {
-        return
+    ;; the hits of the keyboard: the arrows
+    spawn {
+        loop e on :key.dn {
+            if (e.key == "Left") || (e.key == "Right") {
+                emit :golpe [jog=(if e.key == "Left" => ZER => ONE), kmh=0]
+            }
+        }
     }
-    set ESTADO = "ocioso"
-    set JOGO_QUEDAS = JOGO_QUEDAS + 1
-    if jogo_quedas() >= conf_aborta() {
-        delay(1000)
-        go_termino()
-    } else {
-        snds_play(0)
-        if RADAR_AUTO {
-            delay(1000)
-            go_saque()
+
+    ;; the hits of the radar: one reading per frame, only while the sequence
+    ;; goes on
+    spawn {
+        if RADAR == nil {
+            await(false)
+        }
+        loop on :radar.vez {
+            val kmh = radar()
+            if math.abs(kmh) > 1 {
+                emit :golpe [jog=(if kmh > 0 => LADO_RADAR => (1-LADO_RADAR)), kmh=math.abs(kmh), radar=true]
+            }
+            if RADAR_AUTO && (kmh != 0) {
+                set RADAR_AUTO_INICIO = NOW     ;; any reading that is not silence
+            }
+        }
+    }
+
+    par :any {
+        ;; the referee marks the fall (a warm-up has no falls)
+        await :key.dn until (!ESQUENTA) && ctrl(it, "Down", "J")
+        :queda
+    } with {
+        await :quadro until JOGO_TEMPO_RESTANTE <= 0
+        :tempo
+    } with {
+        ;; THE SERVE: until the first hit, which the radar only takes with
+        ;; the speed of a serve; before it, the referee may undo
+        val g = par :any {
+            await :key.dn until ctrl(it, "Backspace")
+            :desfeita
+        } with {
+            await :golpe until (!it.radar) || (it.kmh >= CONF_SAQUE)
+        }
+        if g == :desfeita {
+            set ESTADO = "ocioso"
+            vector.remove(JOGO)     ;; this sequence, and the one before it
+            desfaz()
+            jogo_calc()
+            :desfeita
+        } else {
+            ;; what the serve took beyond 5 seconds comes out of the rest
+            set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
+            set ESTADO_JOGANDO = "jogando"
+            golpe(seq, g)
+
+            ;; THE HITS, until the fall
+            par :any {
+                loop h on :golpe {
+                    golpe(seq, h)
+                }
+            } with {
+                ;; in the automatic mode: 3.5 seconds with no reading
+                await :quadro until (!ESQUENTA) && RADAR_AUTO && (NOW >= (RADAR_AUTO_INICIO + RADAR_AUTO_TIMEOUT))
+                :queda
+            }
         }
     }
 }
 
-;; `float(n)/100` as Java writes it, in a string.
-func float_str (n, d) {
-    f100(n)
-}
+;; The sequences of a presentation, until the time is over or the falls
+;; reach their limit.
+task Jogo () {
+    var direto = false      ;; the automatic mode serves by itself
+    loop {
+        if !direto {
+            await Ocioso()
+        }
+        set direto = false
 
-;; A number of hundredths as `float(n)/100` is written in the original.
-func f100 (n) {
-    val d = n % 100
-    (n // 100) ++ "." ++ ifs {
-        d == 0      => "0"
-        d % 10 == 0 => d // 10
-        else        => nf(d,2)
+        val fim = await Sequencia()
+        until fim == :tempo
+
+        if fim == :queda {
+            set ESTADO = "ocioso"
+            set JOGO_QUEDAS = JOGO_QUEDAS + 1
+            jogo_calc()
+            if jogo_quedas() >= conf_aborta() {
+                await 1s
+                break
+            }
+            som(:queda)
+            if RADAR_AUTO {
+                await 1s
+                set direto = true
+            }
+        }
     }
 }
 
-func go_termino () {
+;; The end of a presentation: the screen, and then its picture, the report,
+;; and a line of `resultados.csv` (not for a warm-up).
+func termina () {
     set ESTADO = "terminado"
-    snds_play(3)
+    som(:fim)
     if JOGO_TOTAL > CONF_RECORDE {
         set CONF_RECORDE = JOGO_TOTAL
     }
-
-    draw()
+    jogo_calc()
+    draw_draw()
 
     if ESQUENTA {
         return
@@ -262,21 +367,18 @@ func go_termino () {
     `mkdir(A_STR_OF($REL)->s, 0777);`
     val nome = REL ++ "/frescogo-" ++ ts ++ "-" ++ CONF_NOMES@0 ++ "-" ++ CONF_NOMES@1
 
-    ;; placar.png
     pico.output.screenshot(pico.layer.window, nome ++ "-placar.png")
 
-    ;; placar.txt
     do {
         pin f = io.open(nome ++ ".txt", "w")
-        io.write(f, jogo_relatorio(ts), "\n")      ;; `saveStrings` ends the line
+        io.write(f, jogo_relatorio(ts), "\n")
     }
 
-    ;; resultados.csv
     do {
         pin f = io.open(REL ++ "/resultados.csv", "a")
         if f == nil {
             print("Erro em 'resultados.csv'.")
-            exit()
+            pico.quit()
             return
         }
         val J0 = JOGO_JOGS@0
@@ -290,707 +392,50 @@ func go_termino () {
     }
 }
 
-;; ----------------------------------------------------------------------------
-;; THE RADAR
-;; ----------------------------------------------------------------------------
+;; A presentation, or a warm-up (the time runs, and there are no falls).
+task Apresentacao (esquenta) {
+    set ESQUENTA = esquenta
+    vector.clear(JOGO)
+    set JOGO_DESCANSO_TOTAL     = 0
+    set JOGO_QUEDAS             = 0
+    set JOGO_QUEDAS_MANUAL      = 0
+    set JOGO_TEMPO_INICIO       = NOW
+    set ESTADO = "ocioso"
+    som(:reinicio)
 
-val RADAR_OUT = os.getenv("FRESCOGO_RADAR") || "radar.txt"      ;; the log
-
-;; `RADAR_OUT.println(msg)` and `flush`.
-func radar_out (msg) {
-    pin f = io.open(RADAR_OUT, "a")
-    io.write(f, msg, "\n")
-}
-
-func radar_clear () {
-    serial.clear(RADAR)
-}
-
-val RADAR_MOCK_SPEED = 500
-var radar_mock_old = 0
-
-func radar_mock () {
-    val dt = NOW - radar_mock_old
-    if dt > RADAR_MOCK_SPEED {
-        set radar_mock_old = NOW
-        if (math.random() * 4) <= 2 {
-            val vel = math.floor(30 + math.random()*(CONF_VEL_MAX-30))
-            return if math.floor(math.random()*5) >= 2 => vel => -vel
+    ;; the warnings: 30 seconds left, each time a sequence crosses them, and
+    ;; the rest that ran out
+    spawn {
+        loop {
+            await :quadro until (ESTADO == "jogando") && (JOGO_TEMPO_RESTANTE >  30)
+            await :quadro until (ESTADO == "jogando") && (JOGO_TEMPO_RESTANTE <= 30)
+            som(:aviso)
         }
     }
-    0
-}
+    spawn {
+        if !ESQUENTA {
+            await :quadro until descanso_resta() < 0
+            som(:aviso)
+        }
+    }
 
-var BUF_I = 0
-pin BUF = [ [0,0],[0,0],[0,0],[0,0],[0,0],      ;; RADAR_REPS_MAX = 10
-            [0,0],[0,0],[0,0],[0,0],[0,0] ]
+    ;; CTRL-S ends it at any moment
+    watching :key.dn until ctrl(it, "S") {
+        await Jogo()
+    }
 
-val _VEL = 0
-val _DIR = 1
-val _NOW = 2
-
-;;;
-75 km/h = 20.8 m/s
-20.8 m - 1000 ms
-15.0 m -  721 ms
-700ms sem repeticao é seguro
-;;;
-pin LAST = [ 0,-1,0 ]   ;; vel, dir, ms
-
-func four (s, idx) {
-    (s@(idx+0) - 48) * 1000 +
-    (s@(idx+1) - 48) *  100 +
-    (s@(idx+2) - 48) *   10 +
-    (s@(idx+3) - 48) *    1
-}
-
-;; -1: erro ou duvida
-;; =0: nada detectado
-;; >0: velocidade se distanciando
-;; <0: velocidade se aproximando
-
-func radar_be () {
-    ;; aproximadamente 40/50 reads/sec (20/25 ms/read)
+    ;; and saves it again, later
     loop {
-        val n = serial.byte(RADAR)
-        until n == 0x88         ;; espera o primeiro byte do pacote
+        termina()
+        await :key.dn until ctrl(it, "S")
     }
-
-    val s = serial.bytes(RADAR, 22)     ;; espera ter o tamanho do pacote
-
-    var dir = (s@7 >> 1) & 0x01         ;; 0=out, 1=in
-    var vel = four(s,8)
-    if vel == 0 {
-        set dir = -1                    ;; -1=none
-    }
-
-    val sdir = if dir == 0 => "->" => (if dir == 1 => "<-" => "--")
-    val msg = "[" ++ nf(millis() // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3)
-
-    if vel != 0 {
-        radar_out(msg)
-    }
-
-    set BUF@BUF_I@_VEL = vel
-    set BUF@BUF_I@_DIR = dir
-    val I = BUF_I
-    set BUF_I = (BUF_I + 1) % RADAR_REPS
-
-    ;; aceito somente se N velocidades na mesma direcao
-    loop i in RADAR_REPS {
-        set vel = max(vel, BUF@i@_VEL)
-        if BUF@i@_DIR != BUF@0@_DIR {
-            return -1       ;; falhou na direcao
-        }
-    }
-
-    ;; duvida se mesma dir em menos de 700ms
-    val now = millis()
-    if (dir != LAST@_DIR) && (now < (LAST@_NOW + RADAR_IGUAL)) {
-        return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
-    }
-    if (dir == LAST@_DIR) && (now < (LAST@_NOW + RADAR_OPOSI)) {
-        return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
-    }
-
-    if (vel != 0) || (LAST@_VEL != 0) {
-        val msg2 = ">>> [" ++ nf(millis() // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3) ++ " <<<"
-        radar_out(msg2)
-        print(msg2)
-    }
-
-    set LAST@_VEL = vel
-    if vel != 0 {
-        set LAST@_DIR = 1-dir   ;; negate current dir (only accept opposite next)
-        set LAST@_NOW = now
-    }
-
-    set BUF@I@_DIR = -1     ;; restarts buffer
-
-    set vel = (vel + 5) // 10   ;; round
-    if dir == 1 => -vel => vel
-}
-
-func radar () {
-    if RADAR_MOCK {
-        radar_mock()
-    } else {
-        radar_be()
-    }
-}
-
-func exit () {
-    pico.quit()
-}
-
-;; ----------------------------------------------------------------------------
-;; KEYBOARD
-;; ----------------------------------------------------------------------------
-
-;; `key` and `keyCode` of Processing, from a key event of pico, which has
-;; the name of the key as SDL gives it ('A', 'Left', 'Backspace') and the
-;; modifiers. `keyCode` is the name. `key` is the code of the character, as
-;; Java gives it: with CTRL, a letter is its control code (CTRL-H is 8, as
-;; BACKSPACE), and a key with no character is CODED.
-
-val BACKSPACE = 8
-val ENTER     = 10
-val RETURN    = 13
-val ESC       = 27
-val CODED     = 0xFFFF
-
-var key     = 0
-var keyCode = ""
-
-func key_de (e) {
-    val k = e.key
-    ifs {
-        (#k == 1) && (k >= "A") && (k <= "Z") => {
-            val c = string.byte(k)
-            ifs {
-                e.ctrl            => c - 64
-                e.shift != e.caps => c
-                else              => c + 32
-            }
-        }
-        (#k == 1) && (k >= "0") && (k <= "9") => string.byte(k)
-        k == "-"            => if e.shift => string.byte("_") => string.byte("-")
-        k == "="            => string.byte("=")
-        k == "Backspace"    => BACKSPACE
-        k == "Return"       => ENTER
-        k == "Keypad Enter" => ENTER
-        k == "Escape"       => ESC
-        else                => CODED
-    }
-}
-
-func letra (c) {
-    ((c >= string.byte("a")) && (c <= string.byte("z"))) ||
-    ((c >= string.byte("A")) && (c <= string.byte("Z"))) ||
-    (c == string.byte("_"))
-}
-
-func trata_nome (idx, json) {
-    ifs {
-        (key == ENTER) || (key == RETURN) => {
-            set CONF@json = CONF_NOMES@idx
-            set ESTADO_DIGITANDO = 255
-            set ESTADO = "ocioso"
-        }
-        key == BACKSPACE => {
-            val nome = CONF_NOMES@idx
-            if #nome > 0 {
-                set CONF_NOMES@idx = string.sub(nome, 0, #nome-2)
-            }
-        }
-        letra(key) => {
-            set CONF_NOMES@idx = CONF_NOMES@idx ++ string.char(key)
-        }
-    }
-}
-
-func keyPressed (e) {
-    val ctrl = e.ctrl
-
-    if (key == ESC) && (!ctrl) {
-        set key = 0
-    }
-
-    if ctrl {
-        match keyCode {
-            "Q" => set key = ESC                    ;; CTRL-Q
-            "A" => {                                ;; CTRL-A
-                set RADAR_AUTO = !RADAR_AUTO
-                set RADAR_AUTO_INICIO = millis()
-            }
-            "E" => {                                ;; CTRL-E
-                set ESQUENTA = true
-                go_esquenta()
-            }
-            "-" => set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL - 1
-            "=" => set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL + 1
-            "R" => {                                ;; CTRL-R
-                set ESQUENTA = false
-                go_reinicio()
-            }
-            "S" => go_termino()                     ;; CTRL-S
-            "I" => {                                ;; CTRL-I
-                set INV = !INV
-                set ZER = 1 - ZER
-                set ONE = 1 - ONE
-            }
-        }
-    }
-
-    ifs {
-        ctrl && (key == BACKSPACE) => {             ;; CTRL-BACKSPACE
-            ifs {
-                ESTADO == "ocioso" => {
-                    if #JOGO > 0 {
-                        set JOGO_QUEDAS = JOGO_QUEDAS - 1
-                        vector.remove(JOGO)
-                        snds_play(4)
-                    }
-                }
-                (ESTADO == "jogando") && (ESTADO_JOGANDO == "sacando") => {
-                    set ESTADO = "ocioso"
-                    if #JOGO > 0 {
-                        vector.remove(JOGO)
-                        if #JOGO > 0 {
-                            set JOGO_QUEDAS = JOGO_QUEDAS - 1
-                            vector.remove(JOGO)
-                            snds_play(4)
-                        }
-                    }
-                }
-            }
-        }
-
-        ESTADO == "ocioso" => {
-            if ctrl {
-                ifs {
-                    keyCode == "0" => {             ;; CTRL-0
-                        set ESTADO = "digitando"
-                        set ESTADO_DIGITANDO = 2
-                        set CONF_NOMES@2 = ""
-                    }
-                    keyCode == "1" => {             ;; CTRL-1
-                        set ESTADO = "digitando"
-                        set ESTADO_DIGITANDO = 0
-                        set CONF_NOMES@0 = ""
-                    }
-                    keyCode == "2" => {             ;; CTRL-2
-                        set ESTADO = "digitando"
-                        set ESTADO_DIGITANDO = 1
-                        set CONF_NOMES@1 = ""
-                    }
-                    (keyCode == "Up") || (keyCode == "U") => go_saque()     ;; CTRL-UP
-                }
-            }
-        }
-
-        ESTADO == "digitando" => {
-            match ESTADO_DIGITANDO {
-                0 => trata_nome(0, "atleta1")       ;; DIGITANDO ESQ
-                1 => trata_nome(1, "atleta2")       ;; DIGITANDO DIR
-                2 => trata_nome(2, "arbitro")       ;; DIGITANDO ARBITRO
-            }
-        }
-
-        ESTADO == "jogando" => {
-            ifs {
-                ctrl && ((keyCode == "Down") || (keyCode == "J")) => {      ;; CTRL-DOWN
-                    go_queda()
-                }
-                (keyCode == "Left") || (keyCode == "Right") => {            ;; LEFT/RIGHT
-                    if ESTADO_JOGANDO == "sacando" {
-                        set ESTADO_JOGANDO = "jogando"
-                        set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
-                    }
-                    val jog = if keyCode == "Left" => ZER => ONE
-                    val seq = JOGO@#
-                    vector.insert(seq, [NOW, jog, 0])   ;; golpe@2=0  -->  radar desligado
-                    var kmh = 0
-                    if #seq >= 2 {
-                        set kmh = jogo_kmh(seq, #seq-2)
-                    }
-                    sound(kmh)
-                }
-            }
-        }
-    }
-    jogo_calc()
-}
-
-;; ----------------------------------------------------------------------------
-;; DRAW
-;; ----------------------------------------------------------------------------
-
-func draw () {
-    set NOW = millis()
-
-    if ESTADO == "jogando" {
-        if conf_radar() {
-            val kmh  = radar()
-            val kmh_ = math.abs(kmh)
-            if kmh_ > 1 {
-                if (ESTADO_JOGANDO == "sacando") && (kmh_ >= CONF_SAQUE) {
-                    set ESTADO_JOGANDO = "jogando"
-                    set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
-                }
-                if ESTADO_JOGANDO == "jogando" {
-                    val jog = if kmh > 0 => LADO_RADAR => (1-LADO_RADAR)
-                    vector.insert(JOGO@#, [NOW, jog, kmh_])     ;; golpe@2!=0  -->  radar ligado
-                    sound(kmh)
-                }
-            }
-            if RADAR_AUTO && (kmh != 0) {
-                ;; zera o timeout com qq bola que não seja 0
-                set RADAR_AUTO_INICIO = NOW
-            }
-        }
-        if (ESTADO_JOGANDO == "jogando") &&
-           RADAR_AUTO && (NOW >= (RADAR_AUTO_INICIO + RADAR_AUTO_TIMEOUT))
-        {
-            go_queda()
-        }
-        if (JOGO_TEMPO_RESTANTE_OLD > 30) && (JOGO_TEMPO_RESTANTE <= 30) {
-            snds_play(2)
-        }
-        set JOGO_TEMPO_RESTANTE_OLD = JOGO_TEMPO_RESTANTE
-        if JOGO_TEMPO_RESTANTE <= 0 {
-            go_termino()
-        }
-    }
-
-    jogo_calc()
-    draw_draw()
-}
-
-func draw_draw () {
-    background(255,255,255)
-
-    draw_logo(0*W, IMG1)
-    draw_logo(7*W, IMG2)
-
-    draw_nome(0*W, ZER, ESTADO_DIGITANDO==ZER)
-    draw_nome(7*W, ONE, ESTADO_DIGITANDO==ONE)
-
-    ;; TEMPO
-    do {
-        val show = max(0, JOGO_TEMPO_RESTANTE_SHOW)
-        val mins = nf(show // 60, 2)
-        val segs = nf(show % 60, 2)
-
-        if ESTADO == "terminado" {
-            fill(255,0,0)
-        } else {
-            fill(0)
-        }
-        rect(4*W, 0, 3*W, 3*H)
-
-        fill(255)
-        textSize(140*dy)
-        textAlign(CENTER, CENTER)
-        text(mins ++ ":" ++ segs, width/2, 1.25*H-10*dy)
-
-        if ESQUENTA {
-            fill(255,0,0)
-            textSize(35*dy)
-            textAlign(CENTER, CENTER)
-            text("AQUECIMENTO", width/2, 2.50*H)
-        } else {
-            var descanso = JOGO_DESCANSO_TOTAL
-            if (ESTADO == "jogando") && (ESTADO_JOGANDO == "sacando") {
-                set descanso = descanso + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
-            }
-            set descanso = descanso // 1000
-            set descanso = CONF_DESCANSO - descanso
-
-            ifs {
-                descanso < 0 => {
-                    fill(255,0,0)
-                    if !JOGO_DESCANSO_PLAY {
-                        set JOGO_DESCANSO_PLAY = true
-                        snds_play(2)
-                    }
-                }
-                ESTADO == "terminado" => fill(255)
-                else => fill(150,150,150)
-            }
-            textSize(35*dy)
-            textAlign(CENTER, CENTER)
-            text(math.abs(descanso) ++ " s", width/2, 2.50*H)
-            image(IMG_DESCANSO, width/2-50*dx, 2.50*H)
-            if descanso < 0 {
-                textSize(20*dy)
-                text("(ESGOTADO)", width/2, 2.5*H+30*dy)
-            }
-        }
-    }
-
-    ;; PARS / INVERTIDO?
-    if ESTADO == "terminado" {
-        fill(255)
-    } else {
-        fill(150,150,150)
-    }
-    textSize(18*dy)
-    textAlign(CENTER, TOP)
-    text("(" ++ CONF_PARS ++ ")", width/2, 0)
-    if INV {
-        text("inv", width/2, 30*dy)
-    }
-
-    ;; MEIO
-    stroke(0)
-    fill(255)
-    rect(0, 3*H, 11*W, 2*H-1)
-
-    ;; QUEDAS
-    do {
-        fill(255, 0, 0)
-        ellipse(width/2, height/2, 1.5*H, 1.5*H)
-
-        fill(255)
-        textAlign(CENTER, CENTER)
-        textSize(110*dy)
-        text(jogo_quedas(), width/2, height/2-15*dy)
-    }
-
-    if ESTADO == "jogando" {
-        val seq = JOGO@#
-        var jog = 255
-        loop i in (1,2) {
-            if #seq < i {
-                skip
-            }
-
-            val golpe = seq@(#seq-i)    ;; millis/jog/kmh
-            if golpe@1 == jog {
-                ;; mesmo jogador deu os ultimos dois golpes
-            } else {
-                set jog = golpe@1
-                if NOW <= (golpe@0 + GOLPE_DELAY) {
-                    var kmh = golpe@2
-                    if kmh == 0 {
-                        val xxx = #seq - i - 1
-                        if xxx >= 0 {
-                            set kmh = jogo_kmh(seq, #seq-i-1)
-                            if jog == ONE {
-                                draw_ultima(1.5*W, kmh)
-                            } else {
-                                draw_ultima(9.5*W, kmh)
-                            }
-                        }
-                    } else {
-                        if jog == ZER {
-                            draw_ultima(1.5*W, kmh)
-                        } else {
-                            draw_ultima(9.5*W, kmh)
-                        }
-                    }
-                }
-                if NOW <= (golpe@0 + 500) {
-                    stroke(0,0,255)
-                    strokeWeight(10*dy)
-                    if jog == ZER {
-                        line(2.5*W, 4*H, 2.5*W+60*dy, 4*H)
-                        line(2.5*W+60*dy, 4*H, 2.5*W+45*dy, 4*H+20*dy)
-                        line(2.5*W+60*dy, 4*H, 2.5*W+45*dy, 4*H-20*dy)
-                    } else {
-                        line(8.5*W, 4*H, 8.5*W-60*dy, 4*H)
-                        line(8.5*W-60*dy, 4*H, 8.5*W-45*dy, 4*H-20*dy)
-                        line(8.5*W-60*dy, 4*H, 8.5*W-45*dy, 4*H+20*dy)
-                    }
-                    strokeWeight(1)
-                }
-            }
-        }
-    }
-
-    if conf_radar() {
-        if LADO_RADAR == 0 {
-            image(IMG_RADAR, 20*dx,       4*H)
-        } else {
-            image(IMG_RADAR, width-20*dx, 4*H)
-        }
-    }
-
-    if CONF_TRINCA {
-        if LADO_PIVO == 0 {
-            image(IMG_RAQUETE, 4*W-20*dx,       2.5*H)
-            image(IMG_RAQUETE, 7*W+20*dx,       2.5*H-10*dy)
-            image(IMG_RAQUETE, 7*W+20*dx+10*dx, 2.5*H+10*dy)
-        } else {
-            image(IMG_RAQUETE, 4*W-20*dx-10*dx, 2.5*H-10*dy)
-            image(IMG_RAQUETE, 4*W-20*dx,       2.5*H+10*dy)
-            image(IMG_RAQUETE, 7*W+20*dx,       2.5*H)
-        }
-    }
-
-    draw_lado(true,  1.25*W, ZER)
-    draw_lado(false, 7.75*W, ONE)
-
-    textSize(15*dy)
-    fill(150,150,150)
-    loop i in 2 {
-        val off = if i == 0 => 1*W => 10*W
-        noStroke()
-        noFill()
-
-        image(IMG_GOLPES, off, 5.5*H+5*dy)
-
-        image(IMG_SPEED, off, 6.5*H+5*dy)
-        textAlign(CENTER, CENTER)
-        fill(100,100,100)
-        textSize(10*dy)
-        text("km/h", off, 6.5*H+25*dy)
-
-        image(IMG_BAND, off, 7.5*H+10*dy)
-    }
-
-    do {
-        noStroke()
-        fill(0)
-        rect(4*W, 5*H, 3*W, 3*H)
-
-        ;; juiz
-        var nome = CONF_NOMES@2
-        if ESTADO_DIGITANDO != 2 {
-            fill(150,150,150)
-        } else {
-            fill(255,0,0)
-            set nome = nome ++ "_"
-        }
-        textSize(20*dy)
-        textAlign(CENTER, TOP)
-        text(nome, width/2, 5*H+12*dy)
-        val w1 = textWidth(nome)
-        image(IMG_APITO, width/2-w1/2-15*dx, 5*H+20*dy)
-
-        ;; auto
-        ifs {
-            ESQUENTA => {
-                fill(200, 200, 0)
-                ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
-            }
-            RADAR_AUTO => {
-                fill(0, 150, 0)
-                ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
-            }
-        }
-
-        ;; recorde
-        if JOGO_TOTAL >= CONF_RECORDE {
-            fill(150,150,150)
-        } else {
-            fill(200,100,100)
-        }
-        textSize(35*dy)
-        textAlign(CENTER, CENTER)
-        text(CONF_RECORDE, width/2, 6*H-15*dy)
-        val w2 = textWidth(CONF_RECORDE)
-        image(IMG_TROFEU, width/2-w2/2-25*dx, 6*H-10*dy)
-
-        ;; TOTAL
-        fill(255)
-        textSize(140*dy)
-        textAlign(CENTER, CENTER)
-        text(JOGO_TOTAL, width/2, 7*H-15*dy)
-
-        ;; conta
-        val ps = jogo_equ()
-        fill(150,150,150)
-        textSize(15*dy)
-        val conta = "(" ++ ps@0 ++ " + " ++ ps@1 ++ ") - " ++ float_str(jogo_quedas_pct(), 100) ++ "%"
-        text(conta, width/2, 7.5*H+20*dy)
-    }
-}
-
-func draw_logo (x, img) {
-    noStroke()
-    fill(255)
-    rect(x, 0, 4*W, 2*H)
-    image(img, x+2*W, H)
-}
-
-func draw_nome (x, jog, digitando) {
-    var nome = CONF_NOMES@jog
-    stroke(0)
-    fill(255)
-    rect(x, 2*H, 4*W, H)
-    if digitando {
-        set nome = nome ++ "_"
-        fill(255, 0, 0)
-    } else {
-        noStroke()
-        fill(0,0,255)
-    }
-    textSize(90*dy)
-    textAlign(CENTER, CENTER)
-    text(nome, x+2*W, 2.5*H-10*dy)
-}
-
-func draw_ultima (x, kmh) {
-    if kmh == 0 {
-        return
-    }
-    if kmh >= CONF_VEL_MIN {
-        fill(0)
-    } else {
-        fill(200,200,200)
-    }
-    textAlign(CENTER, BOTTOM)
-    textSize(120*dy)
-    text(kmh, x, 4*H+45*dy)
-    textAlign(CENTER, TOP)
-    textSize(30*dy)
-    text("km/h", x, 4*H+35*dy)
-}
-
-func draw_lado (isesq, x, jog) {
-    val JOG = JOGO_JOGS@jog
-    noStroke()
-    fill(255,255,255)
-    rect(x, 5*H, 2*W, 3*H)
-
-    fill(0)
-    textAlign(CENTER, CENTER)
-    textSize(65*dy)
-    val atas = conf_ataques(jog)
-    if (atas > 0) && (JOG@1 >= atas) {      ;; golpes vs limite
-        fill(255,0,0)
-    }
-    text(JOG@1, x+W, 5.5*H)                 ;; golpes
-    fill(150,150,150)
-    textSize(20*dy)
-    val w1 = textWidth(JOG@1)               ;; golpes
-    textAlign(TOP, LEFT)
-    text("/" ++ conf_ataques(jog), x+W+w1+10*dx, 5.5*H+30*dy)  ;; limite
-
-    fill(0)
-    textAlign(CENTER, CENTER)
-
-    ;; media
-    textSize(65*dy)
-    text(JOG@2 // 100, x+W, 6.5*H)
-    textSize(25*dy)
-    text("." ++ nf(JOG@2 % 100,2), x+W+30*dx, 6.5*H+15*dy)
-
-    ;; min / max
-    fill(150,150,150)
-    if isesq {
-        textSize(30*dy)
-        text(JOG@4, x+2*W+30*dx, 6.5*H-H/6)
-        text(JOG@3, x+2*W+30*dx, 6.5*H+H/4)
-        textSize(15*dy)
-        text("máx", x+2*W, 6.5*H-H/6)
-        text("min", x+2*W, 6.5*H+H/4)
-    } else {
-        textSize(30*dy)
-        text(JOG@4, x-W/3, 6.5*H-H/6)
-        text(JOG@3, x-W/3, 6.5*H+H/4)
-        textSize(15*dy)
-        text("máx", x-W/3+30*dx, 6.5*H-H/6)
-        text("min", x-W/3+30*dx, 6.5*H+H/4)
-    }
-
-    ;; pontos
-    fill(0)
-    textSize(65*dy)
-    if (CONF_EQUILIBRIO != 0) && (JOGO_JOGS@(1-jog)@0 > (JOG@0*CONF_EQUILIBRIO // 100)) {
-        fill(255,0,0)
-    }
-    text(JOG@0, x+W, 7.5*H)
 }
 
 ;; ----------------------------------------------------------------------------
 ;; MAIN
 ;; ----------------------------------------------------------------------------
 
-;; The radar, as `setup` opens it: the port of the configuration, or the last
-;; one of the list.
+;; The radar: the port of the configuration, or the last one of the system.
 do {
     val porta = os.getenv("FRESCOGO_SERIAL") || (if CONF_SERIAL == "" => serial.last() => CONF_SERIAL)
     if porta != nil {
@@ -1000,32 +445,51 @@ do {
         print("Erro na comunicação com o radar:")
         print(porta || "(nenhuma porta serial)")
     } else {
-        pin f = io.open(RADAR_OUT, "w")     ;; createWriter("radar.txt")
+        pin f = io.open(RADAR_OUT, "w")
     }
 }
-
 conf_pars()
-go_reinicio()
 
+;; The presentations, one after the other: CTRL-R starts a new one, and
+;; CTRL-E a warm-up, at any moment.
 spawn {
-    loop dt on :clock {
-        set MICROS = MICROS + dt
+    var esquenta = false
+    loop {
+        val e = watching :key.dn until ctrl(it, "R", "E") {
+            await Apresentacao(esquenta)
+        }
+        set esquenta = (e.key == "E")
     }
 }
 
-;; As Processing does for a key that is pressed: `key`, `keyCode`, the
-;; handler, and then ESC closes the program.
+;; The keys that are valid at any moment.
 spawn {
     loop e on :key.dn {
-        set key     = key_de(e)
-        set keyCode = e.key
-        keyPressed(e)
-        if key == ESC {
-            exit()
+        if e.ctrl {
+            match e.key {
+                "A" => {                                    ;; the automatic mode
+                    set RADAR_AUTO = !RADAR_AUTO
+                    set RADAR_AUTO_INICIO = NOW
+                }
+                "I" => {                                    ;; the athletes change sides
+                    set INV = !INV
+                    set ZER = 1 - ZER
+                    set ONE = 1 - ONE
+                }
+                "-" => set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL - 1
+                "=" => set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL + 1
+                "Q" => pico.quit()
+            }
+            jogo_calc()
         }
     }
 }
 
+;; A frame: the radar reads, the conditions over the time are checked, and
+;; then the score and the screen.
 loop on :draw {
-    draw()
+    emit :radar.vez
+    emit :quadro
+    jogo_calc()
+    draw_draw()
 }

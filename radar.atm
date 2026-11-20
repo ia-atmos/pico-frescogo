@@ -1,0 +1,133 @@
+;; The radar: the packets of the serial line, and the filter that turns
+;; them into the speeds of the hits (`radar_be` of the original, as it is).
+;;
+;; `radar()` reads one packet, waiting for it, and evaluates to:
+;;      -1: an error, or a doubt
+;;       0: nothing detected
+;;      >0: the speed of a ball that goes away, in km/h
+;;      <0: the speed of a ball that comes
+
+val RADAR_OUT = os.getenv("FRESCOGO_RADAR") || "radar.txt"      ;; the log
+
+;; `RADAR_OUT.println(msg)` and `flush`.
+func radar_out (msg) {
+    pin f = io.open(RADAR_OUT, "a")
+    io.write(f, msg, "\n")
+}
+
+func radar_clear () {
+    serial.clear(RADAR)
+}
+
+val RADAR_MOCK_SPEED = 500
+var radar_mock_old = 0
+
+func radar_mock () {
+    val dt = NOW - radar_mock_old
+    if dt > RADAR_MOCK_SPEED {
+        set radar_mock_old = NOW
+        if (math.random() * 4) <= 2 {
+            val vel = math.floor(30 + math.random()*(CONF_VEL_MAX-30))
+            return if math.floor(math.random()*5) >= 2 => vel => -vel
+        }
+    }
+    0
+}
+
+var BUF_I = 0
+pin BUF = [ [0,0],[0,0],[0,0],[0,0],[0,0],      ;; RADAR_REPS_MAX = 10
+            [0,0],[0,0],[0,0],[0,0],[0,0] ]
+
+val _VEL = 0
+val _DIR = 1
+val _NOW = 2
+
+;;;
+75 km/h = 20.8 m/s
+20.8 m - 1000 ms
+15.0 m -  721 ms
+700ms sem repeticao é seguro
+;;;
+pin LAST = [ 0,-1,0 ]   ;; vel, dir, ms
+
+func four (s, idx) {
+    (s@(idx+0) - 48) * 1000 +
+    (s@(idx+1) - 48) *  100 +
+    (s@(idx+2) - 48) *   10 +
+    (s@(idx+3) - 48) *    1
+}
+
+;; -1: erro ou duvida
+;; =0: nada detectado
+;; >0: velocidade se distanciando
+;; <0: velocidade se aproximando
+
+func radar_be () {
+    ;; aproximadamente 40/50 reads/sec (20/25 ms/read)
+    loop {
+        val n = serial.byte(RADAR)
+        until n == 0x88         ;; espera o primeiro byte do pacote
+    }
+
+    val s = serial.bytes(RADAR, 22)     ;; espera ter o tamanho do pacote
+
+    var dir = (s@7 >> 1) & 0x01         ;; 0=out, 1=in
+    var vel = four(s,8)
+    if vel == 0 {
+        set dir = -1                    ;; -1=none
+    }
+
+    val sdir = if dir == 0 => "->" => (if dir == 1 => "<-" => "--")
+    val msg = "[" ++ nf(millis() // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3)
+
+    if vel != 0 {
+        radar_out(msg)
+    }
+
+    set BUF@BUF_I@_VEL = vel
+    set BUF@BUF_I@_DIR = dir
+    val I = BUF_I
+    set BUF_I = (BUF_I + 1) % RADAR_REPS
+
+    ;; aceito somente se N velocidades na mesma direcao
+    loop i in RADAR_REPS {
+        set vel = max(vel, BUF@i@_VEL)
+        if BUF@i@_DIR != BUF@0@_DIR {
+            return -1       ;; falhou na direcao
+        }
+    }
+
+    ;; duvida se mesma dir em menos de 700ms
+    val now = millis()
+    if (dir != LAST@_DIR) && (now < (LAST@_NOW + RADAR_IGUAL)) {
+        return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
+    }
+    if (dir == LAST@_DIR) && (now < (LAST@_NOW + RADAR_OPOSI)) {
+        return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
+    }
+
+    if (vel != 0) || (LAST@_VEL != 0) {
+        val msg2 = ">>> [" ++ nf(millis() // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3) ++ " <<<"
+        radar_out(msg2)
+        print(msg2)
+    }
+
+    set LAST@_VEL = vel
+    if vel != 0 {
+        set LAST@_DIR = 1-dir   ;; negate current dir (only accept opposite next)
+        set LAST@_NOW = now
+    }
+
+    set BUF@I@_DIR = -1     ;; restarts buffer
+
+    set vel = (vel + 5) // 10   ;; round
+    if dir == 1 => -vel => vel
+}
+
+func radar () {
+    if RADAR_MOCK {
+        radar_mock()
+    } else {
+        radar_be()
+    }
+}

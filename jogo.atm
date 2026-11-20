@@ -1,6 +1,6 @@
-;; The configuration and the score of FrescoGO!: one to one with `placar.pde`
-;; of v4.1.0 (the variables of the configuration and of the game, `conf_*`,
-;; `jogo_*`, and the text of the report of `go_termino`).
+;; The configuration and the score of FrescoGO!, as `placar.pde` of v4.1.0
+;; computes them (the variables of the configuration and of the game,
+;; `conf_*`, `jogo_*`, and the text of the report).
 ;;
 ;; It does not depend on pico: `frescogo.atm` includes it, and so does the
 ;; test of the score (`tst/jogo.atm`), which compares it with the oracle.
@@ -49,7 +49,6 @@ var ESTADO_JOGANDO = nil        ;; sacando, jogando
 
 var JOGO_DESCANSO_TOTAL = 0
 var JOGO_DESCANSO_INICIO = 0
-var JOGO_DESCANSO_PLAY = false
 var JOGO_TOTAL = 0
 var JOGO_QUEDAS = 0
 var JOGO_QUEDAS_MANUAL = 0
@@ -57,7 +56,6 @@ var JOGO_TEMPO_INICIO = 0
 var JOGO_TEMPO_PASSADO = 0
 var JOGO_TEMPO_RESTANTE = 0
 var JOGO_TEMPO_RESTANTE_SHOW = 0
-var JOGO_TEMPO_RESTANTE_OLD = 0
 
 pin JOGO_JOGS = [       ;; pts, golpes, med, min, max
     [0,0,0,0,0],
@@ -259,6 +257,26 @@ func jogo_kmh (seq, i) {
             val nxt = seq@(i+1)
             min(CONF_VEL_MAX, 36 * CONF_DISTANCIA // (nxt@0 - cur@0))
         }
+    }
+}
+
+;; The rest that is left, in seconds: what the athletes took to serve, beyond
+;; 5 seconds each time, is taken from `descanso`. Negative when it ran out.
+func descanso_resta () {
+    var ms = JOGO_DESCANSO_TOTAL
+    if (ESTADO == "jogando") && (ESTADO_JOGANDO == "sacando") {
+        set ms = ms + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
+    }
+    CONF_DESCANSO - (ms // 1000)
+}
+
+;; A number of hundredths as `float(n)/100` is written by Java.
+func f100 (n) {
+    val d = n % 100
+    (n // 100) ++ "." ++ ifs {
+        d == 0      => "0"
+        d % 10 == 0 => d // 10
+        else        => nf(d,2)
     }
 }
 
