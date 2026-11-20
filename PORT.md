@@ -10,8 +10,14 @@ of the author of FrescoGO! and of Atmos.
 **The reference is v4.1.0**, the version in real use: the source that comes
 in its release package
 (<https://github.com/frescogo/frescogo/releases/tag/v4.1.0>), kept here as
-`placar/placar.pde`. The port is first one to one with it, exact, and only
-then rewritten for expressiveness. The rule is that of the readme of
+`placar/placar.pde`.
+
+There are two versions. The branch **`fidelity`** has the port that is one
+to one with the original, function by function. **`master`** has the same
+program written for Atmos: the flow of a presentation is a hierarchy of
+tasks, each state is a place in the code, and the screen and the radar are
+separate from it. Both are checked against the original itself, run over
+the same scripted keys. The rule is that of the readme of
 `frescogo/frescogo` at the tag `v4.1.0`.
 
 `README.md` and `README-v5.3.0` describe later versions (5.x), which are
@@ -21,7 +27,9 @@ not the reference.
 
 | Path | What |
 |------|------|
-| `frescogo.atm` | The port: the screen, the keys, the flow |
+| `frescogo.atm` | The program: the flow of a presentation as tasks, the keys, the sounds |
+| `tela.atm` | The screen: the drawing of the original, which only reads the state |
+| `radar.atm` | The radar: the packets and the filter of the readings |
 | `proc.atm` | The drawing of Processing that the sketch uses (fill, stroke, text, images), over pico |
 | `serial.atm` | The serial line of the radar, over POSIX |
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |

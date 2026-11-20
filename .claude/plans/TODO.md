@@ -31,7 +31,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #11 | F4: the screen (`draw_draw` of v4.1.0), against the screen of the original | work | done on 2026-11-19: `proc.atm` has the drawing of Processing over pico, and the drawing code is ported line by line. 10 screens of 6 states are compared with the original at the same frames (`tst/telas.sh`): mean difference of 2.5 to 3.1 in 255, which is the smoothing of the text; no difference of layout seen | B.5 |
 | #12 | F5: the radar | work | done on 2026-11-19: `serial.atm` (the line over POSIX: the list of ports, open at 9600 baud, a read that blocks as in v4.1.0), `radar_be` one to one. Three scripted radars (files of packets, read by the port and by the original: `tst/radar.py`) give identical sounds, accepted readings, reports and `radar.txt`, with the automatic falls and the limit of falls. The real line was tried over a pseudo-terminal at the pace of the radar (`tst/radar-pty.py`). The real device is for the author (`#13`) | B.6 |
 | #13 | F6: the remaining keys, the launcher, a full presentation by the author with the device | work | not started | B.7 |
-| #14 | F7: the same program written for expressiveness | work | after fidelity | B.8 |
+| #14 | F7: the same program written for expressiveness | work | in course since 2026-11-20, on `master`; the branch `fidelity` keeps the port that is one to one. First step done: the flow is a hierarchy of tasks (see the section below). Next: the data of the game as named tables, and the screen | B.8 |
 | #15 | Design a second environment (`env-posix`) from the case of the serial line | work, with the author | not started | B.9 |
 | #16 | In the original (v4.1.0), two hits by key in the same frame have the same time, and `jogo_kmh` divides by zero. Confirmed by running the original: `ArithmeticException` in `keyPressed`. The port ends with the same error | defect of the original | reported on 2026-11-19 | |
 | #17 | In v4.1.0 the automatic mode (`CTRL-A`) only restarts its 3.5 s with a reading of the radar: with the keyboard, the fall comes 3.5 s after `CTRL-A`, and then at the first hit of each sequence. The port does the same | remark | reported on 2026-11-19 | |
@@ -39,12 +39,53 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #19 | The text of pico: accents and smoothing | work | done on 2026-11-20: pico draws UTF-8 and has `smooth` in the pencil (decided by the author in `env-pico#5`), which the port turns on. With the borders and the ellipses on the pixels that the original uses, the mean difference of the screens is 1.3 to 1.9 in 255 (it was 2.5 to 3.1), and the limit of `tst/telas.sh` is 2.5. The texts are within 1 pixel of the original | |
 | #20 | With `serial = ""`, the original takes the last serial port of the system, and the port does the same. On a machine with a port and no radar (here, `/dev/ttyS0`), both open it, show the radar as connected, and stop at the first serve, waiting for a packet. To run with no radar, the configuration must name a port that does not exist | remark | reported on 2026-11-19 | |
 
+## The expressive version (#14)
+
+`master` since 2026-11-20. The one-to-one port stays in the branch
+`fidelity` (`c69eead`).
+
+What changed in the code:
+
+- `frescogo.atm`: the flow is `Apresentacao` > `Jogo` > `Ocioso` (> `Nome`)
+  and `Sequencia`, tasks that are awaited in sequence; a state is a place in
+  the code, and what is only valid in a state lives in it (the reader of the
+  radar and the arrows of the hits in `Sequencia`, the typing in `Nome`).
+  `watching` gives the keys that are valid over a whole level (CTRL-R and
+  CTRL-E over a presentation, CTRL-S over a game), `par :any` the ways a
+  sequence ends, and the second after a fall is `await 1s`.
+- No `ESTADO` machine, `keyPressed` or `draw` with the cases of each state.
+  `ESTADO` remains as what the screen reads.
+- `tela.atm` (the screen, read-only) and `radar.atm` (the filter) are files
+  of their own.
+
+The tests still compare with the original run over the same keys: the 10
+presentations are identical (sounds with their times, reports, csv,
+`radar.txt`), and the 14 screens. For that, the conditions over the time
+are checked once per frame (`await :quadro until ...`), as the original
+does, and not by timers of their own.
+
+What differs from the original, by choice (the intent is kept):
+
+- The second after a fall does not block: the screen goes on, and a key
+  typed meanwhile is handled then (a hit is ignored), not after it.
+  `oracle/Roteiro.java` models the `delay` of the original accordingly: the
+  sketch goes on at the first frame after the second.
+- The keys are those of pico, with none of what Java does with CTRL (CTRL-H
+  as BACKSPACE, CTRL-J and CTRL-M as ENTER, CTRL-ESC to quit).
+- A restart or CTRL-S while a name is typed ends the typing (the original
+  leaves its cursor on the screen).
+- The time is the clock of the frames, not the time of the machine.
+
+Still as in the original: `#16` (two hits in one frame divide by zero),
+`#17`, `#18`, `#20`.
+
 ## Decided by the author
 
 | Date | Decision |
 |------|----------|
 | 2026-11-16 | The serial port: option A. A small library of the port, natives over POSIX (`open`, `termios`, a read that does not block), polled by a task once per frame, as the original does in `draw`. No new environment for now |
 | 2026-11-16 | Packages: the session may install whatever it needs in the container |
+| 2026-11-20 | Start `#14` (the expressive version) on `master`, as far as it goes with no questions; the one-to-one port is marked as the branch `fidelity` |
 | 2026-11-19 | **The reference is v4.1.0** (`frescogo-v4.1.0-win64.zip`), exact; the rule of 6 minutes only at the very end. Windows left out for now. The original may be run for the oracle of the screen |
 | 2026-11-18 | The configuration becomes a table of Atmos with comments, `data/conf.atm`, read with `X.load` (no JSON) |
 | 2026-11-18 | (no decision needed) The sounds: pico plays the 15 files as they are, the MP3 included |
