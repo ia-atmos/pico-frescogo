@@ -47,16 +47,16 @@ func draw_draw () {
     draw_logo(0*W, IMG1)
     draw_logo(7*W, IMG2)
 
-    draw_nome(0*W, ZER, ESTADO_DIGITANDO==ZER)
-    draw_nome(7*W, ONE, ESTADO_DIGITANDO==ONE)
+    draw_nome(0*W, ZER, NOME == ZER)
+    draw_nome(7*W, ONE, NOME == ONE)
 
     ;; TEMPO
     do {
-        val show = max(0, JOGO_TEMPO_RESTANTE_SHOW)
+        val show = max(0, J.mostra)
         val mins = nf(show // 60, 2)
         val segs = nf(show % 60, 2)
 
-        if ESTADO == "terminado" {
+        if ESTADO == :fim {
             fill(255,0,0)
         } else {
             fill(0)
@@ -68,7 +68,7 @@ func draw_draw () {
         textAlign(CENTER, CENTER)
         text(mins ++ ":" ++ segs, width/2, 1.25*H-10*dy)
 
-        if ESQUENTA {
+        if J.esquenta {
             fill(255,0,0)
             textSize(35*dy)
             textAlign(CENTER, CENTER)
@@ -77,7 +77,7 @@ func draw_draw () {
             val descanso = descanso_resta()
             ifs {
                 descanso < 0          => fill(255,0,0)
-                ESTADO == "terminado" => fill(255)
+                ESTADO == :fim => fill(255)
                 else                  => fill(150,150,150)
             }
             textSize(35*dy)
@@ -92,14 +92,14 @@ func draw_draw () {
     }
 
     ;; PARS / INVERTIDO?
-    if ESTADO == "terminado" {
+    if ESTADO == :fim {
         fill(255)
     } else {
         fill(150,150,150)
     }
     textSize(18*dy)
     textAlign(CENTER, TOP)
-    text("(" ++ CONF_PARS ++ ")", width/2, 0)
+    text("(" ++ conf_pars() ++ ")", width/2, 0)
     if INV {
         text("inv", width/2, 30*dy)
     }
@@ -120,8 +120,8 @@ func draw_draw () {
         text(jogo_quedas(), width/2, height/2-15*dy)
     }
 
-    if ESTADO == "jogando" {
-        val seq = JOGO@#
+    if ESTADO ?? :seq {
+        val seq = J.seqs@#
         var jog = 255
         loop i in (1,2) {
             if #seq < i {
@@ -129,12 +129,12 @@ func draw_draw () {
             }
 
             val golpe = seq@(#seq-i)    ;; millis/jog/kmh
-            if golpe@1 == jog {
+            if golpe.jog == jog {
                 ;; mesmo jogador deu os ultimos dois golpes
             } else {
-                set jog = golpe@1
-                if NOW <= (golpe@0 + GOLPE_DELAY) {
-                    var kmh = golpe@2
+                set jog = golpe.jog
+                if NOW <= (golpe.t + GOLPE_DELAY) {
+                    var kmh = golpe.kmh
                     if kmh == 0 {
                         val xxx = #seq - i - 1
                         if xxx >= 0 {
@@ -153,7 +153,7 @@ func draw_draw () {
                         }
                     }
                 }
-                if NOW <= (golpe@0 + 500) {
+                if NOW <= (golpe.t + 500) {
                     stroke(0,0,255)
                     strokeWeight(10*dy)
                     if jog == ZER {
@@ -171,16 +171,16 @@ func draw_draw () {
         }
     }
 
-    if conf_radar() {
-        if LADO_RADAR == 0 {
+    if (RADAR != nil) {
+        if CONF.lado_radar == 0 {
             image(IMG_RADAR, 20*dx,       4*H)
         } else {
             image(IMG_RADAR, width-20*dx, 4*H)
         }
     }
 
-    if CONF_TRINCA {
-        if LADO_PIVO == 0 {
+    if CONF.trinca {
+        if CONF.lado_pivo == 0 {
             image(IMG_RAQUETE, 4*W-20*dx,       2.5*H)
             image(IMG_RAQUETE, 7*W+20*dx,       2.5*H-10*dy)
             image(IMG_RAQUETE, 7*W+20*dx+10*dx, 2.5*H+10*dy)
@@ -218,8 +218,8 @@ func draw_draw () {
         rect(4*W, 5*H, 3*W, 3*H)
 
         ;; juiz
-        var nome = CONF_NOMES@2
-        if ESTADO_DIGITANDO != 2 {
+        var nome = NOMES@2
+        if NOME != 2 {
             fill(150,150,150)
         } else {
             fill(255,0,0)
@@ -233,33 +233,33 @@ func draw_draw () {
 
         ;; auto
         ifs {
-            ESQUENTA => {
+            J.esquenta => {
                 fill(200, 200, 0)
                 ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
             }
-            RADAR_AUTO => {
+            AUTO => {
                 fill(0, 150, 0)
                 ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
             }
         }
 
         ;; recorde
-        if JOGO_TOTAL >= CONF_RECORDE {
+        if J.total >= CONF.recorde {
             fill(150,150,150)
         } else {
             fill(200,100,100)
         }
         textSize(35*dy)
         textAlign(CENTER, CENTER)
-        text(CONF_RECORDE, width/2, 6*H-15*dy)
-        val w2 = textWidth(CONF_RECORDE)
+        text(CONF.recorde, width/2, 6*H-15*dy)
+        val w2 = textWidth(CONF.recorde)
         image(IMG_TROFEU, width/2-w2/2-25*dx, 6*H-10*dy)
 
         ;; TOTAL
         fill(255)
         textSize(140*dy)
         textAlign(CENTER, CENTER)
-        text(JOGO_TOTAL, width/2, 7*H-15*dy)
+        text(J.total, width/2, 7*H-15*dy)
 
         ;; conta
         val ps = jogo_equ()
@@ -278,7 +278,7 @@ func draw_logo (x, img) {
 }
 
 func draw_nome (x, jog, digitando) {
-    var nome = CONF_NOMES@jog
+    var nome = NOMES@jog
     stroke(0)
     fill(255)
     rect(x, 2*H, 4*W, H)
@@ -298,7 +298,7 @@ func draw_ultima (x, kmh) {
     if kmh == 0 {
         return
     }
-    if kmh >= CONF_VEL_MIN {
+    if kmh >= CONF.minima {
         fill(0)
     } else {
         fill(200,200,200)
@@ -312,7 +312,7 @@ func draw_ultima (x, kmh) {
 }
 
 func draw_lado (isesq, x, jog) {
-    val JOG = JOGO_JOGS@jog
+    val JOG = J.atletas@jog
     noStroke()
     fill(255,255,255)
     rect(x, 5*H, 2*W, 3*H)
@@ -321,13 +321,13 @@ func draw_lado (isesq, x, jog) {
     textAlign(CENTER, CENTER)
     textSize(65*dy)
     val atas = conf_ataques(jog)
-    if (atas > 0) && (JOG@1 >= atas) {      ;; golpes vs limite
+    if (atas > 0) && (JOG.golpes >= atas) {      ;; golpes vs limite
         fill(255,0,0)
     }
-    text(JOG@1, x+W, 5.5*H)                 ;; golpes
+    text(JOG.golpes, x+W, 5.5*H)                 ;; golpes
     fill(150,150,150)
     textSize(20*dy)
-    val w1 = textWidth(JOG@1)               ;; golpes
+    val w1 = textWidth(JOG.golpes)               ;; golpes
     textAlign(TOP, LEFT)
     text("/" ++ conf_ataques(jog), x+W+w1+10*dx, 5.5*H+30*dy)  ;; limite
 
@@ -336,23 +336,23 @@ func draw_lado (isesq, x, jog) {
 
     ;; media
     textSize(65*dy)
-    text(JOG@2 // 100, x+W, 6.5*H)
+    text(JOG.media // 100, x+W, 6.5*H)
     textSize(25*dy)
-    text("." ++ nf(JOG@2 % 100,2), x+W+30*dx, 6.5*H+15*dy)
+    text("." ++ nf(JOG.media % 100,2), x+W+30*dx, 6.5*H+15*dy)
 
     ;; min / max
     fill(150,150,150)
     if isesq {
         textSize(30*dy)
-        text(JOG@4, x+2*W+30*dx, 6.5*H-H/6)
-        text(JOG@3, x+2*W+30*dx, 6.5*H+H/4)
+        text(JOG.max, x+2*W+30*dx, 6.5*H-H/6)
+        text(JOG.min, x+2*W+30*dx, 6.5*H+H/4)
         textSize(15*dy)
         text("máx", x+2*W, 6.5*H-H/6)
         text("min", x+2*W, 6.5*H+H/4)
     } else {
         textSize(30*dy)
-        text(JOG@4, x-W/3, 6.5*H-H/6)
-        text(JOG@3, x-W/3, 6.5*H+H/4)
+        text(JOG.max, x-W/3, 6.5*H-H/6)
+        text(JOG.min, x-W/3, 6.5*H+H/4)
         textSize(15*dy)
         text("máx", x-W/3+30*dx, 6.5*H-H/6)
         text("min", x-W/3+30*dx, 6.5*H+H/4)
@@ -361,8 +361,8 @@ func draw_lado (isesq, x, jog) {
     ;; pontos
     fill(0)
     textSize(65*dy)
-    if (CONF_EQUILIBRIO != 0) && (JOGO_JOGS@(1-jog)@0 > (JOG@0*CONF_EQUILIBRIO // 100)) {
+    if (CONF.equilibrio != 0) && ((J.atletas@(1-jog)).pontos > (JOG.pontos*CONF.equilibrio // 100)) {
         fill(255,0,0)
     }
-    text(JOG@0, x+W, 7.5*H)
+    text(JOG.pontos, x+W, 7.5*H)
 }

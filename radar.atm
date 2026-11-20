@@ -19,23 +19,8 @@ func radar_clear () {
     serial.clear(RADAR)
 }
 
-val RADAR_MOCK_SPEED = 500
-var radar_mock_old = 0
-
-func radar_mock () {
-    val dt = NOW - radar_mock_old
-    if dt > RADAR_MOCK_SPEED {
-        set radar_mock_old = NOW
-        if (math.random() * 4) <= 2 {
-            val vel = math.floor(30 + math.random()*(CONF_VEL_MAX-30))
-            return if math.floor(math.random()*5) >= 2 => vel => -vel
-        }
-    }
-    0
-}
-
 var BUF_I = 0
-pin BUF = [ [0,0],[0,0],[0,0],[0,0],[0,0],      ;; RADAR_REPS_MAX = 10
+pin BUF = [ [0,0],[0,0],[0,0],[0,0],[0,0],      ;; CONF.radar_reps_MAX = 10
             [0,0],[0,0],[0,0],[0,0],[0,0] ]
 
 val _VEL = 0
@@ -62,7 +47,7 @@ func four (s, idx) {
 ;; >0: velocidade se distanciando
 ;; <0: velocidade se aproximando
 
-func radar_be () {
+func radar () {
     ;; aproximadamente 40/50 reads/sec (20/25 ms/read)
     loop {
         val n = serial.byte(RADAR)
@@ -78,7 +63,7 @@ func radar_be () {
     }
 
     val sdir = if dir == 0 => "->" => (if dir == 1 => "<-" => "--")
-    val msg = "[" ++ nf(millis() // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3)
+    val msg = "[" ++ nf(NOW // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3)
 
     if vel != 0 {
         radar_out(msg)
@@ -87,10 +72,10 @@ func radar_be () {
     set BUF@BUF_I@_VEL = vel
     set BUF@BUF_I@_DIR = dir
     val I = BUF_I
-    set BUF_I = (BUF_I + 1) % RADAR_REPS
+    set BUF_I = (BUF_I + 1) % CONF.radar_reps
 
     ;; aceito somente se N velocidades na mesma direcao
-    loop i in RADAR_REPS {
+    loop i in CONF.radar_reps {
         set vel = max(vel, BUF@i@_VEL)
         if BUF@i@_DIR != BUF@0@_DIR {
             return -1       ;; falhou na direcao
@@ -98,16 +83,16 @@ func radar_be () {
     }
 
     ;; duvida se mesma dir em menos de 700ms
-    val now = millis()
-    if (dir != LAST@_DIR) && (now < (LAST@_NOW + RADAR_IGUAL)) {
+    val now = NOW
+    if (dir != LAST@_DIR) && (now < (LAST@_NOW + CONF.radar_igual)) {
         return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
     }
-    if (dir == LAST@_DIR) && (now < (LAST@_NOW + RADAR_OPOSI)) {
+    if (dir == LAST@_DIR) && (now < (LAST@_NOW + CONF.radar_oposi)) {
         return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
     }
 
     if (vel != 0) || (LAST@_VEL != 0) {
-        val msg2 = ">>> [" ++ nf(millis() // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3) ++ " <<<"
+        val msg2 = ">>> [" ++ nf(NOW // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3) ++ " <<<"
         radar_out(msg2)
         print(msg2)
     }
@@ -122,12 +107,4 @@ func radar_be () {
 
     set vel = (vel + 5) // 10   ;; round
     if dir == 1 => -vel => vel
-}
-
-func radar () {
-    if RADAR_MOCK {
-        radar_mock()
-    } else {
-        radar_be()
-    }
 }

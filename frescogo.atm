@@ -38,9 +38,9 @@ static const char* fresco_ts (void) {
 val TRACE = os.getenv("FRESCOGO_TRACE") != nil
 val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
 
-var RADAR_AUTO = false              ;; the automatic mode: falls by silence
-val RADAR_AUTO_TIMEOUT = 3500
-var RADAR_AUTO_INICIO = 0           ;; the time of the last reading
+var AUTO = false             ;; the automatic mode: a fall after a silence
+val AUTO_SILENCIO = 3500     ;; of the radar, of 3.5 seconds
+var AUTO_ULTIMA = 0          ;; since its last reading
 
 val GOLPE_DELAY = 1500
 
@@ -48,7 +48,7 @@ var INV = false                     ;; the athletes changed sides
 var ZER = 0
 var ONE = 1
 
-val CONF = conf_load(os.getenv("FRESCOGO_CONF") || "data/conf.atm")
+conf_load(os.getenv("FRESCOGO_CONF") || "data/conf.atm")
 
 ;; ----------------------------------------------------------------------------
 ;; TIME
@@ -65,10 +65,6 @@ spawn {
         set MICROS = MICROS + dt
         set NOW    = MICROS // 1000
     }
-}
-
-func millis () {
-    NOW
 }
 
 func trace (msg) {
@@ -122,7 +118,7 @@ func som (nome) {
 
 ;; A hit below 50 km/h only sounds with no radar.
 func som_golpe (kmh) {
-    if (kmh < 50) && conf_radar() {
+    if (kmh < 50) && (RADAR != nil) {
         return
     }
     loop _,g in GOLPES {
@@ -171,20 +167,20 @@ func letra (e) {
 
 ;; Discards the last sequence, and the fall that ended it.
 func desfaz () {
-    if #JOGO > 0 {
-        set JOGO_QUEDAS = JOGO_QUEDAS - 1
-        vector.remove(JOGO)
+    if #J.seqs > 0 {
+        set J.quedas = J.quedas - 1
+        vector.remove(J.seqs)
         som(:desfaz)
     }
 }
 
 ;; A name, typed until ENTER.
-task Nome (idx, campo) {
-    set ESTADO = "digitando"
-    set ESTADO_DIGITANDO = idx
-    set CONF_NOMES@idx = ""
+task Nome (idx) {
+    set ESTADO = :nome
+    set NOME   = idx
+    set NOMES@idx = ""
     defer {
-        set ESTADO_DIGITANDO = 255
+        set NOME = nil
     }
     loop {
         val e = await :key.dn
@@ -192,30 +188,29 @@ task Nome (idx, campo) {
         ifs {
             (e.key == "Return") || (e.key == "Keypad Enter") => break
             (e.key == "Backspace") && (!e.ctrl) => {
-                val nome = CONF_NOMES@idx
-                set CONF_NOMES@idx = string.sub(nome, 0, #nome-2)
+                val nome = NOMES@idx
+                set NOMES@idx = string.sub(nome, 0, #nome-2)
             }
             c != nil => {
-                set CONF_NOMES@idx = CONF_NOMES@idx ++ c
+                set NOMES@idx = NOMES@idx ++ c
             }
         }
     }
-    set CONF@campo = CONF_NOMES@idx
 }
 
 ;; Between sequences: until the referee serves.
 task Ocioso () {
     loop {
-        set ESTADO = "ocioso"
+        set ESTADO = :ocioso
         val e = await :key.dn until it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"])
         match e.key {
             "Backspace" => {
                 desfaz()
                 jogo_calc()
             }
-            "1"  => await Nome(0, "atleta1")
-            "2"  => await Nome(1, "atleta2")
-            "0"  => await Nome(2, "arbitro")
+            "1"  => await Nome(0)
+            "2"  => await Nome(1)
+            "0"  => await Nome(2)
             else => break
         }
     }
@@ -223,7 +218,7 @@ task Ocioso () {
 
 ;; A hit, of the keyboard or of the radar, in the sequence that goes on.
 func golpe (seq, g) {
-    vector.insert(seq, [NOW, g.jog, g.kmh])
+    vector.insert(seq, [t=NOW, jog=g.jog, kmh=g.kmh])
     if g.radar {
         som_golpe(g.kmh)
     } else {
@@ -237,16 +232,12 @@ func golpe (seq, g) {
 ;; ball fell), `:tempo` (the time is over), or `:desfeita` (the referee
 ;; undid the serve).
 task Sequencia () {
-    set ESTADO = "jogando"
-    set ESTADO_JOGANDO = "sacando"
-    set JOGO_DESCANSO_INICIO = NOW
-    val seq = vector.insert(JOGO, [])
+    set ESTADO  = :seq.saque
+    set J.saque = NOW
+    val seq = vector.insert(J.seqs, [])
     som(:saque)
     if RADAR != nil {
         radar_clear()
-    }
-    if ESQUENTA {
-        set ESQUENTA_INICIO = NOW
     }
     jogo_calc()
 
@@ -268,20 +259,20 @@ task Sequencia () {
         loop on :radar.vez {
             val kmh = radar()
             if math.abs(kmh) > 1 {
-                emit :golpe [jog=(if kmh > 0 => LADO_RADAR => (1-LADO_RADAR)), kmh=math.abs(kmh), radar=true]
+                emit :golpe [jog=(if kmh > 0 => CONF.lado_radar => (1-CONF.lado_radar)), kmh=math.abs(kmh), radar=true]
             }
-            if RADAR_AUTO && (kmh != 0) {
-                set RADAR_AUTO_INICIO = NOW     ;; any reading that is not silence
+            if AUTO && (kmh != 0) {
+                set AUTO_ULTIMA = NOW     ;; any reading that is not silence
             }
         }
     }
 
     par :any {
         ;; the referee marks the fall (a warm-up has no falls)
-        await :key.dn until (!ESQUENTA) && ctrl(it, "Down", "J")
+        await :key.dn until (!J.esquenta) && ctrl(it, "Down", "J")
         :queda
     } with {
-        await :quadro until JOGO_TEMPO_RESTANTE <= 0
+        await :quadro until J.restante <= 0
         :tempo
     } with {
         ;; THE SERVE: until the first hit, which the radar only takes with
@@ -290,18 +281,18 @@ task Sequencia () {
             await :key.dn until ctrl(it, "Backspace")
             :desfeita
         } with {
-            await :golpe until (!it.radar) || (it.kmh >= CONF_SAQUE)
+            await :golpe until (!it.radar) || (it.kmh >= CONF.saque)
         }
         if g == :desfeita {
-            set ESTADO = "ocioso"
-            vector.remove(JOGO)     ;; this sequence, and the one before it
+            set ESTADO = :ocioso
+            vector.remove(J.seqs)     ;; this sequence, and the one before it
             desfaz()
             jogo_calc()
             :desfeita
         } else {
             ;; what the serve took beyond 5 seconds comes out of the rest
-            set JOGO_DESCANSO_TOTAL = JOGO_DESCANSO_TOTAL + max(0, NOW-JOGO_DESCANSO_INICIO-5000)
-            set ESTADO_JOGANDO = "jogando"
+            set J.descanso = J.descanso + max(0, NOW-J.saque-5000)
+            set ESTADO = :seq.golpes
             golpe(seq, g)
 
             ;; THE HITS, until the fall
@@ -311,7 +302,7 @@ task Sequencia () {
                 }
             } with {
                 ;; in the automatic mode: 3.5 seconds with no reading
-                await :quadro until (!ESQUENTA) && RADAR_AUTO && (NOW >= (RADAR_AUTO_INICIO + RADAR_AUTO_TIMEOUT))
+                await :quadro until (!J.esquenta) && AUTO && (NOW >= (AUTO_ULTIMA + AUTO_SILENCIO))
                 :queda
             }
         }
@@ -332,15 +323,15 @@ task Jogo () {
         until fim == :tempo
 
         if fim == :queda {
-            set ESTADO = "ocioso"
-            set JOGO_QUEDAS = JOGO_QUEDAS + 1
+            set ESTADO = :ocioso
+            set J.quedas = J.quedas + 1
             jogo_calc()
             if jogo_quedas() >= conf_aborta() {
                 await 1s
                 break
             }
             som(:queda)
-            if RADAR_AUTO {
+            if AUTO {
                 await 1s
                 set direto = true
             }
@@ -351,21 +342,21 @@ task Jogo () {
 ;; The end of a presentation: the screen, and then its picture, the report,
 ;; and a line of `resultados.csv` (not for a warm-up).
 func termina () {
-    set ESTADO = "terminado"
+    set ESTADO = :fim
     som(:fim)
-    if JOGO_TOTAL > CONF_RECORDE {
-        set CONF_RECORDE = JOGO_TOTAL
+    if J.total > CONF.recorde {
+        set CONF.recorde = J.total
     }
     jogo_calc()
     draw_draw()
 
-    if ESQUENTA {
+    if J.esquenta {
         return
     }
 
     val ts = os.getenv("FRESCOGO_TS") || `:string fresco_ts()`
     `mkdir(A_STR_OF($REL)->s, 0777);`
-    val nome = REL ++ "/frescogo-" ++ ts ++ "-" ++ CONF_NOMES@0 ++ "-" ++ CONF_NOMES@1
+    val nome = REL ++ "/frescogo-" ++ ts ++ "-" ++ NOMES@0 ++ "-" ++ NOMES@1
 
     pico.output.screenshot(pico.layer.window, nome ++ "-placar.png")
 
@@ -381,39 +372,32 @@ func termina () {
             pico.quit()
             return
         }
-        val J0 = JOGO_JOGS@0
-        val J1 = JOGO_JOGS@1
-        io.write(f,
-            ts ++ " ; " ++ JOGO_TOTAL ++ " ; " ++ jogo_quedas() ++ " ; " ++ (JOGO_DESCANSO_TOTAL // 1000) ++ " ; " ++
-            CONF_NOMES@0 ++ " ; " ++ J0@0 ++ " ; " ++ J0@1 ++ " ; " ++ f100(J0@2) ++ " ; " ++
-            CONF_NOMES@1 ++ " ; " ++ J1@0 ++ " ; " ++ J1@1 ++ " ; " ++ f100(J1@2) ++ " ; " ++
-            "\n"
-        )
+        io.write(f, jogo_csv(ts))
     }
 }
 
 ;; A presentation, or a warm-up (the time runs, and there are no falls).
 task Apresentacao (esquenta) {
-    set ESQUENTA = esquenta
-    vector.clear(JOGO)
-    set JOGO_DESCANSO_TOTAL     = 0
-    set JOGO_QUEDAS             = 0
-    set JOGO_QUEDAS_MANUAL      = 0
-    set JOGO_TEMPO_INICIO       = NOW
-    set ESTADO = "ocioso"
+    set J.esquenta = esquenta
+    set J.descanso = 0
+    set J.quedas   = 0
+    set J.manual   = 0
+    set J.inicio   = NOW
+    vector.clear(J.seqs)
+    set ESTADO = :ocioso
     som(:reinicio)
 
     ;; the warnings: 30 seconds left, each time a sequence crosses them, and
     ;; the rest that ran out
     spawn {
         loop {
-            await :quadro until (ESTADO == "jogando") && (JOGO_TEMPO_RESTANTE >  30)
-            await :quadro until (ESTADO == "jogando") && (JOGO_TEMPO_RESTANTE <= 30)
+            await :quadro until (ESTADO ?? :seq) && (J.restante >  30)
+            await :quadro until (ESTADO ?? :seq) && (J.restante <= 30)
             som(:aviso)
         }
     }
     spawn {
-        if !ESQUENTA {
+        if !J.esquenta {
             await :quadro until descanso_resta() < 0
             som(:aviso)
         }
@@ -437,7 +421,7 @@ task Apresentacao (esquenta) {
 
 ;; The radar: the port of the configuration, or the last one of the system.
 do {
-    val porta = os.getenv("FRESCOGO_SERIAL") || (if CONF_SERIAL == "" => serial.last() => CONF_SERIAL)
+    val porta = os.getenv("FRESCOGO_SERIAL") || (if CONF.serial == "" => serial.last() => CONF.serial)
     if porta != nil {
         set RADAR = serial.open(porta)
     }
@@ -448,8 +432,6 @@ do {
         pin f = io.open(RADAR_OUT, "w")
     }
 }
-conf_pars()
-
 ;; The presentations, one after the other: CTRL-R starts a new one, and
 ;; CTRL-E a warm-up, at any moment.
 spawn {
@@ -468,16 +450,16 @@ spawn {
         if e.ctrl {
             match e.key {
                 "A" => {                                    ;; the automatic mode
-                    set RADAR_AUTO = !RADAR_AUTO
-                    set RADAR_AUTO_INICIO = NOW
+                    set AUTO = !AUTO
+                    set AUTO_ULTIMA = NOW
                 }
                 "I" => {                                    ;; the athletes change sides
                     set INV = !INV
                     set ZER = 1 - ZER
                     set ONE = 1 - ONE
                 }
-                "-" => set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL - 1
-                "=" => set JOGO_QUEDAS_MANUAL = JOGO_QUEDAS_MANUAL + 1
+                "-" => set J.manual = J.manual - 1
+                "=" => set J.manual = J.manual + 1
                 "Q" => pico.quit()
             }
             jogo_calc()
