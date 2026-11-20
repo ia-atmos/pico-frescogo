@@ -4,14 +4,15 @@
 # screen of THE ORIGINAL at the same frame (`tst/telas/orig/`, written by
 # `oracle/orig.sh <package> telas`).
 #
-# The two are not equal pixel by pixel: the text of pico has no smoothing,
-# and its sizes are whole pixels. A screen passes if the mean difference of
+# The two are not equal pixel by pixel: the smoothing of the edges, the
+# scaling of the images, and the sizes of the text (whole pixels in pico)
+# differ. Today the differences are of 1.3 to 1.9. A screen passes if the mean difference of
 # its pixels (0 to 255) is at most LIMITE.
 #
 #   tst/telas.sh            checks
 #   tst/telas.sh <dir>      also keeps the screenshots of the port in <dir>
 
-LIMITE=4.0
+LIMITE=2.5
 
 cd "$(dirname "$0")/.." || exit 1
 ATMOS=.deps/env-pico/atmos-pico
