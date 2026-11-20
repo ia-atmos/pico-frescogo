@@ -83,7 +83,7 @@ for i in range(4):
     r.troca(r.r.randint(8,14), dir=i%2)
     r.nada(260)                         # 3.5 s (219 frames), and more
 k.wait(r.n + 60)
-r.save("08-radar-auto"); k.save("08-radar-auto", extra=100)
+r.save("08-radar-auto"); k.save("08-radar-auto", extra=260)
 
 # 09: what the filter refuses, with the radar on the right side
 conf("09-radar-ruido", lado_radar=2, radar_reps=4)

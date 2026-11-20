@@ -8,22 +8,22 @@
 [003296] snd peteleco.mp3
 [003584] snd fall.wav
 [004584] snd start.wav
-[006792] snd peteleco.mp3
-[006808] snd fall.wav
-[007808] snd start.wav
-[009232] snd peteleco.mp3
-[009248] snd fall.wav
-[010248] snd start.wav
-[013192] snd peteleco.mp3
-[013832] snd peteleco.mp3
-[014440] snd peteleco.mp3
-[014840] snd agudo.wav
-[015400] snd peteleco.mp3
-[015944] snd peteleco.mp3
-[016536] snd peteleco.mp3
-[017176] snd peteleco.mp3
-[017656] snd fall.wav
-[017736] snd queda2.wav
+[005792] snd peteleco.mp3
+[005808] snd fall.wav
+[006808] snd start.wav
+[007232] snd peteleco.mp3
+[007248] snd fall.wav
+[008248] snd start.wav
+[010192] snd peteleco.mp3
+[010832] snd peteleco.mp3
+[011440] snd peteleco.mp3
+[011840] snd agudo.wav
+[012400] snd peteleco.mp3
+[012944] snd peteleco.mp3
+[013536] snd peteleco.mp3
+[014176] snd peteleco.mp3
+[014656] snd fall.wav
+[014736] snd queda2.wav
 === frescogo-TESTE-Atleta 1-Atleta 2.txt
 Data:          TESTE
 Versão:        v4.1.0 / dupla / 750cm / 300s
@@ -58,7 +58,7 @@ SEQUÊNCIA 02
 
 TEMPO   DIR   KMH
 -----   ---   ---
-006792   ->   000
+005792   ->   000
 
 
 SEQUÊNCIA 03
@@ -66,7 +66,7 @@ SEQUÊNCIA 03
 
 TEMPO   DIR   KMH
 -----   ---   ---
-009232   <-   000
+007232   <-   000
 
 
 SEQUÊNCIA 04
@@ -74,14 +74,14 @@ SEQUÊNCIA 04
 
 TEMPO   DIR   KMH
 -----   ---   ---
-013192   <-   042
-013832   ->   044
-014440   <-   067
-014840   ->   048
-015400   <-   049
-015944   ->   045
-016536   <-   042
-017176   ->   000
+010192   <-   042
+010832   ->   044
+011440   <-   067
+011840   ->   048
+012400   <-   049
+012944   ->   045
+013536   <-   042
+014176   ->   000
 
 
 
