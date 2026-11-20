@@ -19,7 +19,6 @@
 ;;                              path that does not exist, for no radar)
 
 include "jogo.atm"
-include "proc.atm"
 include "serial.atm"
 
 ```:prelude
@@ -42,7 +41,6 @@ var AUTO = false             ;; the automatic mode: a fall after a silence
 val AUTO_SILENCIO = 3500     ;; of the radar, of 3.5 seconds
 var AUTO_ULTIMA = 0          ;; since its last reading
 
-val GOLPE_DELAY = 1500
 
 var INV = false                     ;; the athletes changed sides
 var ZER = 0
@@ -348,7 +346,7 @@ func termina () {
         set CONF.recorde = J.total
     }
     jogo_calc()
-    draw_draw()
+    tela()
 
     if J.esquenta {
         return
@@ -474,5 +472,5 @@ loop on :draw {
     emit :radar.vez
     emit :quadro
     jogo_calc()
-    draw_draw()
+    tela()
 }

@@ -1,368 +1,239 @@
-;; The screen of the scoreboard: the window, the images, and the drawing,
-;; which is `draw_draw` of the original, line by line, over the drawing of
-;; Processing (`proc.atm`). It only reads the state of the game.
+;; The screen of the scoreboard: what the original draws, by regions. It
+;; only reads the state of the game (`J`, `ESTADO`, `NOME`, ...).
+;;
+;;      +-----------+---------+-----------+
+;;      |   logo    |  tempo  |   logo    |     0..2
+;;      +-----------+descanso +-----------+
+;;      |   nome    |         |   nome    |     2..3
+;;      +-----------+---------+-----------+
+;;      | última  -->  quedas    última   |     3..5
+;;      +-----------+---------+-----------+
+;;      |  golpes   | árbitro |  golpes   |     5..8
+;;      |  média    | recorde |  média    |
+;;      |  pontos   |  TOTAL  |  pontos   |
+;;      +-----------+---------+-----------+
+;;           4           3          4           (11 columns, 8 rows)
 
-;; The size of the screen, as `fullScreen()` in the original.
+include "desenho.atm"
+
+;; The whole screen, as the original has it.
 pico.open [title="FrescoGO! " ++ VERSAO]
 val width  = pico.get.app().screen.w
 val height = pico.get.app().screen.h
 pico.set.dim ['!', w=width, h=height]
 pico.set.app [fullscreen=true]
 
-val dy = 0.001 * height     ;; 0.001 height
-val dx = 0.001 * width      ;; 0.001 width
-val W  = width  / 11.0
-val H  = height /  8.0
-
-pico.set.expert(true, 60)       ;; the frame rate of Processing
+pico.set.expert(true, 60)
 pico.set.aids(false)            ;; the keys with CTRL are of the scoreboard
 
-pin IMG1         = loadImage(CONF.imagem1)
-pin IMG2         = loadImage(CONF.imagem2)
-pin IMG_SPEED    = loadImage("data/icos/speed-03.png")
-pin IMG_GOLPES   = loadImage("data/icos/raq-03.png")
-pin IMG_BAND     = loadImage("data/icos/flag.png")
-pin IMG_APITO    = loadImage("data/icos/apito-04.png")
-pin IMG_TROFEU   = loadImage("data/icos/trophy-02.png")
-pin IMG_DESCANSO = loadImage("data/icos/timeout-03.png")
-pin IMG_RADAR    = loadImage("data/icos/radar.png")
-pin IMG_RAQUETE  = loadImage("data/icos/raq.png")
+val W  = width  / 11.0          ;; a column
+val H  = height /  8.0          ;; a row
+val dx = 0.001 * width          ;; the sizes are thousandths of the screen
+val dy = 0.001 * height
+val MX = width / 2              ;; the middle
 
-resize(IMG1,         height // 8)
-resize(IMG2,         height // 8)
-resize(IMG_SPEED,    math.floor(45*dy))
-resize(IMG_GOLPES,   math.floor(50*dy))
-resize(IMG_BAND,     math.floor(40*dy))
-resize(IMG_APITO,    math.floor(30*dy))
-resize(IMG_TROFEU,   math.floor(30*dy))
-resize(IMG_DESCANSO, math.floor(25*dy))
-resize(IMG_RADAR,    math.floor(30*dy))
-resize(IMG_RAQUETE,  math.floor(40*dy))
+val CINZA = cinza(150)
 
-textFont("data/LiberationSans-Bold.ttf")
+fonte("data/LiberationSans-Bold.ttf")
 
-func draw_draw () {
-    background(255,255,255)
+pin IMG = [
+    logos    = [ figura(CONF.imagem1, height // 8), figura(CONF.imagem2, height // 8) ],
+    veloc    = figura("data/icos/speed-03.png",   math.floor(45*dy)),
+    golpes   = figura("data/icos/raq-03.png",     math.floor(50*dy)),
+    pontos   = figura("data/icos/flag.png",       math.floor(40*dy)),
+    apito    = figura("data/icos/apito-04.png",   math.floor(30*dy)),
+    trofeu   = figura("data/icos/trophy-02.png",  math.floor(30*dy)),
+    descanso = figura("data/icos/timeout-03.png", math.floor(25*dy)),
+    radar    = figura("data/icos/radar.png",      math.floor(30*dy)),
+    raquete  = figura("data/icos/raq.png",        math.floor(40*dy)),
+]
 
-    draw_logo(0*W, IMG1)
-    draw_logo(7*W, IMG2)
-
-    draw_nome(0*W, ZER, NOME == ZER)
-    draw_nome(7*W, ONE, NOME == ONE)
-
-    ;; TEMPO
-    do {
-        val show = max(0, J.mostra)
-        val mins = nf(show // 60, 2)
-        val segs = nf(show % 60, 2)
-
-        if ESTADO == :fim {
-            fill(255,0,0)
-        } else {
-            fill(0)
-        }
-        rect(4*W, 0, 3*W, 3*H)
-
-        fill(255)
-        textSize(140*dy)
-        textAlign(CENTER, CENTER)
-        text(mins ++ ":" ++ segs, width/2, 1.25*H-10*dy)
-
-        if J.esquenta {
-            fill(255,0,0)
-            textSize(35*dy)
-            textAlign(CENTER, CENTER)
-            text("AQUECIMENTO", width/2, 2.50*H)
-        } else {
-            val descanso = descanso_resta()
-            ifs {
-                descanso < 0          => fill(255,0,0)
-                ESTADO == :fim => fill(255)
-                else                  => fill(150,150,150)
-            }
-            textSize(35*dy)
-            textAlign(CENTER, CENTER)
-            text(math.abs(descanso) ++ " s", width/2, 2.50*H)
-            image(IMG_DESCANSO, width/2-50*dx, 2.50*H)
-            if descanso < 0 {
-                textSize(20*dy)
-                text("(ESGOTADO)", width/2, 2.5*H+30*dy)
-            }
-        }
-    }
-
-    ;; PARS / INVERTIDO?
-    if ESTADO == :fim {
-        fill(255)
+;; The name of an athlete, in blue; in red, with a cursor, while it is typed.
+func tela_nome (x, jog) {
+    caixa(x, 2*H, 4*W, H, BRANCO, PRETO)
+    if NOME == jog {
+        texto(NOMES@jog ++ "_", x+2*W, 2.5*H-10*dy, 90*dy, VERMELHO, :meio)
     } else {
-        fill(150,150,150)
+        texto(NOMES@jog, x+2*W, 2.5*H-10*dy, 90*dy, AZUL, :meio)
     }
-    textSize(18*dy)
-    textAlign(CENTER, TOP)
-    text("(" ++ conf_pars() ++ ")", width/2, 0)
+}
+
+;; The time that is left, the rest, and the parameters. Red at the end.
+func tela_tempo () {
+    val fim   = (ESTADO == :fim)
+    val claro = if fim => BRANCO => CINZA
+
+    caixa(4*W, 0, 3*W, 3*H, (if fim => VERMELHO => PRETO))
+
+    val t = max(0, J.mostra)
+    texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), MX, 1.25*H-10*dy, 140*dy, BRANCO, :meio)
+
+    if J.esquenta {
+        texto("AQUECIMENTO", MX, 2.5*H, 35*dy, VERMELHO, :meio)
+    } else {
+        val resta = descanso_resta()
+        val cor   = if resta < 0 => VERMELHO => claro
+        texto(math.abs(resta) ++ " s", MX, 2.5*H, 35*dy, cor, :meio)
+        poe(IMG.descanso, MX-50*dx, 2.5*H)
+        if resta < 0 {
+            texto("(ESGOTADO)", MX, 2.5*H+30*dy, 20*dy, cor, :meio)
+        }
+    }
+
+    texto("(" ++ conf_pars() ++ ")", MX, 0, 18*dy, claro, :topo)
     if INV {
-        text("inv", width/2, 30*dy)
-    }
-
-    ;; MEIO
-    stroke(0)
-    fill(255)
-    rect(0, 3*H, 11*W, 2*H-1)
-
-    ;; QUEDAS
-    do {
-        fill(255, 0, 0)
-        ellipse(width/2, height/2, 1.5*H, 1.5*H)
-
-        fill(255)
-        textAlign(CENTER, CENTER)
-        textSize(110*dy)
-        text(jogo_quedas(), width/2, height/2-15*dy)
-    }
-
-    if ESTADO ?? :seq {
-        val seq = J.seqs@#
-        var jog = 255
-        loop i in (1,2) {
-            if #seq < i {
-                skip
-            }
-
-            val golpe = seq@(#seq-i)    ;; millis/jog/kmh
-            if golpe.jog == jog {
-                ;; mesmo jogador deu os ultimos dois golpes
-            } else {
-                set jog = golpe.jog
-                if NOW <= (golpe.t + GOLPE_DELAY) {
-                    var kmh = golpe.kmh
-                    if kmh == 0 {
-                        val xxx = #seq - i - 1
-                        if xxx >= 0 {
-                            set kmh = jogo_kmh(seq, #seq-i-1)
-                            if jog == ONE {
-                                draw_ultima(1.5*W, kmh)
-                            } else {
-                                draw_ultima(9.5*W, kmh)
-                            }
-                        }
-                    } else {
-                        if jog == ZER {
-                            draw_ultima(1.5*W, kmh)
-                        } else {
-                            draw_ultima(9.5*W, kmh)
-                        }
-                    }
-                }
-                if NOW <= (golpe.t + 500) {
-                    stroke(0,0,255)
-                    strokeWeight(10*dy)
-                    if jog == ZER {
-                        line(2.5*W, 4*H, 2.5*W+60*dy, 4*H)
-                        line(2.5*W+60*dy, 4*H, 2.5*W+45*dy, 4*H+20*dy)
-                        line(2.5*W+60*dy, 4*H, 2.5*W+45*dy, 4*H-20*dy)
-                    } else {
-                        line(8.5*W, 4*H, 8.5*W-60*dy, 4*H)
-                        line(8.5*W-60*dy, 4*H, 8.5*W-45*dy, 4*H-20*dy)
-                        line(8.5*W-60*dy, 4*H, 8.5*W-45*dy, 4*H+20*dy)
-                    }
-                    strokeWeight(1)
-                }
-            }
-        }
-    }
-
-    if (RADAR != nil) {
-        if CONF.lado_radar == 0 {
-            image(IMG_RADAR, 20*dx,       4*H)
-        } else {
-            image(IMG_RADAR, width-20*dx, 4*H)
-        }
-    }
-
-    if CONF.trinca {
-        if CONF.lado_pivo == 0 {
-            image(IMG_RAQUETE, 4*W-20*dx,       2.5*H)
-            image(IMG_RAQUETE, 7*W+20*dx,       2.5*H-10*dy)
-            image(IMG_RAQUETE, 7*W+20*dx+10*dx, 2.5*H+10*dy)
-        } else {
-            image(IMG_RAQUETE, 4*W-20*dx-10*dx, 2.5*H-10*dy)
-            image(IMG_RAQUETE, 4*W-20*dx,       2.5*H+10*dy)
-            image(IMG_RAQUETE, 7*W+20*dx,       2.5*H)
-        }
-    }
-
-    draw_lado(true,  1.25*W, ZER)
-    draw_lado(false, 7.75*W, ONE)
-
-    textSize(15*dy)
-    fill(150,150,150)
-    loop i in 2 {
-        val off = if i == 0 => 1*W => 10*W
-        noStroke()
-        noFill()
-
-        image(IMG_GOLPES, off, 5.5*H+5*dy)
-
-        image(IMG_SPEED, off, 6.5*H+5*dy)
-        textAlign(CENTER, CENTER)
-        fill(100,100,100)
-        textSize(10*dy)
-        text("km/h", off, 6.5*H+25*dy)
-
-        image(IMG_BAND, off, 7.5*H+10*dy)
-    }
-
-    do {
-        noStroke()
-        fill(0)
-        rect(4*W, 5*H, 3*W, 3*H)
-
-        ;; juiz
-        var nome = NOMES@2
-        if NOME != 2 {
-            fill(150,150,150)
-        } else {
-            fill(255,0,0)
-            set nome = nome ++ "_"
-        }
-        textSize(20*dy)
-        textAlign(CENTER, TOP)
-        text(nome, width/2, 5*H+12*dy)
-        val w1 = textWidth(nome)
-        image(IMG_APITO, width/2-w1/2-15*dx, 5*H+20*dy)
-
-        ;; auto
-        ifs {
-            J.esquenta => {
-                fill(200, 200, 0)
-                ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
-            }
-            AUTO => {
-                fill(0, 150, 0)
-                ellipse(6.5*W, 5.2*H, 20*dy, 20*dy)
-            }
-        }
-
-        ;; recorde
-        if J.total >= CONF.recorde {
-            fill(150,150,150)
-        } else {
-            fill(200,100,100)
-        }
-        textSize(35*dy)
-        textAlign(CENTER, CENTER)
-        text(CONF.recorde, width/2, 6*H-15*dy)
-        val w2 = textWidth(CONF.recorde)
-        image(IMG_TROFEU, width/2-w2/2-25*dx, 6*H-10*dy)
-
-        ;; TOTAL
-        fill(255)
-        textSize(140*dy)
-        textAlign(CENTER, CENTER)
-        text(J.total, width/2, 7*H-15*dy)
-
-        ;; conta
-        val ps = jogo_equ()
-        fill(150,150,150)
-        textSize(15*dy)
-        val conta = "(" ++ ps@0 ++ " + " ++ ps@1 ++ ") - " ++ f100(jogo_quedas_pct()) ++ "%"
-        text(conta, width/2, 7.5*H+20*dy)
+        texto("inv", MX, 30*dy, 18*dy, claro, :topo)
     }
 }
 
-func draw_logo (x, img) {
-    noStroke()
-    fill(255)
-    rect(x, 0, 4*W, 2*H)
-    image(img, x+2*W, H)
-}
-
-func draw_nome (x, jog, digitando) {
-    var nome = NOMES@jog
-    stroke(0)
-    fill(255)
-    rect(x, 2*H, 4*W, H)
-    if digitando {
-        set nome = nome ++ "_"
-        fill(255, 0, 0)
-    } else {
-        noStroke()
-        fill(0,0,255)
-    }
-    textSize(90*dy)
-    textAlign(CENTER, CENTER)
-    text(nome, x+2*W, 2.5*H-10*dy)
-}
-
-func draw_ultima (x, kmh) {
+;; The speed of a hit, at one side: gray if it does not count.
+func tela_ultima (esq, kmh) {
     if kmh == 0 {
         return
     }
-    if kmh >= CONF.minima {
-        fill(0)
-    } else {
-        fill(200,200,200)
-    }
-    textAlign(CENTER, BOTTOM)
-    textSize(120*dy)
-    text(kmh, x, 4*H+45*dy)
-    textAlign(CENTER, TOP)
-    textSize(30*dy)
-    text("km/h", x, 4*H+35*dy)
+    val x   = if esq => 1.5*W => 9.5*W
+    val cor = if kmh >= CONF.minima => PRETO => cinza(200)
+    texto(kmh,    x, 4*H+45*dy, 120*dy, cor, :fundo)
+    texto("km/h", x, 4*H+35*dy,  30*dy, cor, :topo)
 }
 
-func draw_lado (isesq, x, jog) {
-    val JOG = J.atletas@jog
-    noStroke()
-    fill(255,255,255)
-    rect(x, 5*H, 2*W, 3*H)
+;; An arrow from the side of who hit.
+func tela_seta (esq) {
+    val s = if esq => 1 => -1                   ;; it points to the middle
+    val x = (if esq => 2.5*W => 8.5*W) + s*60*dy
+    linha(x - s*60*dy, 4*H, x, 4*H, AZUL, 10*dy)
+    linha(x, 4*H, x - s*15*dy, 4*H+20*dy, AZUL, 10*dy)
+    linha(x, 4*H, x - s*15*dy, 4*H-20*dy, AZUL, 10*dy)
+}
 
-    fill(0)
-    textAlign(CENTER, CENTER)
-    textSize(65*dy)
-    val atas = conf_ataques(jog)
-    if (atas > 0) && (JOG.golpes >= atas) {      ;; golpes vs limite
-        fill(255,0,0)
+;; The middle: the falls, and, in a sequence, the last hit of each athlete:
+;; its speed for 1.5 seconds, and an arrow for half a second.
+func tela_meio () {
+    caixa(0, 3*H, 11*W, 2*H-1, BRANCO, PRETO)
+
+    disco(MX, height/2, 1.5*H, VERMELHO, PRETO)
+    texto(jogo_quedas(), MX, height/2-15*dy, 110*dy, BRANCO, :meio)
+
+    if ESTADO ?? :seq {
+        val seq = J.seqs@#
+        var de = nil
+        loop i in (1,2) {
+            val golpe = seq@(#seq-i)
+            if (golpe == nil) || (golpe.jog == de) {
+                skip            ;; the same athlete gave the last two hits
+            }
+            set de = golpe.jog
+            val esq = (de == ZER)
+            if NOW <= (golpe.t + 1500) {
+                if golpe.kmh != 0 {
+                    tela_ultima(esq, golpe.kmh)
+                } else {
+                    ;; with no radar, a hit tells the speed of the one before
+                    ;; it, of the other athlete
+                    if (#seq-i-1) >= 0 {
+                        tela_ultima(!esq, jogo_kmh(seq, #seq-i-1))
+                    }
+                }
+            }
+            if NOW <= (golpe.t + 500) {
+                tela_seta(esq)
+            }
+        }
     }
-    text(JOG.golpes, x+W, 5.5*H)                 ;; golpes
-    fill(150,150,150)
-    textSize(20*dy)
-    val w1 = textWidth(JOG.golpes)               ;; golpes
-    textAlign(TOP, LEFT)
-    text("/" ++ conf_ataques(jog), x+W+w1+10*dx, 5.5*H+30*dy)  ;; limite
 
-    fill(0)
-    textAlign(CENTER, CENTER)
+    if RADAR != nil {
+        poe(IMG.radar, (if CONF.lado_radar == 0 => 20*dx => (width-20*dx)), 4*H)
+    }
+}
 
-    ;; media
-    textSize(65*dy)
-    text(JOG.media // 100, x+W, 6.5*H)
-    textSize(25*dy)
-    text("." ++ nf(JOG.media % 100,2), x+W+30*dx, 6.5*H+15*dy)
-
-    ;; min / max
-    fill(150,150,150)
-    if isesq {
-        textSize(30*dy)
-        text(JOG.max, x+2*W+30*dx, 6.5*H-H/6)
-        text(JOG.min, x+2*W+30*dx, 6.5*H+H/4)
-        textSize(15*dy)
-        text("máx", x+2*W, 6.5*H-H/6)
-        text("min", x+2*W, 6.5*H+H/4)
+;; In the `trinca` mode: one racket at the side of the pivot, two at the
+;; other.
+func tela_trinca () {
+    val e = 4*W - 20*dx
+    val d = 7*W + 20*dx
+    if CONF.lado_pivo == 0 {
+        poe(IMG.raquete, e,       2.5*H)
+        poe(IMG.raquete, d,       2.5*H-10*dy)
+        poe(IMG.raquete, d+10*dx, 2.5*H+10*dy)
     } else {
-        textSize(30*dy)
-        text(JOG.max, x-W/3, 6.5*H-H/6)
-        text(JOG.min, x-W/3, 6.5*H+H/4)
-        textSize(15*dy)
-        text("máx", x-W/3+30*dx, 6.5*H-H/6)
-        text("min", x-W/3+30*dx, 6.5*H+H/4)
+        poe(IMG.raquete, e-10*dx, 2.5*H-10*dy)
+        poe(IMG.raquete, e,       2.5*H+10*dy)
+        poe(IMG.raquete, d,       2.5*H)
+    }
+}
+
+;; The numbers of an athlete, in a column that starts at `x`: the hits and
+;; their limit, the mean speed with the highest and the lowest at its outer
+;; side, and the points.
+func tela_atleta (esq, x, jog) {
+    val a = J.atletas@jog
+    val m = x + W                           ;; the middle of the column
+
+    val limite = conf_ataques(jog)
+    texto(a.golpes, m, 5.5*H, 65*dy, (if (limite > 0) && (a.golpes >= limite) => VERMELHO => PRETO), :meio)
+    texto("/" ++ limite, m + largura(a.golpes, 20*dy) + 10*dx, 5.5*H+30*dy, 20*dy, CINZA, :esq)
+
+    texto(a.media // 100, m, 6.5*H, 65*dy, PRETO, :meio)
+    texto("." ++ nf(a.media % 100, 2), m+30*dx, 6.5*H+15*dy, 25*dy, PRETO, :meio)
+
+    val xn = if esq => (x + 2*W + 30*dx) => (x - W/3)       ;; the numbers
+    val xr = if esq => (x + 2*W) => (x - W/3 + 30*dx)       ;; and their names
+    texto(a.max, xn, 6.5*H-H/6, 30*dy, CINZA, :meio)
+    texto(a.min, xn, 6.5*H+H/4, 30*dy, CINZA, :meio)
+    texto("máx", xr, 6.5*H-H/6, 15*dy, CINZA, :meio)
+    texto("min", xr, 6.5*H+H/4, 15*dy, CINZA, :meio)
+
+    ;; red while the balance cuts the points of the other athlete
+    val outro = (J.atletas@(1-jog)).pontos
+    val corta = (CONF.equilibrio != 0) && (outro > (a.pontos*CONF.equilibrio // 100))
+    texto(a.pontos, m, 7.5*H, 65*dy, (if corta => VERMELHO => PRETO), :meio)
+
+    ;; what each row is
+    val xi = if esq => 1*W => 10*W
+    poe(IMG.golpes, xi, 5.5*H+5*dy)
+    poe(IMG.veloc,  xi, 6.5*H+5*dy)
+    texto("km/h", xi, 6.5*H+25*dy, 10*dy, cinza(100), :meio)
+    poe(IMG.pontos, xi, 7.5*H+10*dy)
+}
+
+;; The referee, the record, and the total of the presentation.
+func tela_total () {
+    caixa(4*W, 5*H, 3*W, 3*H, PRETO)
+
+    val arbitro = if NOME == 2 => (NOMES@2 ++ "_") => NOMES@2
+    texto(arbitro, MX, 5*H+12*dy, 20*dy, (if NOME == 2 => VERMELHO => CINZA), :topo)
+    poe(IMG.apito, MX - largura(arbitro, 20*dy)/2 - 15*dx, 5*H+20*dy)
+
+    ;; a light: yellow in a warm-up, green in the automatic mode
+    ifs {
+        J.esquenta => disco(6.5*W, 5.2*H, 20*dy, ['!', r=200, g=200, b=0])
+        AUTO       => disco(6.5*W, 5.2*H, 20*dy, ['!', r=0,   g=150, b=0])
     }
 
-    ;; pontos
-    fill(0)
-    textSize(65*dy)
-    if (CONF.equilibrio != 0) && ((J.atletas@(1-jog)).pontos > (JOG.pontos*CONF.equilibrio // 100)) {
-        fill(255,0,0)
+    val batido = J.total >= CONF.recorde
+    texto(CONF.recorde, MX, 6*H-15*dy, 35*dy, (if batido => CINZA => ['!', r=200, g=100, b=100]), :meio)
+    poe(IMG.trofeu, MX - largura(CONF.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
+
+    texto(J.total, MX, 7*H-15*dy, 140*dy, BRANCO, :meio)
+
+    ;; how it is made: the points of each athlete, less the falls
+    val ps = jogo_equ()
+    texto("(" ++ ps@0 ++ " + " ++ ps@1 ++ ") - " ++ f100(jogo_quedas_pct()) ++ "%", MX, 7.5*H+20*dy, 15*dy, CINZA, :meio)
+}
+
+func tela () {
+    fundo(BRANCO)
+
+    poe(IMG.logos@0, 2*W, H)
+    poe(IMG.logos@1, 9*W, H)
+    tela_nome(0*W, ZER)
+    tela_nome(7*W, ONE)
+    tela_tempo()
+    tela_meio()
+    if CONF.trinca {
+        tela_trinca()
     }
-    text(JOG.pontos, x+W, 7.5*H)
+    tela_atleta(true,  1.25*W, ZER)
+    tela_atleta(false, 7.75*W, ONE)
+    tela_total()
 }
