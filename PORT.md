@@ -114,5 +114,4 @@ What only the author can do. Each step says what to look for.
    of the csv. Compare the hits of the report with what was played.
 8. If something differs from what v4.1.0 does with the same radar, the
    branch `fidelity` is the port that is one to one: try the same there
-   (`git checkout fidelity && make frescogo`... it has no `frescogo` target:
-   `make run`), and tell which of the two differs.
+   (`git checkout fidelity && make run`), and tell which of the two differs.
