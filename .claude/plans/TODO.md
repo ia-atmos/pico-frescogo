@@ -31,7 +31,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #11 | F4: the screen (`draw_draw` of v4.1.0), against the screen of the original | work | done on 2026-11-19: `proc.atm` has the drawing of Processing over pico, and the drawing code is ported line by line. 10 screens of 6 states are compared with the original at the same frames (`tst/telas.sh`): mean difference of 2.5 to 3.1 in 255, which is the smoothing of the text; no difference of layout seen | B.5 |
 | #12 | F5: the radar | work | done on 2026-11-19: `serial.atm` (the line over POSIX: the list of ports, open at 9600 baud, a read that blocks as in v4.1.0), `radar_be` one to one. Three scripted radars (files of packets, read by the port and by the original: `tst/radar.py`) give identical sounds, accepted readings, reports and `radar.txt`, with the automatic falls and the limit of falls. The real line was tried over a pseudo-terminal at the pace of the radar (`tst/radar-pty.py`). The real device is for the author (`#13`) | B.6 |
 | #13 | F6: the remaining keys, the launcher, a full presentation by the author with the device | work | not started | B.7 |
-| #14 | F7: the same program written for expressiveness | work | in course since 2026-11-20, on `master`; the branch `fidelity` keeps the port that is one to one. Done so far: the flow as a hierarchy of tasks, and the data as named tables and state tags (see the section below). Next: the screen | B.8 |
+| #14 | F7: the same program written for expressiveness | work | done on `master` (2026-11-20): the flow as a hierarchy of tasks, the data as named tables and state tags, and the screen by regions over drawing primitives with explicit arguments (see the section below). The branch `fidelity` keeps the port that is one to one | B.8 |
 | #15 | Design a second environment (`env-posix`) from the case of the serial line | work, with the author | not started | B.9 |
 | #16 | In the original (v4.1.0), two hits by key in the same frame have the same time, and `jogo_kmh` divides by zero | defect of the original | fixed on `master` on 2026-11-20, by the author's decision: the first of the two hits gets the highest speed that is accepted (`maxima`), which is what one millisecond between them already gives. `fidelity` still ends with the error, as the original | |
 | #17 | In v4.1.0 the automatic mode (`CTRL-A`) only restarts its 3.5 s with a reading of the radar: with the keyboard, the fall comes 3.5 s after `CTRL-A`, and then at the first hit of each sequence. The port does the same | remark | reported on 2026-11-19 | |
@@ -56,8 +56,12 @@ What changed in the code:
   sequence ends, and the second after a fall is `await 1s`.
 - No `keyPressed` or `draw` with the cases of each state. `ESTADO` remains
   as what the screen reads, set where each state starts.
-- `tela.atm` (the screen, read-only) and `radar.atm` (the filter) are files
-  of their own.
+- `tela.atm` is the screen by regions (`tela_tempo`, `tela_meio`,
+  `tela_atleta`, `tela_total`), a function of the state, over `desenho.atm`:
+  boxes, discs, lines, text, and images with all they need as arguments.
+  The emulation of the state of Processing (`proc.atm`: fill, stroke,
+  alignment, size) is gone. The 14 screens are the same, byte by byte, as
+  before the rewrite. `radar.atm` (the filter) is a file of its own.
 - `jogo.atm`: the game is one table, `J` (`J.quedas`, `J.seqs`, `J.atletas`),
   a hit is `[t=, jog=, kmh=]`, an athlete `[pontos=, golpes=, media=, min=,
   max=]`, and the configuration is the table that is read (`CONF.tempo`),

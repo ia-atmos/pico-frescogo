@@ -28,9 +28,9 @@ not the reference.
 | Path | What |
 |------|------|
 | `frescogo.atm` | The program: the flow of a presentation as tasks, the keys, the sounds |
-| `tela.atm` | The screen: the drawing of the original, which only reads the state |
+| `tela.atm` | The screen, by regions: a function of the state of the game |
 | `radar.atm` | The radar: the packets and the filter of the readings |
-| `proc.atm` | The drawing of Processing that the sketch uses (fill, stroke, text, images), over pico |
+| `desenho.atm` | The drawing that the screen uses, over pico: boxes, discs, lines, text, images |
 | `serial.atm` | The serial line of the radar, over POSIX |
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |
 | `placar/` | The original: `placar.pde` and `conf.json` of v4.1.0, as the reference |
