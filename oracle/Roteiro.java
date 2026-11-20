@@ -11,7 +11,11 @@
 //
 // The names of the keys are those of SDL, as in pico. In a frame, the keys
 // come first, with the time of the previous frame, and then `draw`.
-// `delay` only advances the clock.
+//
+// `delay(ms)` blocks the sketch: here, the time is `ms` later for the rest of
+// the handler that called it, and the sketch then goes on at the first frame
+// from that time on (a frame is 16 ms). The keys of the frames in between
+// wait, as they do in the system, and come before that frame.
 
 import java.util.*;
 import processing.core.*;
@@ -21,7 +25,7 @@ public class Roteiro extends placar {
     int     frames  = 0;
     int     frame   = 0;
     int     clock   = 0;
-    int     offset  = 0;
+    int     salto   = -1;       // the time after a `delay`, or -1
     boolean dentro  = false;
     boolean ctrl, shift, caps;
 
@@ -55,11 +59,20 @@ public class Roteiro extends placar {
     }
 
     public int millis () {
-        return clock + offset;
+        return (salto >= 0) ? salto : clock;
     }
 
     public void delay (int ms) {
-        offset += ms;
+        if (ms > 0) {           // the sketch also calls `delay(0)`
+            salto = millis() + ms;
+        }
+    }
+
+    // The first frame at or after the time of a delay.
+    int depois () {
+        int f = (salto + 15) / 16;
+        salto = -1;
+        return f;
     }
 
     void tecla (boolean dn, String k) {
@@ -99,6 +112,8 @@ public class Roteiro extends placar {
         handleKeyEvent(new KeyEvent(null, millis(), dn ? KeyEvent.PRESS : KeyEvent.RELEASE, mods, key, code));
     }
 
+    int entregue = 0;       // the keys of the frames up to this one were given
+
     public void draw () {
         if (dentro) {           // `go_termino` calls `draw`
             super.draw();
@@ -108,9 +123,14 @@ public class Roteiro extends placar {
         frame++;
         clock = 16 * (frame-1);
         for (String[] k : keys) {
-            if (Integer.parseInt(k[0]) == frame) {
+            int f = Integer.parseInt(k[0]);
+            if (f > entregue && f <= frame) {
                 tecla(k[1].equals("dn"), k[2]);
             }
+        }
+        entregue = frame;
+        if (salto >= 0) {       // a delay in a key: the frame of this `draw`
+            frame = depois();
         }
         clock = 16 * frame;
         super.draw();
@@ -118,6 +138,9 @@ public class Roteiro extends placar {
             if (Integer.parseInt(s[0]) == frame) {
                 saveFrame(s[1]);
             }
+        }
+        if (salto >= 0) {       // a delay in `draw`: the next frame
+            frame = depois() - 1;
         }
         dentro = false;
         if (frame >= frames) {
