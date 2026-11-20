@@ -42,7 +42,8 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 ## The expressive version (#14)
 
 `master` since 2026-11-20. The one-to-one port stays in the branch
-`fidelity` (`c69eead`).
+`fidelity` (marked at `c69eead`; one fix since, `e35fde0`: BACKSPACE did not
+erase a name of one letter, in both versions).
 
 What changed in the code:
 
@@ -81,6 +82,10 @@ What differs from the original, by choice (the intent is kept):
 - A restart or CTRL-S while a name is typed ends the typing (the original
   leaves its cursor on the screen).
 - The time is the clock of the frames, not the time of the machine.
+
+What is left of `#14`, to decide with the author: the screen (`tela.atm` is
+still the drawing of the original, line by line, over `proc.atm`), and
+whether `#16` is fixed here.
 
 Still as in the original: `#16` (two hits in one frame divide by zero),
 `#17`, `#18`, `#20`.
