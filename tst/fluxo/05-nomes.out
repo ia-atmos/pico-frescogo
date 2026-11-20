@@ -1,15 +1,15 @@
 [000000] snd restart.wav
-[001472] snd start.wav
-[001856] snd peteleco.mp3
-[002416] snd peteleco.mp3
-[003056] snd peteleco.mp3
-[003664] snd peteleco.mp3
-[004160] snd peteleco.mp3
-[004624] snd peteleco.mp3
-[005248] snd peteleco.mp3
-[005824] snd peteleco.mp3
-[006336] snd fall.wav
-[006416] snd queda2.wav
+[001616] snd start.wav
+[002000] snd peteleco.mp3
+[002560] snd peteleco.mp3
+[003200] snd peteleco.mp3
+[003808] snd peteleco.mp3
+[004304] snd peteleco.mp3
+[004768] snd peteleco.mp3
+[005392] snd peteleco.mp3
+[005968] snd peteleco.mp3
+[006480] snd fall.wav
+[006560] snd queda2.wav
 === frescogo-TESTE-Ana_-BIa.txt
 Data:          TESTE
 Versão:        v4.1.0 / dupla / 750cm / 300s
@@ -31,14 +31,14 @@ SEQUÊNCIA 01
 
 TEMPO   DIR   KMH
 -----   ---   ---
-001856   <-   048
-002416   ->   042
-003056   ->   044
-003664   <-   054
-004160   ->   058
-004624   <-   043
-005248   ->   046
-005824   <-   000
+002000   <-   048
+002560   ->   042
+003200   ->   044
+003808   <-   054
+004304   ->   058
+004768   <-   043
+005392   ->   046
+005968   <-   000
 
 
 

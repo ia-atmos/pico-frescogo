@@ -189,7 +189,7 @@ task Nome (idx) {
             (e.key == "Return") || (e.key == "Keypad Enter") => break
             (e.key == "Backspace") && (!e.ctrl) => {
                 val nome = NOMES@idx
-                set NOMES@idx = string.sub(nome, 0, #nome-2)
+                set NOMES@idx = if #nome <= 1 => "" => string.sub(nome, 0, #nome-2)
             }
             c != nil => {
                 set NOMES@idx = NOMES@idx ++ c
@@ -432,6 +432,7 @@ do {
         pin f = io.open(RADAR_OUT, "w")
     }
 }
+
 ;; The presentations, one after the other: CTRL-R starts a new one, and
 ;; CTRL-E a warm-up, at any moment.
 spawn {
