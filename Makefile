@@ -14,9 +14,9 @@
 # JDK for the oracle.
 
 LANG_URL := https://github.com/ia-atmos/lang
-LANG_REV := 8c461498d3bbec9d92175cb2926904ccfbe585f6
+LANG_REV := d9e0e314473c6ac54e2c999ca811693044064be3
 PICO_URL := https://github.com/ia-atmos/env-pico
-PICO_REV := 0bba50d4cc3d1615112399b3a23f34dd506cac7a
+PICO_REV := cb9529fe73ed25ccb19c22b8627353652381c6b4
 
 ORIG_URL := https://github.com/frescogo/frescogo/releases/download/v4.1.0/frescogo-v4.1.0-win64.zip
 
