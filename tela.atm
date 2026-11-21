@@ -146,22 +146,6 @@ func tela_meio () {
     }
 }
 
-;; In the `trinca` mode: one racket at the side of the pivot, two at the
-;; other.
-func tela_trinca () {
-    val e = 4*W - 20*dx
-    val d = 7*W + 20*dx
-    if CONF.lado_pivo == 0 {
-        poe(IMG.raquete, e,       2.5*H)
-        poe(IMG.raquete, d,       2.5*H-10*dy)
-        poe(IMG.raquete, d+10*dx, 2.5*H+10*dy)
-    } else {
-        poe(IMG.raquete, e-10*dx, 2.5*H-10*dy)
-        poe(IMG.raquete, e,       2.5*H+10*dy)
-        poe(IMG.raquete, d,       2.5*H)
-    }
-}
-
 ;; The numbers of an athlete, in a column that starts at `x`: the hits and
 ;; their limit, the mean speed with the highest and the lowest at its outer
 ;; side, and the points.
@@ -230,9 +214,6 @@ func tela () {
     tela_nome(7*W, ONE)
     tela_tempo()
     tela_meio()
-    if CONF.trinca {
-        tela_trinca()
-    }
     tela_atleta(true,  1.25*W, ZER)
     tela_atleta(false, 7.75*W, ONE)
     tela_total()

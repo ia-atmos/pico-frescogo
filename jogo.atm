@@ -95,29 +95,20 @@ func f100 (n) {
 ;; THE CONFIGURATION
 ;; ----------------------------------------------------------------------------
 
-;; Reads the table of the configuration. The sides become 0=esq, 1=dir, and
-;; the `trinca` mode has no balance between the athletes.
+;; Reads the table of the configuration. The sides become 0=esq, 1=dir.
 func conf_load (path) {
     set CONF = do {
         pin f = io.open(path)
         X.load(io.read(f, :all))
     }
     set CONF.lado_radar = CONF.lado_radar - 1
-    set CONF.lado_pivo  = CONF.lado_pivo  - 1
     set NOMES@2 = CONF.arbitro
-    conf_trinca()
-}
-
-func conf_trinca () {
-    if CONF.trinca {
-        set CONF.equilibrio = 0
-    }
 }
 
 ;; The parameters of a presentation, as the screen and the report show them.
 func conf_pars () {
     "v" ++ VERSAO ++ " / " ++
-    (if CONF.trinca => "trinca" => "dupla") ++ " / " ++
+    "dupla" ++ " / " ++
     (if RADAR != nil => "radar" => (CONF.distancia ++ "cm")) ++ " / " ++
     CONF.tempo ++ "s"
 }
@@ -126,14 +117,9 @@ func conf_tempo () {
     if J.esquenta => CONF.esquenta => CONF.tempo
 }
 
-;; The hits of an athlete that count, at most: in the `trinca` mode, those of
-;; the pivot do not count.
+;; The hits of an athlete that count, at most.
 func conf_ataques (jog) {
-    ifs {
-        !CONF.trinca          => max(1, conf_tempo() * CONF.ataques // 60 // 2)
-        jog == CONF.lado_pivo => 0
-        else                  => max(1, conf_tempo() * CONF.ataques // 60)
-    }
+    max(1, conf_tempo() * CONF.ataques // 60 // 2)
 }
 
 ;; The falls that cost nothing: one per minute.

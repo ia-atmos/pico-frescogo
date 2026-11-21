@@ -22,7 +22,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #2 | The original (v5.3.0) divides by zero in the `trinca` mode | defect of v5.3.0 | closed on 2026-11-19: the author allowed removing it; v4.1.0, the reference, has no such defect, and its `trinca` is kept one to one | C.1 |
 | #3 | The rule of the readme against the code of v5.3.0 | remark | closed on 2026-11-19: the author said that rule is wrong, and the reference is v4.1.0. The readme of `frescogo/frescogo` at `v4.1.0` and the code of v4.1.0 agree (5 minutes, 150 hits, 30%, 5 falls of truce, 3% per fall, the 20th ends it) | C.3 |
 | #4 | Known differences of the port in the flow | remark | closed on 2026-11-19: `delay(1000)` now blocks as in the original (`SDL_Delay`: the screen stays, and the keys wait in the system), and `millis` is the real time (`pico.get.now`). Only in the tests, with fixed frames, the time is that of the frames and a delay just advances it, as the harness of the original does | C.4 |
-| #5 | Remove the `trinca` mode | work, after fidelity | allowed by the author; not needed for v4.1.0 | B.10 |
+| #5 | Remove the `trinca` mode | done on 2026-11-21, on `master` (the author: "tirar trinca") | the score, the screen, the configuration; the reports still say `dupla`, as v4.1.0, until the version changes. The oracle keeps it (`oracle/tst/05-trinca.txt` tests only the oracle) | B.10 |
 | #6 | Adopt the rule of 6 minutes, with the discount of time per fall | work | **only at the very end** (author, 2026-11-19), after v4.1.0 is exact and working | B.11 |
 | #7 | Windows: the serial line over POSIX leaves it out | decision | closed on 2026-11-19: accepted for now | A.5 |
 | #8 | The oracle: run the original | decision | done on 2026-11-19: the original runs here from the jars of its release package, not changed, with stand-ins for sound and serial (`oracle/Roteiro.java`, `oracle/stub/`, `make orig`). It writes the expected outputs of the tests of the flow, and its screen is the reference for `#11` | A.6 |
@@ -102,6 +102,7 @@ Still as in the original: `#16` (two hits in one frame divide by zero),
 |------|----------|
 | 2026-11-16 | The serial port: option A. A small library of the port, natives over POSIX (`open`, `termios`, a read that does not block), polled by a task once per frame, as the original does in `draw`. No new environment for now |
 | 2026-11-16 | Packages: the session may install whatever it needs in the container |
+| 2026-11-21 | Branch `4.1` = v4.1.0 exact; on `master` the real changes: remove trinca, remove the manual marking (with a key to start the clock), the rule of time |
 | 2026-11-20 | (through `atmos-lang`) Work with no input: do what needs no decision; go on with a recommendation that is reversible and stays in the repository, marked "by the session, to be confirmed" |
 | 2026-11-20 | Fix `#16` and rewrite the screen on `master` ("ambos") |
 | 2026-11-20 | Start `#14` (the expressive version) on `master`, as far as it goes with no questions; the one-to-one port is marked as the branch `fidelity` |

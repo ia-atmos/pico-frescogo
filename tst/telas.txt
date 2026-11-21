@@ -12,6 +12,4 @@
 06-aborta  1826 1820
 07-radar    200 190
 08-radar-auto 400 390
-10-trinca   1090 1085
-10-trinca   400 390
 05-nomes    320 310

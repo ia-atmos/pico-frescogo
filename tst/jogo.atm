@@ -10,12 +10,10 @@ conf_load("data/conf.atm")
 ;; A field of `conf.json`, as the original names it.
 func conf (key, v) {
     ifs {
-        key == "trinca"           => set CONF.trinca = (v == "true")
-        X.in(key, ["lado_radar", "lado_pivo"]) => set CONF@key = tonumber(v) - 1
+        key == "lado_radar"       => set CONF@key = tonumber(v) - 1
         CONF@key == nil           => throw "conf : invalid key : " ++ key
         else                      => set CONF@key = tonumber(v)
     }
-    conf_trinca()
 }
 
 ;; The states, as the original names them (`ESTADO` and `ESTADO_JOGANDO`).
