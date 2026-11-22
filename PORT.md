@@ -12,13 +12,19 @@ in its release package
 (<https://github.com/frescogo/frescogo/releases/tag/v4.1.0>), kept here as
 `placar/placar.pde`.
 
-There are two versions. The branch **`fidelity`** has the port that is one
-to one with the original, function by function. **`master`** has the same
-program written for Atmos: the flow of a presentation is a hierarchy of
-tasks, each state is a place in the code, and the screen and the radar are
-separate from it. Both are checked against the original itself, run over
-the same scripted keys. The rule is that of the readme of
-`frescogo/frescogo` at the tag `v4.1.0`.
+There are three versions:
+
+| Branch | What |
+|--------|------|
+| `fidelity` | The port that is one to one with the original, function by function |
+| `4.1` | The same program written for Atmos: the flow of a presentation is a hierarchy of tasks, each state is a place in the code, and the screen and the radar are separate from it. Exactly v4.1.0 |
+| `master` | `4.1` with the changes of the rule since then (`.claude/plans/TODO.md`): no `trinca` mode (`#5`), no hits by the keyboard and a key of the referee for the clock (`#23`) |
+
+`fidelity` and `4.1` are checked against the original itself, run over the
+same scripted keys, and their rule is that of the readme of
+`frescogo/frescogo` at the tag `v4.1.0`. `master` is checked against the
+oracle of the score, changed with the rule, and against expected outputs of
+its own, checked by hand.
 
 `README.md` and `README-v5.3.0` describe later versions (5.x), which are
 not the reference.
@@ -35,8 +41,8 @@ not the reference.
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |
 | `placar/` | The original: `placar.pde` and `conf.json` of v4.1.0, as the reference |
 | `data/` | The images, fonts, and sounds of v4.1.0, and `conf.atm` |
-| `oracle/` | The oracles. `Oracle.java`: the functions of the score of the original in plain Java, with scripts of hits. `Roteiro.java`: the original itself (the class of the release package, not changed) run with scripted keys and a fixed clock, which writes the expected outputs of the tests of the flow (`make orig`) |
-| `tst/` | The tests: the score against `Oracle.java` (`jogo.sh`), scripted presentations against the original (`fluxo.sh`), and the screen against the screen of the original at the same frames (`telas.sh`), all with no display |
+| `oracle/` | The oracle: the functions of the score of the original in plain Java, with the changes of the rule, and scripts of hits |
+| `tst/` | The tests: the score against the oracle (`jogo.sh`), scripted presentations with scripted radars, whose reports also go back to the oracle (`fluxo.sh`, `radar.py`, `relatorio.py`), and the screen at chosen frames (`telas.sh`), all with no display |
 | `.claude/plans/TODO.md` | What waits for a decision, and what is not done |
 
 ## Build and run
@@ -51,14 +57,16 @@ make test       # needs a JDK and xvfb-run
 ## Operation
 
 The keys of v4.1.0 (the `README.md` of the root describes 5.x, which has
-other keys and holds them for seconds). None is held here.
+other keys and holds them for seconds), with the changes since then: the
+hits are only those of the radar (there are no hits by the keyboard), and
+`CTRL-T` starts the clock. None is held here.
 
 | Key | What |
 |-----|------|
 | `CTRL-R` | A new presentation |
 | `CTRL-E` | A warm-up: the time runs, and there are no falls |
 | `CTRL-↑` or `CTRL-U` | The serve: a sequence starts |
-| `←` `→` | A hit of the athlete at the left or at the right (with no radar) |
+| `CTRL-T` | In a sequence, before the first hit: starts the clock, in spite of the radar (since v4.1.0, `#23`) |
 | `CTRL-↓` or `CTRL-J` | The ball fell |
 | `CTRL-BACKSPACE` | Between sequences, or before the first hit: discards the last sequence and its fall |
 | `CTRL-=` `CTRL--` | One fall more, or less |
@@ -97,9 +105,9 @@ What only the author can do. Each step says what to look for.
 2. Connect the radar, configured as `radar.md` says. Check its port
    (`ls /dev/ttyUSB*`) and that the user may read it (the group `dialout`).
    Leave `serial = ""`, or write the port in `data/conf.atm`.
-3. `./frescogo`. The top of the screen must say `radar` (not `750cm`), and
+3. `./frescogo`. The top of the screen must say `radar` (not `sem radar`), and
    the icon of the radar must be at the side of `lado_radar`. If it says
-   `750cm`, the terminal has `Erro na comunicação com o radar:` and the port
+   `sem radar`, the terminal has `Erro na comunicação com o radar:` and the port
    that was tried.
 4. `CTRL-↑`, and hit a ball towards the radar and away from it. Each hit
    must show its speed at the side of who hit, with its sound, and

@@ -1,0 +1,31 @@
+# #23: the clock of a sequence started by the key of the referee
+radar 1
+inicio 1000
+seq
+crono 3000
+estado jogando jogando
+now 5500
+calc
+hit 6000 0 70
+hit 6700 1 65
+hit 7400 0 80
+now 9000
+calc
+quedas 1
+estado ocioso
+calc
+seq
+crono 12000
+now 14000
+estado jogando jogando
+calc
+quedas 2
+estado ocioso
+calc
+seq
+hit 20000 1 75
+hit 20800 0 60
+hit 21500 1 90
+quedas 3
+calc
+report 2026_11_22_10_00_00

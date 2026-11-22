@@ -125,15 +125,7 @@ func tela_meio () {
             set de = golpe.jog
             val esq = (de == ZER)
             if NOW <= (golpe.t + 1500) {
-                if golpe.kmh != 0 {
-                    tela_ultima(esq, golpe.kmh)
-                } else {
-                    ;; with no radar, a hit tells the speed of the one before
-                    ;; it, of the other athlete
-                    if (#seq-i-1) >= 0 {
-                        tela_ultima(!esq, jogo_kmh(seq, #seq-i-1))
-                    }
-                }
+                tela_ultima(esq, golpe.kmh)
             }
             if NOW <= (golpe.t + 500) {
                 tela_seta(esq)

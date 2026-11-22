@@ -10,10 +10,8 @@ trap 'rm -rf "$BIN"' EXIT
 err=0
 # `tst/jogo/` has what the original does not do: it has no oracle, and its
 # expected outputs were checked by hand
-# The `trinca` mode was removed from the port (`#5`): its scripts test only
-# the oracle.
 for f in oracle/tst/*.txt tst/jogo/*.txt; do
-    case "$f" in *trinca*) continue ;; esac
+    [ -f "$f" ] || continue
     if "$BIN/jogo" < "$f" 2>&1 | cmp -s - "${f%.txt}.out"; then
         echo "ok   $f"
     else

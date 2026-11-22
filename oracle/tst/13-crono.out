@@ -1,0 +1,50 @@
+calc tempo=0,300,298 total=0 equ=0,0 pct=0 aborta=20 jog0=0,0,0,0,0/150 jog1=0,0,0,0,0/150
+calc tempo=4,296,295 total=182 equ=98,84 pct=0 aborta=20 jog0=98,1,7000,70,70/150 jog1=84,1,6500,65,65/150
+calc tempo=4,296,296 total=182 equ=98,84 pct=0 aborta=20 jog0=98,1,7000,70,70/150 jog1=84,1,6500,65,65/150
+calc tempo=4,296,294 total=182 equ=98,84 pct=0 aborta=20 jog0=98,1,7000,70,70/150 jog1=84,1,6500,65,65/150
+calc tempo=4,296,296 total=182 equ=98,84 pct=0 aborta=20 jog0=98,1,7000,70,70/150 jog1=84,1,6500,65,65/150
+calc tempo=5,295,295 total=366 equ=170,196 pct=0 aborta=20 jog0=170,2,6500,60,70/150 jog1=196,2,7000,65,75/150
+Data:          2026_11_22_10_00_00
+Versão:        v4.1.0 / dupla / radar / 300s
+
+Descanso:      0
+Quedas:        3
+
+Atleta 1:      00170 pontos / 002 golpes / 65.00 km/h
+Atleta 2:      00196 pontos / 002 golpes / 70.00 km/h
+
+Parcial:       00366 pontos
+Desequilibrio: 00000 (-)
+Quedas:        00000 (-)
+
+FINAL:         00366 pontos
+
+SEQUÊNCIA 01
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+002000   cronômetro pelo árbitro
+005000   ->   070
+005700   <-   065
+006400   ->   080
+
+
+SEQUÊNCIA 02
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+011000   cronômetro pelo árbitro
+
+
+SEQUÊNCIA 03
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+019000   <-   075
+019800   ->   060
+020500   <-   090
+
+

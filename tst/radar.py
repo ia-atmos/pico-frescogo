@@ -55,12 +55,106 @@ class Keys:
 def conf (name, **kw):
     c = open("data/conf.atm").read()
     c = c.replace("which takes the place of `conf.json` of the original (v4.1.0).", f"here with other values, for the test `{name}`.")
-    o = []
     for k,v in kw.items():
         c,n = re.subn(rf"(\n    {k}\s*= )\S+,", rf"\g<1>{v},", c); assert n == 1
-        o.append(f"conf {k} {v}")
     open(f"tst/fluxo/{name}.conf","w").write(c)
-    open(f"tst/fluxo/{name}.oracle","w").write("\n".join(o)+"\n")
+
+# A sequence: the serve, the packets that `build` adds to the radar, which
+# are read one per frame, and then the key that ends it (or none).
+def seq (k, r, build, fim="Down", saque="Up"):
+    k.ctrl(saque); n0 = r.n
+    build(r)
+    k.wait(r.n - n0)
+    if fim:
+        k.ctrl(fim)
+
+# 01: a presentation: the falls by key (CTRL-DOWN, CTRL-J), the falls added
+# and removed (CTRL-=, CTRL--), the serve by CTRL-U, a sequence undone after
+# its fall (CTRL-BACKSPACE), the sides inverted (CTRL-I), a serve undone,
+# and the end by CTRL-S
+r = Radar(1); k = Keys()
+seq(k, r, lambda r: (r.nada(30), r.troca(24)))
+k.ctrl("="); k.ctrl("="); k.ctrl("-")
+seq(k, r, lambda r: (r.nada(25), r.troca(12, kmh=70)), fim="J", saque="U")
+k.ctrl("Backspace")
+seq(k, r, lambda r: (r.nada(20), r.troca(10, kmh=80)))
+k.ctrl("I")
+seq(k, r, lambda r: (r.nada(20), r.troca(14, kmh=65, dir=1)), fim="Backspace")
+k.ctrl("Down")
+k.ctrl("Up"); k.ctrl("Backspace")
+k.wait(20); k.ctrl("S")
+r.save("01-jogo"); k.save("01-jogo")
+
+# 02: the automatic mode turned on and off (CTRL-A): a fall by 3.5 s of
+# silence, the serve by itself one second later, and a fall by key
+r = Radar(2); k = Keys()
+k.ctrl("A")
+k.ctrl("Up"); n0 = r.n
+r.nada(30); r.troca(8); r.nada(240)     # 3.5 s (219 frames), the fall, 1 s
+r.troca(6, dir=1)
+k.wait(r.n - n0); k.ctrl("A"); n0 = r.n
+r.troca(8); r.nada(300)                 # no fall by silence now
+k.wait(r.n - n0); k.ctrl("Down"); k.ctrl("S")
+r.save("02-auto"); k.save("02-auto")
+
+# 03: the end by the time, in a presentation of one minute
+conf("03-tempo", tempo=60)
+r = Radar(3); k = Keys()
+seq(k, r, lambda r: (r.nada(30), r.troca(30)))
+seq(k, r, lambda r: (r.nada(30), r.troca(30, kmh=75)))
+seq(k, r, lambda r: (r.nada(30), r.troca(80, kmh=70)), fim=None)
+r.save("03-tempo"); k.save("03-tempo", extra=200)
+
+# 04: a warm-up (CTRL-E): the time runs from the serve, and there are no falls
+r = Radar(4); k = Keys()
+k.ctrl("E")
+seq(k, r, lambda r: (r.nada(30), r.troca(40), r.nada(200), r.troca(40, kmh=80)), fim="Down")
+k.wait(3000)
+r.save("04-esquenta"); k.save("04-esquenta")
+
+# 05: the names (CTRL-1, CTRL-2, CTRL-0): shift, caps lock, backspace, and
+# ENTER of the keypad, then a short sequence, and the end
+r = Radar(5); k = Keys()
+def tecla (key, d="dn"):
+    k.k.append((k.f, d, key)); k.f += 3
+k.ctrl("1"); tecla("Left Shift"); tecla("A"); tecla("Left Shift","up"); tecla("N"); tecla("A")
+tecla("Left Shift"); tecla("-"); tecla("X"); tecla("Left Shift","up"); tecla("Backspace"); tecla("Return")
+k.ctrl("2"); tecla("CapsLock"); tecla("B"); tecla("I"); tecla("Left Shift"); tecla("A"); tecla("Left Shift","up")
+tecla("CapsLock"); tecla("Return")
+k.ctrl("0"); tecla("X"); tecla("Backspace"); tecla("Backspace"); tecla("J"); tecla("O"); tecla("S"); tecla("E")
+tecla("Keypad Enter")
+seq(k, r, lambda r: (r.nada(20), r.troca(8)))
+k.ctrl("S"); k.ctrl("Q")
+r.save("05-nomes"); k.save("05-nomes")
+
+# 06: the end by the limit of falls, in a presentation of one minute (4
+# falls), and the rest that runs out (3 seconds)
+conf("06-aborta", tempo=60, descanso=3)
+r = Radar(6); k = Keys()
+for i in range(4):
+    seq(k, r, lambda r: (r.nada(30 + 600*(i%2)), r.troca(10, dir=i%2)))   # 10 s to serve: 5 s of rest
+k.wait(100)
+r.save("06-aborta"); k.save("06-aborta")
+
+# 10: the clock started by the referee (CTRL-T): the radar misses the serve;
+# a sequence with no hit at all; and in the automatic mode, where the silence
+# counts from the key
+r = Radar(10); k = Keys()
+def fraco (r):
+    r.nada(20); r.golpe(35, 0); r.nada(40)          # below the speed of a serve
+k.ctrl("Up"); n0 = r.n; fraco(r)
+k.wait(r.n - n0 - 20); k.ctrl("T"); n0 = r.n
+r.nada(10); r.troca(12, dir=1)
+k.wait(r.n - n0); k.ctrl("Down")
+k.ctrl("Up"); k.wait(40); k.ctrl("T"); k.wait(120); k.ctrl("Down")
+r.nada(170)                                     # read meanwhile
+k.ctrl("A")
+k.ctrl("Up"); n0 = r.n; fraco(r)
+k.wait(r.n - n0 - 20); k.ctrl("T"); n0 = r.n
+r.nada(10); r.troca(6)
+k.wait(r.n - n0 + 300)
+k.ctrl("A"); k.ctrl("Down"); k.ctrl("S")
+r.save("10-crono"); k.save("10-crono")
 
 # 07: two sequences with the radar, the falls by key
 r = Radar(7); k = Keys()
@@ -83,7 +177,7 @@ for i in range(4):
     r.troca(r.r.randint(8,14), dir=i%2)
     r.nada(260)                         # 3.5 s (219 frames), and more
 k.wait(r.n + 60)
-r.save("08-radar-auto"); k.save("08-radar-auto", extra=260)
+r.save("08-radar-auto"); k.save("08-radar-auto", extra=257)
 
 # 09: what the filter refuses, with the radar on the right side
 conf("09-radar-ruido", lado_radar=2, radar_reps=4)

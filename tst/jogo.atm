@@ -69,8 +69,19 @@ loop {
         }
         "now"      => set NOW = tonumber(w@1)
         "nome"     => set NOMES@(tonumber(w@1)) = w@2
-        "seq"      => vector.insert(J.seqs, [])
-        "hit"      => vector.insert(J.seqs@#, [t=tonumber(w@1), jog=tonumber(w@2), kmh=tonumber(w@3)])
+        "seq"      => {
+            vector.insert(J.seqs, [])
+            vector.insert(J.cronos, [arbitro=false])
+        }
+        "crono"    => set J.cronos@(#J.cronos-1) = [t=tonumber(w@1), arbitro=true]
+        "hit"      => {
+            val t = tonumber(w@1)
+            vector.insert(J.seqs@#, [t=t, jog=tonumber(w@2), kmh=tonumber(w@3)])
+            val crono = J.cronos@(#J.cronos-1)
+            if crono.t == nil {
+                set crono.t = t     ;; the first hit starts the clock
+            }
+        }
         "quedas"   => set J.quedas = tonumber(w@1)
         "manual"   => set J.manual = tonumber(w@1)
         "descanso" => set J.descanso = tonumber(w@1)

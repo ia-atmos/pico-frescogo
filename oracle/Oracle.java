@@ -3,12 +3,21 @@
 // The functions of the score of `placar/placar.pde` (v4.1.0, the source of
 // the release package), taken out of the sketch into plain Java, with no
 // Processing. It reads a script from the standard input and prints the
-// numbers that the original computes: the port must print the same lines for
-// the same scripts.
+// numbers that the scoreboard computes: the port must print the same lines
+// for the same scripts.
 //
-// The functions between the marks BEGIN and END are copied from the sketch
-// by a script, with `static` as the only change. `min`, `max`, `nf`, and
-// `IntList` are those of Processing, redefined at the end of this file.
+// The functions between the marks BEGIN and END were copied from the sketch
+// by a script, with `static` as the only change (the branch `4.1` has them
+// so). Here they have the changes of the rule after v4.1.0, each marked
+// with its item of `.claude/plans/TODO.md`, written apart from the port:
+//
+//      #5      no `trinca` mode
+//      #23     no hits by the keyboard: the speeds are those of the radar;
+//              the clock of a sequence starts at its first hit, or at the
+//              key of the referee (`crono`)
+//
+// `min`, `max`, `nf`, and `IntList` are those of Processing, redefined at
+// the end of this file.
 //
 // See `oracle/README.md` for the format of the scripts.
 
@@ -31,13 +40,10 @@ public class Oracle {
 
     // the defaults are those of `conf.json`
     static int         CONF_TEMPO       = 300;
-    static int         CONF_DISTANCIA   = 750;
     static int         CONF_ATAQUES     = 60;
     static int         CONF_EQUILIBRIO  = 130;
     static int         CONF_VEL_MIN     = 50;
-    static int         CONF_VEL_MAX     = 85;
     static int         CONF_SAQUE       = 45;
-    static boolean     CONF_TRINCA      = false;
     static int         CONF_TREGUA      = 1;
     static int         CONF_QUEDAS      = 1500;
     static int         CONF_ABORTA      = 15;
@@ -45,7 +51,6 @@ public class Oracle {
     static int         CONF_DESCANSO    = 90;
 
     static int         LADO_RADAR       = 0;
-    static int         LADO_PIVO        = 0;
 
     static String[]    CONF_NOMES = { "Atleta 1", "Atleta 2", "Árbitro" };
     static String      CONF_PARS;
@@ -59,6 +64,7 @@ public class Oracle {
     static int[][]     JOGO_JOGS = new int[2][5];  // pts, golpes, med, min, max
 
     static ArrayList<ArrayList> JOGO = new ArrayList<ArrayList>();
+    static ArrayList<Integer>   CRONO = new ArrayList<Integer>();   // #23: the key of the referee, or -1
 
     ///////////////////////////////////////////////////////////////////////////
     // BEGIN: copied from `placar.pde`
@@ -79,15 +85,7 @@ public class Oracle {
     }
 
     static int conf_ataques (int jog) {
-        if (CONF_TRINCA) {
-            if (jog == LADO_PIVO) {
-                return 0;
-            } else {
-                return max(1, conf_tempo() * CONF_ATAQUES / 60);
-            }
-        } else {
-            return max(1, conf_tempo() * CONF_ATAQUES / 60 / 2);
-        }
+        return max(1, conf_tempo() * CONF_ATAQUES / 60 / 2);    // #5
     }
 
     static int conf_quedas_base () {
@@ -118,7 +116,11 @@ public class Oracle {
             for (int i=0; i<JOGO.size(); i++) {
                 ArrayList<int[]> seq = JOGO.get(i);
                 int S = seq.size();
-                if (S > 0) {
+                int c = CRONO.get(i);                       // #23
+                if (c >= 0) {
+                    last = (S > 0) ? seq.get(S-1)[0] : c;
+                    ret += last - c;
+                } else if (S > 0) {
                     last = seq.get(S-1)[0];
                     if (S >= 2) {
                         ret += (seq.get(S-1)[0] - seq.get(0)[0]);
@@ -171,18 +173,7 @@ public class Oracle {
     }
 
     static int jogo_kmh (ArrayList<int[]> seq, int i) {
-        int[] cur = seq.get(i);
-        int kmh = cur[2];
-        if (kmh != 0) {     // radar ligado
-            return kmh;
-        } else {            // radar desligado
-            if (seq.size() < i+2) {
-                return 0;
-            } else {
-                int[] nxt = seq.get(i+1);
-                return min(CONF_VEL_MAX, 36 * CONF_DISTANCIA / (nxt[0] - cur[0]));
-            }
-        }
+        return seq.get(i)[2];                               // #23
     }
 
     static int jogo_quedas () {
@@ -220,8 +211,8 @@ public class Oracle {
     // `CONF_PARS`, as `setup` builds it.
     static void conf_pars () {
         CONF_PARS = "v" + VERSAO + " / " +
-                    (CONF_TRINCA ? "trinca" : "dupla") + " / " +
-                    (conf_radar() ? "radar" : CONF_DISTANCIA + "cm") + " / " +
+                    "dupla" + " / " +                                   // #5
+                    (conf_radar() ? "radar" : "sem radar") + " / " +    // #23
                     CONF_TEMPO   + "s";
     }
 
@@ -260,6 +251,9 @@ public class Oracle {
         for (int i=0; i<JOGO.size(); i++) {
             ArrayList<int[]> seq = JOGO.get(i);
             out += "SEQUÊNCIA " + nf(i+1,2) + "\n============\n\nTEMPO   DIR   KMH\n-----   ---   ---\n";
+            if (CRONO.get(i) >= 0) {                        // #23
+                out += nf(CRONO.get(i) - JOGO_TEMPO_INICIO, 6) + "   cronômetro pelo árbitro\n";
+            }
             for (int j=0; j<seq.size(); j++) {
                 int[] golpe = seq.get(j);
                 int ms = golpe[0] - JOGO_TEMPO_INICIO;
@@ -298,18 +292,12 @@ public class Oracle {
     // The script
 
     static void conf (String key, String val) {
-        if (key.equals("trinca")) {
-            CONF_TRINCA = val.equals("true");
-            return;
-        }
         int v = Integer.parseInt(val);
         switch (key) {
             case "tempo":      CONF_TEMPO       = v;   break;
-            case "distancia":  CONF_DISTANCIA   = v;   break;
             case "ataques":    CONF_ATAQUES     = v;   break;
             case "equilibrio": CONF_EQUILIBRIO  = v;   break;
             case "minima":     CONF_VEL_MIN     = v;   break;
-            case "maxima":     CONF_VEL_MAX     = v;   break;
             case "tregua":     CONF_TREGUA      = v;   break;
             case "quedas":     CONF_QUEDAS      = v;   break;
             case "aborta":     CONF_ABORTA      = v;   break;
@@ -317,7 +305,6 @@ public class Oracle {
             case "esquenta":   CONF_ESQUENTA    = v;   break;
             case "descanso":   CONF_DESCANSO    = v;   break;
             case "lado_radar": LADO_RADAR       = v-1; break;
-            case "lado_pivo":  LADO_PIVO        = v-1; break;
             default: throw new RuntimeException("conf : invalid key : " + key);
         }
     }
@@ -357,10 +344,6 @@ public class Oracle {
             switch (w[0]) {
                 case "conf":
                     conf(w[1], w[2]);
-                    // as `setup` does
-                    if (CONF_TRINCA) {
-                        CONF_EQUILIBRIO = 0;
-                    }
                     break;
                 case "radar":
                     RADAR = w[1].equals("1");
@@ -384,10 +367,15 @@ public class Oracle {
                     NOW = Integer.parseInt(w[1]);
                     break;
                 case "nome":
-                    CONF_NOMES[Integer.parseInt(w[1])] = w[2];
+                    // the rest of the line: a name may have spaces
+                    CONF_NOMES[Integer.parseInt(w[1])] = line.split("\\s+", 3)[2];
                     break;
                 case "seq":
                     JOGO.add(new ArrayList<int[]>());
+                    CRONO.add(-1);
+                    break;
+                case "crono":
+                    CRONO.set(CRONO.size()-1, Integer.parseInt(w[1]));
                     break;
                 case "hit": {
                     int[] golpe = {

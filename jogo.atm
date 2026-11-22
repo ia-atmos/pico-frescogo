@@ -32,6 +32,8 @@ var RADAR = nil         ;; the serial line of the radar, or nil
 pin J = [
     esquenta = false,   ;; a warm-up: the time runs, and there are no falls
     seqs     = [],      ;; the sequences: vectors of hits [t=, jog=, kmh=]
+    cronos   = [],      ;; of each sequence, when its clock started: [t=, arbitro=]
+                        ;; (`t` is nil before it starts; `arbitro` if by the key)
     quedas   = 0,       ;; the falls
     manual   = 0,       ;; the falls that the referee added or removed
     descanso = 0,       ;; the rest that was used, in ms
@@ -109,7 +111,7 @@ func conf_load (path) {
 func conf_pars () {
     "v" ++ VERSAO ++ " / " ++
     "dupla" ++ " / " ++
-    (if RADAR != nil => "radar" => (CONF.distancia ++ "cm")) ++ " / " ++
+    (if RADAR != nil => "radar" => "sem radar") ++ " / " ++
     CONF.tempo ++ "s"
 }
 
@@ -140,22 +142,6 @@ func conf_aborta () {
 ;; ----------------------------------------------------------------------------
 ;; THE SCORE
 ;; ----------------------------------------------------------------------------
-
-;; The speed of the hit `i` of a sequence: that of the radar, or, with no
-;; radar, the distance over the time until the next hit (0 for the last one).
-;; Two hits at the same instant give the highest speed that is accepted (the
-;; original divides by zero there).
-func jogo_kmh (seq, i) {
-    val cur = seq@i
-    ifs {
-        cur.kmh != 0 => cur.kmh
-        #seq < (i+2) => 0
-        else => {
-            val dt = (seq@(i+1)).t - cur.t
-            if dt <= 0 => CONF.maxima => min(CONF.maxima, 36 * CONF.distancia // dt)
-        }
-    }
-}
 
 func jogo_quedas () {
     J.quedas + J.manual
@@ -190,8 +176,9 @@ func jogo_equ () {
     [p0, p1]
 }
 
-;; The time played is the time of the sequences, each from its first hit to
-;; its last one. In a warm-up, it is the time since the serve.
+;; The time played is the time of the sequences, each from the start of its
+;; clock (its first hit, or the key of the referee) to its last hit. In a
+;; warm-up, it is the time since the serve.
 func _jogo_tempo () {
     var ms   = 0
     var last = NOW
@@ -201,10 +188,11 @@ func _jogo_tempo () {
             set ms = NOW - J.saque
         }
     } else {
-        loop _,seq in J.seqs {
-            if #seq > 0 {
-                set last = (seq@#).t
-                set ms   = ms + (last - (seq@0).t)
+        loop i,seq in J.seqs {
+            val t0 = (J.cronos@i).t
+            if t0 != nil {
+                set last = if #seq > 0 => (seq@#).t => t0
+                set ms   = ms + (last - t0)
             }
         }
     }
@@ -225,7 +213,7 @@ func _jogo_lado (jog) {
     loop _,seq in J.seqs {
         loop j in (#seq - 1) {
             if (seq@j).jog == jog {
-                val kmh = jogo_kmh(seq,j)
+                val kmh = (seq@j).kmh
                 if kmh >= CONF.minima {
                     vector.insert(kmhs, kmh)
                 }
@@ -300,10 +288,14 @@ func jogo_relatorio (ts) {
 
     loop i,seq in J.seqs {
         set out = out ++ "SEQUÊNCIA " ++ nf(i+1,2) ++ "\n============\n\nTEMPO   DIR   KMH\n-----   ---   ---\n"
-        loop j,golpe in seq {
+        val crono = J.cronos@i
+        if crono.arbitro {
+            set out = out ++ nf(crono.t - J.inicio, 6) ++ "   cronômetro pelo árbitro\n"
+        }
+        loop _,golpe in seq {
             set out = out ++ nf(golpe.t - J.inicio, 6) ++ "   " ++
                       (if golpe.jog == 0 => "->" => "<-") ++ "   " ++
-                      nf(jogo_kmh(seq,j),3) ++ "\n"
+                      nf(golpe.kmh,3) ++ "\n"
         }
         set out = out ++ "\n\n"
     }

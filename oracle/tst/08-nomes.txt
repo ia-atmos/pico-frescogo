@@ -1,51 +1,52 @@
+# the hits had no radar in v4.1.0: here, the speeds that it inferred from them
 # generated once, with a fixed seed
-radar 0
+radar 1
 nome 0 Ana
 nome 1 Bia_C
 inicio 1000
 seq
-hit 7005 0 0
-hit 7474 0 0
-hit 8360 1 0
-hit 9777 0 0
+hit 7005 0 57
+hit 7474 0 30
+hit 8360 1 19
+hit 9777 0 20
 now 9901
 estado jogando jogando
 calc
-hit 11097 1 0
-hit 12276 0 0
-hit 13049 1 0
-hit 14253 1 0
-hit 15112 0 0
-hit 16038 1 0
-hit 17389 0 0
+hit 11097 1 22
+hit 12276 0 34
+hit 13049 1 22
+hit 14253 1 31
+hit 15112 0 29
+hit 16038 1 19
+hit 17389 0 44
 now 18941
 estado jogando jogando
 calc
-hit 18001 1 0
+hit 18001 1 60
 quedas 1
 descanso 6367
 now 21501
 estado ocioso
 calc
 seq
-hit 26667 0 0
-hit 27267 1 0
-hit 28340 0 0
-hit 28896 1 0
+hit 26667 0 45
+hit 27267 1 25
+hit 28340 0 48
+hit 28896 1 33
 now 31012
 estado jogando jogando
 calc
-hit 29701 0 0
-hit 30372 1 0
-hit 31857 0 0
-hit 33237 1 0
-hit 33920 0 0
-hit 35485 1 0
-hit 37061 0 0
+hit 29701 0 40
+hit 30372 1 18
+hit 31857 0 19
+hit 33237 1 39
+hit 33920 0 17
+hit 35485 1 17
+hit 37061 0 17
 now 38231
 estado jogando jogando
 calc
-hit 38582 1 0
+hit 38582 1 60
 quedas 2
 descanso 27926
 now 42082

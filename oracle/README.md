@@ -4,12 +4,15 @@
 (v4.1.0, the source of the release package) in plain Java, with no
 Processing: `conf_*`, `_jogo_tempo`, `_jogo_lado`, `jogo_kmh`,
 `jogo_quedas_pct`, `jogo_equ`, `jogo_calc`, and the text of the report of
-`go_termino`. They are copied from the sketch by a script, between the
-marks `BEGIN` and `END`.
+`go_termino`. They were copied from the sketch by a script, between the
+marks `BEGIN` and `END` (as the branch `4.1` has them). Here they have the
+changes of the rule since v4.1.0, written apart from the port, and marked
+with their items of `.claude/plans/TODO.md`.
 
-It reads a script and prints what the original computes. The port to Atmos
+It reads a script and prints what the scoreboard computes. The port to Atmos
 must print the same lines for the same scripts: the pairs `tst/*.txt` and
-`tst/*.out` are its tests of the score.
+`tst/*.out` are its tests of the score. The tests of the flow also give
+each report back to it (`tst/relatorio.py`).
 
 ```
 ./run.sh        # builds, and checks tst/*.txt against tst/*.out
@@ -25,14 +28,15 @@ One command per line; `#` starts a comment.
 | Command | Effect |
 |---------|--------|
 | `conf <key> <value>` | A field of `conf.json` (the defaults are those of the file) |
-| `radar 0\|1` | The answer of `conf_radar()`: `0` is the manual mode, with the speeds computed from the distance |
+| `radar 0\|1` | The answer of `conf_radar()` (only the report shows it: the speeds are those of the hits) |
 | `esquenta 0\|1 [<ms>]` | `ESQUENTA`, and `ESQUENTA_INICIO` |
 | `inicio <ms>` | `JOGO_TEMPO_INICIO` |
 | `estado <estado> [<jogando>]` | `ESTADO` (`ocioso`, `jogando`, ...) and `ESTADO_JOGANDO` (`sacando`, `jogando`) |
 | `now <ms>` | `NOW` |
 | `seq` | Starts a sequence |
-| `hit <ms> <jog> <kmh>` | Adds a hit to the last sequence: the time, the athlete (`0`, `1`), and the speed (`0` with no radar) |
-| `nome <0\|1> <name>` | The name of an athlete |
+| `hit <ms> <jog> <kmh>` | Adds a hit to the last sequence: the time, the athlete (`0`, `1`), and the speed |
+| `crono <ms>` | The referee started the clock of the last sequence (`CTRL-T`): without it, its first hit starts it |
+| `nome <0\|1\|2> <name>` | The name of an athlete, or of the referee: the rest of the line |
 | `descanso <ms>` | `JOGO_DESCANSO_TOTAL` |
 | `quedas <n>` | `JOGO_QUEDAS` |
 | `manual <n>` | `JOGO_QUEDAS_MANUAL` |

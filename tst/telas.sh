@@ -1,18 +1,24 @@
 #!/bin/sh
 # The tests of the screen: runs the port over the scripted presentations of
 # `tst/telas.txt`, with no display, and compares each screenshot with the
-# screen of THE ORIGINAL at the same frame (`tst/telas/orig/`, written by
-# `oracle/orig.sh <package> telas`).
+# expected one at the same frame (`tst/telas/ref/`).
 #
-# The two are not equal pixel by pixel: the smoothing of the edges, the
-# scaling of the images, and the sizes of the text (whole pixels in pico)
-# differ. Today the differences are of 1.3 to 1.9. A screen passes if the mean difference of
-# its pixels (0 to 255) is at most LIMITE.
+# Up to v4.1.0 (the branch `4.1`), the expected screens were those of THE
+# ORIGINAL, within a mean difference of 2.5 (the smoothing of the edges, the
+# scaling of the images, and the sizes of the text differ). Since the rule
+# changed, they are screenshots of the port, checked by hand. A screen
+# passes if the mean difference of its pixels (0 to 255) is at most LIMITE.
 #
 #   tst/telas.sh            checks
+#   tst/telas.sh -w         writes the expected screens (check them by hand)
 #   tst/telas.sh <dir>      also keeps the screenshots of the port in <dir>
 
-LIMITE=2.5
+LIMITE=0.5
+W=""
+if [ "$1" = "-w" ]; then
+    W=1; shift
+    mkdir -p tst/telas/ref
+fi
 
 cd "$(dirname "$0")/.." || exit 1
 ATMOS=.deps/env-pico/atmos-pico
@@ -36,7 +42,10 @@ while read -r name frames shot; do
         echo "FAIL $name-$shot (exit)"; tail -5 "$OUT/log"; err=1; continue
     fi
     [ -n "$1" ] && cp "$OUT/$name-$shot.png" "$1/"
-    d=$(python3 -I - "tst/telas/orig/$name-$shot.png" "$OUT/$name-$shot.png" <<'PY'
+    if [ -n "$W" ]; then
+        cp "$OUT/$name-$shot.png" tst/telas/ref/; echo "wrote $name-$shot"; continue
+    fi
+    d=$(python3 -I - "tst/telas/ref/$name-$shot.png" "$OUT/$name-$shot.png" <<'PY'
 import sys
 from PIL import Image, ImageChops
 a = Image.open(sys.argv[1]).convert('RGB')

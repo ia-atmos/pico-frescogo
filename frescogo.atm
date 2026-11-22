@@ -2,8 +2,9 @@
 ;;
 ;; The scoreboard of `placar/placar.pde` (v4.1.0), written for Atmos: the flow
 ;; of a presentation is a hierarchy of tasks, and each state is a place in
-;; the code. The branch `fidelity` has the port that is one to one with the
-;; original (see `PORT.md`). Built and run with `atmos-pico`:
+;; the code. Here with the changes of the rule since v4.1.0, which the branch
+;; `4.1` does not have; the branch `fidelity` has the port that is one to one
+;; with the original (see `PORT.md`). Built and run with `atmos-pico`:
 ;;
 ;;      make run
 ;;
@@ -114,9 +115,9 @@ func som (nome) {
     toca(SONS@nome)
 }
 
-;; A hit below 50 km/h only sounds with no radar.
+;; A hit below 50 km/h has no sound.
 func som_golpe (kmh) {
-    if (kmh < 50) && (RADAR != nil) {
+    if kmh < 50 {
         return
     }
     loop _,g in GOLPES {
@@ -163,11 +164,17 @@ func letra (e) {
 ;; it: the conditions see what the last frame left.
 ;; ----------------------------------------------------------------------------
 
+;; Discards the last sequence.
+func remove_seq () {
+    vector.remove(J.seqs)
+    vector.remove(J.cronos)
+}
+
 ;; Discards the last sequence, and the fall that ended it.
 func desfaz () {
     if #J.seqs > 0 {
         set J.quedas = J.quedas - 1
-        vector.remove(J.seqs)
+        remove_seq()
         som(:desfaz)
     }
 }
@@ -214,16 +221,10 @@ task Ocioso () {
     }
 }
 
-;; A hit, of the keyboard or of the radar, in the sequence that goes on.
+;; A hit of the radar, in the sequence that goes on.
 func golpe (seq, g) {
     vector.insert(seq, [t=NOW, jog=g.jog, kmh=g.kmh])
-    if g.radar {
-        som_golpe(g.kmh)
-    } else {
-        ;; with no radar, the speed of a hit is only known at the next one
-        som_golpe(if #seq >= 2 => jogo_kmh(seq, #seq-2) => 0)
-        jogo_calc()
-    }
+    som_golpe(g.kmh)
 }
 
 ;; A sequence, from the serve on. Evaluates to how it ended: `:queda` (the
@@ -232,21 +233,13 @@ func golpe (seq, g) {
 task Sequencia () {
     set ESTADO  = :seq.saque
     set J.saque = NOW
-    val seq = vector.insert(J.seqs, [])
+    val seq   = vector.insert(J.seqs, [])
+    val crono = vector.insert(J.cronos, [arbitro=false])
     som(:saque)
     if RADAR != nil {
         radar_clear()
     }
     jogo_calc()
-
-    ;; the hits of the keyboard: the arrows
-    spawn {
-        loop e on :key.dn {
-            if (e.key == "Left") || (e.key == "Right") {
-                emit :golpe [jog=(if e.key == "Left" => ZER => ONE), kmh=0]
-            }
-        }
-    }
 
     ;; the hits of the radar: one reading per frame, only while the sequence
     ;; goes on
@@ -257,7 +250,7 @@ task Sequencia () {
         loop on :radar.vez {
             val kmh = radar()
             if math.abs(kmh) > 1 {
-                emit :golpe [jog=(if kmh > 0 => CONF.lado_radar => (1-CONF.lado_radar)), kmh=math.abs(kmh), radar=true]
+                emit :golpe [jog=(if kmh > 0 => CONF.lado_radar => (1-CONF.lado_radar)), kmh=math.abs(kmh)]
             }
             if AUTO && (kmh != 0) {
                 set AUTO_ULTIMA = NOW     ;; any reading that is not silence
@@ -274,24 +267,35 @@ task Sequencia () {
         :tempo
     } with {
         ;; THE SERVE: until the first hit, which the radar only takes with
-        ;; the speed of a serve; before it, the referee may undo
+        ;; the speed of a serve, or until the referee starts the clock
+        ;; (CTRL-T) in spite of the radar; before it, the referee may undo
         val g = par :any {
             await :key.dn until ctrl(it, "Backspace")
             :desfeita
         } with {
-            await :golpe until (!it.radar) || (it.kmh >= CONF.saque)
+            await :key.dn until ctrl(it, "T")
+            :arbitro
+        } with {
+            await :golpe until it.kmh >= CONF.saque
         }
         if g == :desfeita {
             set ESTADO = :ocioso
-            vector.remove(J.seqs)     ;; this sequence, and the one before it
+            remove_seq()              ;; this sequence, and the one before it
             desfaz()
             jogo_calc()
             :desfeita
         } else {
             ;; what the serve took beyond 5 seconds comes out of the rest
             set J.descanso = J.descanso + max(0, NOW-J.saque-5000)
-            set ESTADO = :seq.golpes
-            golpe(seq, g)
+            set ESTADO  = :seq.golpes
+            set crono.t = NOW
+            if g == :arbitro {
+                set crono.arbitro = true
+                set AUTO_ULTIMA   = NOW     ;; the silence counts from here
+                jogo_calc()
+            } else {
+                golpe(seq, g)
+            }
 
             ;; THE HITS, until the fall
             par :any {
@@ -382,6 +386,7 @@ task Apresentacao (esquenta) {
     set J.manual   = 0
     set J.inicio   = NOW
     vector.clear(J.seqs)
+    vector.clear(J.cronos)
     set ESTADO = :ocioso
     som(:reinicio)
 
