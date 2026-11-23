@@ -14,9 +14,9 @@
 # JDK for the oracle.
 
 LANG_URL := https://github.com/ia-atmos/lang
-LANG_REV := 98e47876bcfb6f01d9b9893fbbfadba0fac65839
+LANG_REV := eca10f54ca29d700464e6b9dfff9ea1130c756a5
 PICO_URL := https://github.com/ia-atmos/env-pico
-PICO_REV := 1e68b0c6c503a4bc1ebf064e3cb5673ca7b17263
+PICO_REV := 8a20c46483715938215de79fdfba4baedbe90c93
 
 DEPS  := $(CURDIR)/.deps
 ATMOS := $(DEPS)/env-pico/atmos-pico
