@@ -103,24 +103,26 @@ func conf_load (path) {
         pin f = io.open(path)
         X.load(io.read(f, :all))
     }
-    set CONF.lado_radar = CONF.lado_radar - 1
-    set NOMES@2 = CONF.arbitro
+    set CONF.radar.lado = CONF.radar.lado - 1
+    set NOMES@0 = CONF.nomes.esq
+    set NOMES@1 = CONF.nomes.dir
+    set NOMES@2 = CONF.nomes.arbitro
 }
 
 ;; The parameters of a presentation, as the screen and the report show them.
 func conf_pars () {
     "v" ++ VERSAO ++ " / " ++
     (if RADAR != nil => "radar" => "sem radar") ++ " / " ++
-    CONF.tempo ++ "s"
+    CONF.apresentacao.tempo ++ "s"
 }
 
 func conf_tempo () {
-    if J.esquenta => CONF.esquenta => CONF.tempo
+    if J.esquenta => CONF.apresentacao.esquenta => CONF.apresentacao.tempo
 }
 
 ;; The hits of an athlete that count, at most: its strongest ones.
 func conf_ataques (jog) {
-    CONF.ataques
+    CONF.pontos.golpes
 }
 
 ;; ----------------------------------------------------------------------------
@@ -133,7 +135,7 @@ func jogo_quedas () {
 
 ;; What the falls take from the time, in seconds (none in a warm-up).
 func jogo_desconto () {
-    if J.esquenta => 0 => max(0, CONF.queda * jogo_quedas())
+    if J.esquenta => 0 => max(0, CONF.apresentacao.queda * jogo_quedas())
 }
 
 ;; The rest that is left, in seconds: what the athletes took to serve, beyond
@@ -141,9 +143,9 @@ func jogo_desconto () {
 func descanso_resta () {
     var ms = J.descanso
     if ESTADO == :seq.saque {
-        set ms = ms + max(0, NOW-J.saque-5000)
+        set ms = ms + max(0, NOW - J.saque - (CONF.apresentacao.saque * 1000))
     }
-    CONF.descanso - (ms // 1000)
+    CONF.apresentacao.descanso - (ms // 1000)
 }
 
 ;; The points of the two athletes with the balance: from 30 hits on, none
@@ -153,9 +155,10 @@ func jogo_equ () {
     val a1 = J.atletas@1
     var p0 = a0.pontos
     var p1 = a1.pontos
-    if (CONF.equilibrio != 0) && ((a0.golpes + a1.golpes) >= 30) {
-        set p0 = min(p0, p1*CONF.equilibrio // 100)
-        set p1 = min(p1, p0*CONF.equilibrio // 100)
+    val equ = CONF.pontos.equilibrio
+    if (equ != 0) && ((a0.golpes + a1.golpes) >= CONF.pontos.equ_golpes) {
+        set p0 = min(p0, p1*equ // 100)
+        set p1 = min(p1, p0*equ // 100)
     }
     [p0, p1]
 }
@@ -199,7 +202,7 @@ func _jogo_lado (jog) {
         loop j in (#seq - 1) {
             if (seq@j).jog == jog {
                 val kmh = (seq@j).kmh
-                if kmh >= CONF.minima {
+                if kmh >= CONF.pontos.minima {
                     vector.insert(kmhs, kmh)
                 }
             }

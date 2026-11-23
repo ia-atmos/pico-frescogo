@@ -37,7 +37,7 @@ val CINZA = cinza(150)
 fonte("data/LiberationSans-Bold.ttf")
 
 pin IMG = [
-    logos    = [ figura(CONF.imagem1, height // 8), figura(CONF.imagem2, height // 8) ],
+    logos    = [ figura(CONF.tela.imagem1, height // 8), figura(CONF.tela.imagem2, height // 8) ],
     veloc    = figura("data/icos/speed-03.png",   math.floor(45*dy)),
     golpes   = figura("data/icos/raq-03.png",     math.floor(50*dy)),
     pontos   = figura("data/icos/flag.png",       math.floor(40*dy)),
@@ -92,7 +92,7 @@ func tela_ultima (esq, kmh) {
         return
     }
     val x   = if esq => 1.5*W => 9.5*W
-    val cor = if kmh >= CONF.minima => PRETO => cinza(200)
+    val cor = if kmh >= CONF.pontos.minima => PRETO => cinza(200)
     texto(kmh,    x, 4*H+45*dy, 120*dy, cor, :fundo)
     texto("km/h", x, 4*H+35*dy,  30*dy, cor, :topo)
 }
@@ -107,7 +107,7 @@ func tela_seta (esq) {
 }
 
 ;; The middle: the falls, and, in a sequence, the last hit of each athlete:
-;; its speed for 1.5 seconds, and an arrow for half a second.
+;; its speed for `tela.velocidade`, and an arrow for `tela.seta`.
 func tela_meio () {
     caixa(0, 3*H, 11*W, 2*H-1, BRANCO, PRETO)
 
@@ -127,17 +127,17 @@ func tela_meio () {
             }
             set de = golpe.jog
             val esq = (de == ZER)
-            if NOW <= (golpe.t + 1500) {
+            if NOW <= (golpe.t + CONF.tela.velocidade) {
                 tela_ultima(esq, golpe.kmh)
             }
-            if NOW <= (golpe.t + 500) {
+            if NOW <= (golpe.t + CONF.tela.seta) {
                 tela_seta(esq)
             }
         }
     }
 
     if RADAR != nil {
-        poe(IMG.radar, (if CONF.lado_radar == 0 => 20*dx => (width-20*dx)), 4*H)
+        poe(IMG.radar, (if CONF.radar.lado == 0 => 20*dx => (width-20*dx)), 4*H)
     }
 }
 
@@ -164,7 +164,7 @@ func tela_atleta (esq, x, jog) {
 
     ;; red while the balance cuts the points of the other athlete
     val outro = (J.atletas@(1-jog)).pontos
-    val corta = (CONF.equilibrio != 0) && (outro > (a.pontos*CONF.equilibrio // 100))
+    val corta = (CONF.pontos.equilibrio != 0) && (outro > (a.pontos*CONF.pontos.equilibrio // 100))
     texto(a.pontos, m, 7.5*H, 65*dy, (if corta => VERMELHO => PRETO), :meio)
 
     ;; what each row is
@@ -189,9 +189,9 @@ func tela_total () {
         AUTO       => disco(6.5*W, 5.2*H, 20*dy, ['!', r=0,   g=150, b=0])
     }
 
-    val batido = J.total >= CONF.recorde
-    texto(CONF.recorde, MX, 6*H-15*dy, 35*dy, (if batido => CINZA => ['!', r=200, g=100, b=100]), :meio)
-    poe(IMG.trofeu, MX - largura(CONF.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
+    val batido = J.total >= CONF.tela.recorde
+    texto(CONF.tela.recorde, MX, 6*H-15*dy, 35*dy, (if batido => CINZA => ['!', r=200, g=100, b=100]), :meio)
+    poe(IMG.trofeu, MX - largura(CONF.tela.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
 
     texto(J.total, MX, 7*H-15*dy, 140*dy, BRANCO, :meio)
 

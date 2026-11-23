@@ -39,8 +39,7 @@ val TRACE = os.getenv("FRESCOGO_TRACE") != nil
 val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
 
 var AUTO = false             ;; the automatic mode: a fall after a silence
-val AUTO_SILENCIO = 3500     ;; of the radar, of 3.5 seconds
-var AUTO_ULTIMA = 0          ;; since its last reading
+var AUTO_ULTIMA = 0          ;; of the radar, since its last reading
 
 
 var INV = false                     ;; the athletes changed sides
@@ -79,30 +78,13 @@ include "radar.atm"
 ;; SOUNDS
 ;; ----------------------------------------------------------------------------
 
-val SONS = [
-    queda    = "fall.wav",
-    reinicio = "restart.wav",
-    aviso    = "30s.wav",
-    fim      = "queda2.wav",
-    desfaz   = "undo.wav",
-    saque    = "start.wav",
-]
-
-;; The sound of a hit, by its speed.
-val GOLPES = [
-    [ 60, "peteleco.mp3" ],
-    [ 70, "agudo.wav" ],
-    [ 80, "laser.wav" ],
-    [ 90, "hit.wav" ],
-    [ 100, "trophaser.wav" ],
-    [ math.huge, "ambulancia.wav" ],
-]
-
 pin SOM = []            ;; the sounds, by the names of their files
-loop _,arq in SONS {
-    set SOM@arq = pico.sound.load("data/snds/" ++ arq)
+loop _,arq in CONF.som {
+    if type(arq) == :string {
+        set SOM@arq = pico.sound.load("data/snds/" ++ arq)
+    }
 }
-loop _,g in GOLPES {
+loop _,g in CONF.som.golpes {
     set SOM@(g@1) = pico.sound.load("data/snds/" ++ g@1)
 }
 
@@ -112,15 +94,15 @@ func toca (arq) {
 }
 
 func som (nome) {
-    toca(SONS@nome)
+    toca(CONF.som@nome)
 }
 
-;; A hit below 50 km/h has no sound.
+;; The sound of a hit, by its speed: none below `som.minima`.
 func som_golpe (kmh) {
-    if kmh < 50 {
+    if kmh < CONF.som.minima {
         return
     }
-    loop _,g in GOLPES {
+    loop _,g in CONF.som.golpes {
         if kmh < g@0 {
             toca(g@1)
             break
@@ -255,7 +237,7 @@ task Sequencia (tecla) {
         loop on :radar.vez {
             val kmh = radar()
             if math.abs(kmh) > 1 {
-                emit :golpe [jog=(if kmh > 0 => CONF.lado_radar => (1-CONF.lado_radar)), kmh=math.abs(kmh)]
+                emit :golpe [jog=(if kmh > 0 => CONF.radar.lado => (1-CONF.radar.lado)), kmh=math.abs(kmh)]
             }
             if AUTO && (kmh != 0) {
                 set AUTO_ULTIMA = NOW     ;; any reading that is not silence
@@ -285,7 +267,7 @@ task Sequencia (tecla) {
             await :key.dn until ctrl(it, "Up", "U")
             :arbitro
         } with {
-            await :golpe until it.kmh >= CONF.saque
+            await :golpe until it.kmh >= CONF.radar.saque
         }
         if g == :desfeita {
             set ESTADO = :ocioso
@@ -295,7 +277,7 @@ task Sequencia (tecla) {
             :desfeita
         } else {
             ;; what the serve took beyond 5 seconds comes out of the rest
-            set J.descanso = J.descanso + max(0, NOW-J.saque-5000)
+            set J.descanso = J.descanso + max(0, NOW - J.saque - (CONF.apresentacao.saque * 1000))
             set ESTADO  = :seq.golpes
             set crono.t = NOW
             if g == :arbitro {
@@ -313,7 +295,7 @@ task Sequencia (tecla) {
                 }
             } with {
                 ;; in the automatic mode: 3.5 seconds with no reading
-                await :quadro until (!J.esquenta) && AUTO && (NOW >= (AUTO_ULTIMA + AUTO_SILENCIO))
+                await :quadro until (!J.esquenta) && AUTO && (NOW >= (AUTO_ULTIMA + CONF.radar.silencio))
                 :queda
             }
         }
@@ -344,7 +326,7 @@ task Jogo () {
             }
             som(:queda)
             if AUTO {
-                await 1s
+                await(CONF.radar.resaque * 1ms)
                 set direto = true
             }
         }
@@ -356,8 +338,8 @@ task Jogo () {
 func termina () {
     set ESTADO = :fim
     som(:fim)
-    if J.total > CONF.recorde {
-        set CONF.recorde = J.total
+    if J.total > CONF.tela.recorde {
+        set CONF.tela.recorde = J.total
     }
     jogo_calc()
     tela()
@@ -401,12 +383,12 @@ task Apresentacao (esquenta) {
     jogo_calc()             ;; nothing is left of the last presentation
     som(:reinicio)
 
-    ;; the warnings: 30 seconds left, each time a sequence crosses them, and
+    ;; the warnings: `aviso` seconds left, each time a sequence crosses them, and
     ;; the rest that ran out
     spawn {
         loop {
-            await :quadro until (ESTADO ?? :seq) && (J.restante >  30)
-            await :quadro until (ESTADO ?? :seq) && (J.restante <= 30)
+            await :quadro until (ESTADO ?? :seq) && (J.restante >  CONF.apresentacao.aviso)
+            await :quadro until (ESTADO ?? :seq) && (J.restante <= CONF.apresentacao.aviso)
             som(:aviso)
         }
     }
@@ -435,7 +417,7 @@ task Apresentacao (esquenta) {
 
 ;; The radar: the port of the configuration, or the last one of the system.
 do {
-    val porta = os.getenv("FRESCOGO_SERIAL") || (if CONF.serial == "" => serial.last() => CONF.serial)
+    val porta = os.getenv("FRESCOGO_SERIAL") || (if CONF.radar.serial == "" => serial.last() => CONF.radar.serial)
     if porta != nil {
         set RADAR = serial.open(porta)
     }

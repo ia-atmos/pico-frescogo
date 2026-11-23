@@ -40,7 +40,7 @@ not the reference.
 | `serial.atm` | The serial line of the radar, over POSIX |
 | `jogo.atm` | The configuration and the score, with no pico: tested against the oracle |
 | `placar/` | The original: `placar.pde` and `conf.json` of v4.1.0, as the reference |
-| `data/` | The images, fonts, and sounds of v4.1.0, and `conf.atm` |
+| `data/` | The images, fonts, and sounds of v4.1.0, and `conf.atm`: the configuration, in sections, with each value apart from the others |
 | `oracle/` | The oracle: the functions of the score of the original in plain Java, with the changes of the rule, and scripts of hits |
 | `tst/` | The tests: the score against the oracle (`jogo.sh`), scripted presentations with scripted radars, whose reports also go back to the oracle (`fluxo.sh`, `radar.py`, `relatorio.py`), and the screen at chosen frames (`telas.sh`), all with no display |
 | `.claude/plans/TODO.md` | What waits for a decision, and what is not done |
@@ -88,10 +88,10 @@ The report, a picture of the screen, and a line of `resultados.csv` go to
 
 `serial.atm` is the serial line, a small library over POSIX (the list of
 ports, `open` at 9600 baud, a read that blocks until a byte arrives, as the
-original reads). With `serial = ""` in `data/conf.atm`, the port is the last
+original reads). With `radar.serial = ""` in `data/conf.atm`, the port is the last
 one of the system, as in the original; otherwise, the path given. On a
 machine with a serial port and no radar, name a port that does not exist
-(`serial = "nenhuma"`), or the program waits for the radar at the first
+(`radar.serial = "nenhuma"`), or the program waits for the radar at the first
 serve.
 
 It was tried with scripted radars (files of packets, which the original
@@ -102,18 +102,18 @@ the device. Windows is left out.
 
 What only the author can do. Each step says what to look for.
 
-1. `make` and `make frescogo`, then `make test` (about 8 minutes): all `ok`.
+1. `make` and `make frescogo`, then `make test` (about 10 minutes): all `ok`.
 2. Connect the radar, configured as `radar.md` says. Check its port
    (`ls /dev/ttyUSB*`) and that the user may read it (the group `dialout`).
-   Leave `serial = ""`, or write the port in `data/conf.atm`.
+   Leave `radar.serial = ""`, or write the port in `data/conf.atm`.
 3. `./frescogo`. The top of the screen must say `radar` (not `sem radar`), and
-   the icon of the radar must be at the side of `lado_radar`. If it says
+   the icon of the radar must be at the side of `radar.lado`. If it says
    `sem radar`, the terminal has `Erro na comunicação com o radar:` and the port
    that was tried.
 4. `CTRL-↑`, and hit a ball towards the radar and away from it. Each hit
    must show its speed at the side of who hit, with its sound, and
    `radar.txt` must have a line `>>> [....] -> NNN <<<` for each. A hit of
-   the wrong side means `lado_radar`.
+   the wrong side means `radar.lado`.
 5. Stop hitting. The screen stops with the radar silent only if the radar
    itself stops sending (it sends packets with no speed all the time, so it
    should not): if the screen freezes, tell the session (`#18`).

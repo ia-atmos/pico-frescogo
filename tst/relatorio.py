@@ -12,11 +12,22 @@ import re, sys
 rel  = open(sys.argv[1], encoding="utf-8").read()
 conf = open(sys.argv[2], encoding="utf-8").read()
 
+# the fields of the score: their names in the oracle, and their places
+CAMPOS = {
+    "tempo":      ("apresentacao", "tempo"),
+    "queda":      ("apresentacao", "queda"),
+    "esquenta":   ("apresentacao", "esquenta"),
+    "descanso":   ("apresentacao", "descanso"),
+    "ataques":    ("pontos", "golpes"),
+    "minima":     ("pontos", "minima"),
+    "equilibrio": ("pontos", "equilibrio"),
+    "saque":      ("radar", "saque"),
+}
 out = []
-for k in ["tempo", "ataques", "equilibrio", "minima", "tregua", "quedas", "aborta", "saque", "esquenta", "descanso"]:
-    m = re.search(rf"\n    {k}\s*=\s*(\d+),", conf)
-    if m:
-        out.append(f"conf {k} {m.group(1)}")
+for k, (sec, campo) in CAMPOS.items():
+    a = conf.index(f"\n    {sec} = [")
+    m = re.search(rf"\n        {campo}\s*=\s*(\d+),", conf[a:conf.index("\n    ],", a)])
+    out.append(f"conf {k} {m.group(1)}")
 
 ver = re.search(r"^Versão:\s+v\S+ / (?:dupla / )?(.+) / \d+s$", rel, re.M)
 out.append("radar " + ("1" if ver.group(1) == "radar" else "0"))

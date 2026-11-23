@@ -20,7 +20,7 @@ func radar_clear () {
 }
 
 var BUF_I = 0
-pin BUF = [ [0,0],[0,0],[0,0],[0,0],[0,0],      ;; CONF.radar_reps_MAX = 10
+pin BUF = [ [0,0],[0,0],[0,0],[0,0],[0,0],      ;; `radar.reps` up to 10
             [0,0],[0,0],[0,0],[0,0],[0,0] ]
 
 val _VEL = 0
@@ -72,10 +72,10 @@ func radar () {
     set BUF@BUF_I@_VEL = vel
     set BUF@BUF_I@_DIR = dir
     val I = BUF_I
-    set BUF_I = (BUF_I + 1) % CONF.radar_reps
+    set BUF_I = (BUF_I + 1) % CONF.radar.reps
 
     ;; aceito somente se N velocidades na mesma direcao
-    loop i in CONF.radar_reps {
+    loop i in CONF.radar.reps {
         set vel = max(vel, BUF@i@_VEL)
         if BUF@i@_DIR != BUF@0@_DIR {
             return -1       ;; falhou na direcao
@@ -84,10 +84,10 @@ func radar () {
 
     ;; duvida se mesma dir em menos de 700ms
     val now = NOW
-    if (dir != LAST@_DIR) && (now < (LAST@_NOW + CONF.radar_igual)) {
+    if (dir != LAST@_DIR) && (now < (LAST@_NOW + CONF.radar.igual)) {
         return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
     }
-    if (dir == LAST@_DIR) && (now < (LAST@_NOW + CONF.radar_oposi)) {
+    if (dir == LAST@_DIR) && (now < (LAST@_NOW + CONF.radar.oposi)) {
         return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
     }
 
