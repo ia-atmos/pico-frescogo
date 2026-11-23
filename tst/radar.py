@@ -46,7 +46,7 @@ class Radar:
 class Keys:
     def __init__ (self): self.k = []; self.f = 5
     def ctrl (self, key):
-        self.k += [(self.f,"dn","Left Ctrl"), (self.f+1,"dn",key), (self.f+2,"up","Left Ctrl")]
+        self.k += [(self.f,"dn","Left Ctrl"), (self.f+1,"dn",key), (self.f+2,"up",key), (self.f+2,"up","Left Ctrl")]
         self.f += 5
     def wait (self, n): self.f += n
     def save (self, name, extra=20):
@@ -138,21 +138,23 @@ k.ctrl("=")
 k.wait(100)
 r.save("06-quedas"); k.save("06-quedas")
 
-# 10: the clock started by the referee (CTRL-T): the radar misses the serve;
+# 10: the clock started by the referee (CTRL-UP again): the radar misses the serve;
 # a sequence with no hit at all; and in the automatic mode, where the silence
 # counts from the key
 r = Radar(10); k = Keys()
 def fraco (r):
     r.nada(20); r.golpe(35, 0); r.nada(40)          # below the speed of a serve
-k.ctrl("Up"); n0 = r.n; fraco(r)
-k.wait(r.n - n0 - 20); k.ctrl("T"); n0 = r.n
+# the serve held: the key repeats, and that does not start the clock
+k.k += [(k.f,"dn","Left Ctrl"), (k.f+1,"dn","Up"), (k.f+20,"dn","Up"), (k.f+22,"dn","Up"), (k.f+24,"up","Up"), (k.f+25,"up","Left Ctrl")]
+k.f += 5; n0 = r.n; fraco(r)
+k.wait(r.n - n0 - 20); k.ctrl("Up"); n0 = r.n
 r.nada(10); r.troca(12, dir=1)
 k.wait(r.n - n0); k.ctrl("Down")
-k.ctrl("Up"); k.wait(40); k.ctrl("T"); k.wait(120); k.ctrl("Down")
+k.ctrl("Up"); k.wait(40); k.ctrl("Up"); k.wait(120); k.ctrl("Down")
 r.nada(170)                                     # read meanwhile
 k.ctrl("A")
 k.ctrl("Up"); n0 = r.n; fraco(r)
-k.wait(r.n - n0 - 20); k.ctrl("T"); n0 = r.n
+k.wait(r.n - n0 - 20); k.ctrl("Up"); n0 = r.n
 r.nada(10); r.troca(6)
 k.wait(r.n - n0 + 300)
 k.ctrl("A"); k.ctrl("Down"); k.ctrl("S")

@@ -35,7 +35,7 @@ One command per line; `#` starts a comment.
 | `now <ms>` | `NOW` |
 | `seq` | Starts a sequence |
 | `hit <ms> <jog> <kmh>` | Adds a hit to the last sequence: the time, the athlete (`0`, `1`), and the speed |
-| `crono <ms>` | The referee started the clock of the last sequence (`CTRL-T`): without it, its first hit starts it |
+| `crono <ms>` | The referee started the clock of the last sequence (a second `CTRL-↑`): without it, its first hit starts it |
 | `nome <0\|1\|2> <name>` | The name of an athlete, or of the referee: the rest of the line |
 | `descanso <ms>` | `JOGO_DESCANSO_TOTAL` |
 | `quedas <n>` | `JOGO_QUEDAS` |

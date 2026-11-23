@@ -233,8 +233,9 @@ func golpe (seq, g) {
 
 ;; A sequence, from the serve on. Evaluates to how it ended: `:queda` (the
 ;; ball fell), `:tempo` (the time is over), or `:desfeita` (the referee
-;; undid the serve).
-task Sequencia () {
+;; undid the serve). `tecla` if the referee served (CTRL-UP), and not the
+;; automatic mode.
+task Sequencia (tecla) {
     set ESTADO  = :seq.saque
     set J.saque = NOW
     val seq   = vector.insert(J.seqs, [])
@@ -271,13 +272,17 @@ task Sequencia () {
         :tempo
     } with {
         ;; THE SERVE: until the first hit, which the radar only takes with
-        ;; the speed of a serve, or until the referee starts the clock
-        ;; (CTRL-T) in spite of the radar; before it, the referee may undo
+        ;; the speed of a serve, or until the referee starts the clock in
+        ;; spite of the radar (CTRL-UP again, once the key of the serve was
+        ;; released: a key held repeats); before it, the referee may undo
         val g = par :any {
             await :key.dn until ctrl(it, "Backspace")
             :desfeita
         } with {
-            await :key.dn until ctrl(it, "T")
+            if tecla {
+                await :key.up until X.in(it.key, ["Up", "U"])
+            }
+            await :key.dn until ctrl(it, "Up", "U")
             :arbitro
         } with {
             await :golpe until it.kmh >= CONF.saque
@@ -323,9 +328,10 @@ task Jogo () {
             await Ocioso()
             until J.restante <= 0
         }
+        val tecla = !direto
         set direto = false
 
-        val fim = await Sequencia()
+        val fim = await Sequencia(tecla)
         until fim == :tempo
 
         if fim == :queda {

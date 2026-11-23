@@ -59,14 +59,14 @@ make test       # needs a JDK and xvfb-run
 The keys of v4.1.0 (the `README.md` of the root describes 5.x, which has
 other keys and holds them for seconds), with the changes since then: the
 hits are only those of the radar (there are no hits by the keyboard), and
-`CTRL-T` starts the clock. None is held here.
+a second `CTRL-↑` starts the clock. None is held here.
 
 | Key | What |
 |-----|------|
 | `CTRL-R` | A new presentation |
 | `CTRL-E` | A warm-up: the time runs, and there are no falls |
 | `CTRL-↑` or `CTRL-U` | The serve: a sequence starts |
-| `CTRL-T` | In a sequence, before the first hit: starts the clock, in spite of the radar (since v4.1.0, `#23`) |
+| `CTRL-↑` again | In a sequence, before the first hit, once the key of the serve was released: starts the clock, in spite of the radar (since v4.1.0, `#23`) |
 | `CTRL-↓` or `CTRL-J` | The ball fell |
 | `CTRL-BACKSPACE` | Between sequences, or before the first hit: discards the last sequence and its fall |
 | `CTRL-=` `CTRL--` | One fall more, or less |
