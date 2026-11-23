@@ -7,7 +7,7 @@ include "../jogo.atm"
 
 conf_load("data/conf.atm")
 
-;; A field of `conf.json`, as the original names it, and where it is in
+;; A field of `conf.json`, as the original names it, and its path in
 ;; `data/conf.atm`.
 val CAMPOS = [
     tempo      = [:tempos, "jogo"],
@@ -16,7 +16,7 @@ val CAMPOS = [
     descanso   = [:tempos, "descanso"],
     ataques    = [:pontos, "golpes"],
     minima     = [:pontos, "minima"],
-    equilibrio = [:pontos, "equilibrio"],
+    equilibrio = [:pontos, "equilibrio", "limite"],
     saque      = [:radar, "saque"],
     lado_radar = [:radar, "lado"],
 ]
@@ -25,7 +25,11 @@ func conf (key, v) {
     if c == nil {
         throw "conf : invalid key : " ++ key
     }
-    set (CONF@(c@0))@(c@1) = if key == "lado_radar" => (tonumber(v) - 1) => tonumber(v)
+    var t = CONF
+    loop i in (#c - 1) {
+        set t = t@(c@i)
+    }
+    set t@(c@(#c-1)) = if key == "lado_radar" => (tonumber(v) - 1) => tonumber(v)
 }
 
 ;; The states, as the original names them (`ESTADO` and `ESTADO_JOGANDO`).

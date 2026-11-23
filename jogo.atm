@@ -155,8 +155,8 @@ func jogo_equ () {
     val a1 = J.atletas@1
     var p0 = a0.pontos
     var p1 = a1.pontos
-    val equ = CONF.pontos.equilibrio
-    if (equ != 0) && ((a0.golpes + a1.golpes) >= CONF.pontos.equ_golpes) {
+    val equ = CONF.pontos.equilibrio.limite
+    if (equ != 0) && ((a0.golpes + a1.golpes) >= CONF.pontos.equilibrio.golpes) {
         set p0 = min(p0, p1*equ // 100)
         set p1 = min(p1, p0*equ // 100)
     }

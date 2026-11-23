@@ -20,13 +20,13 @@ CAMPOS = {
     "descanso":   ("tempos", "descanso"),
     "ataques":    ("pontos", "golpes"),
     "minima":     ("pontos", "minima"),
-    "equilibrio": ("pontos", "equilibrio"),
+    "equilibrio": ("pontos", "limite"),     # in `pontos.equilibrio`, the only `limite`
     "saque":      ("radar", "saque"),
 }
 out = []
 for k, (sec, campo) in CAMPOS.items():
     a = conf.index(f"\n    {sec} = [")
-    m = re.search(rf"\n        {campo}\s*=\s*(\d+),", conf[a:conf.index("\n    ],", a)])
+    m = re.search(rf"\n\s+{campo}\s*=\s*(\d+),", conf[a:conf.index("\n    ],", a)])
     out.append(f"conf {k} {m.group(1)}")
 
 ver = re.search(r"^Versão:\s+v\S+ / (?:dupla / )?(.+) / \d+s$", rel, re.M)

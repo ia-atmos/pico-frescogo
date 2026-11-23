@@ -164,7 +164,7 @@ func tela_atleta (esq, x, jog) {
 
     ;; red while the balance cuts the points of the other athlete
     val outro = (J.atletas@(1-jog)).pontos
-    val corta = (CONF.pontos.equilibrio != 0) && (outro > (a.pontos*CONF.pontos.equilibrio // 100))
+    val corta = (CONF.pontos.equilibrio.limite != 0) && (outro > (a.pontos*CONF.pontos.equilibrio.limite // 100))
     texto(a.pontos, m, 7.5*H, 65*dy, (if corta => VERMELHO => PRETO), :meio)
 
     ;; what each row is
