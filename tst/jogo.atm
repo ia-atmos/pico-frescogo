@@ -10,10 +10,10 @@ conf_load("data/conf.atm")
 ;; A field of `conf.json`, as the original names it, and where it is in
 ;; `data/conf.atm`.
 val CAMPOS = [
-    tempo      = [:apresentacao, "tempo"],
-    queda      = [:apresentacao, "queda"],
-    esquenta   = [:apresentacao, "esquenta"],
-    descanso   = [:apresentacao, "descanso"],
+    tempo      = [:tempos, "jogo"],
+    queda      = [:tempos, "queda"],
+    esquenta   = [:tempos, "esquenta"],
+    descanso   = [:tempos, "descanso"],
     ataques    = [:pontos, "golpes"],
     minima     = [:pontos, "minima"],
     equilibrio = [:pontos, "equilibrio"],

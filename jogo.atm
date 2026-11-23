@@ -113,11 +113,11 @@ func conf_load (path) {
 func conf_pars () {
     "v" ++ VERSAO ++ " / " ++
     (if RADAR != nil => "radar" => "sem radar") ++ " / " ++
-    CONF.apresentacao.tempo ++ "s"
+    CONF.tempos.jogo ++ "s"
 }
 
 func conf_tempo () {
-    if J.esquenta => CONF.apresentacao.esquenta => CONF.apresentacao.tempo
+    if J.esquenta => CONF.tempos.esquenta => CONF.tempos.jogo
 }
 
 ;; The hits of an athlete that count, at most: its strongest ones.
@@ -135,7 +135,7 @@ func jogo_quedas () {
 
 ;; What the falls take from the time, in seconds (none in a warm-up).
 func jogo_desconto () {
-    if J.esquenta => 0 => max(0, CONF.apresentacao.queda * jogo_quedas())
+    if J.esquenta => 0 => max(0, CONF.tempos.queda * jogo_quedas())
 }
 
 ;; The rest that is left, in seconds: what the athletes took to serve, beyond
@@ -143,9 +143,9 @@ func jogo_desconto () {
 func descanso_resta () {
     var ms = J.descanso
     if ESTADO == :seq.saque {
-        set ms = ms + max(0, NOW - J.saque - (CONF.apresentacao.saque * 1000))
+        set ms = ms + max(0, NOW - J.saque - (CONF.tempos.saque * 1000))
     }
-    CONF.apresentacao.descanso - (ms // 1000)
+    CONF.tempos.descanso - (ms // 1000)
 }
 
 ;; The points of the two athletes with the balance: from 30 hits on, none

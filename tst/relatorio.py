@@ -14,10 +14,10 @@ conf = open(sys.argv[2], encoding="utf-8").read()
 
 # the fields of the score: their names in the oracle, and their places
 CAMPOS = {
-    "tempo":      ("apresentacao", "tempo"),
-    "queda":      ("apresentacao", "queda"),
-    "esquenta":   ("apresentacao", "esquenta"),
-    "descanso":   ("apresentacao", "descanso"),
+    "tempo":      ("tempos", "jogo"),
+    "queda":      ("tempos", "queda"),
+    "esquenta":   ("tempos", "esquenta"),
+    "descanso":   ("tempos", "descanso"),
     "ataques":    ("pontos", "golpes"),
     "minima":     ("pontos", "minima"),
     "equilibrio": ("pontos", "equilibrio"),

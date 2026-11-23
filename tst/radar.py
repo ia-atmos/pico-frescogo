@@ -53,7 +53,7 @@ class Keys:
         open(f"tst/fluxo/{name}.keys","w").write(f"{self.f+extra}\n" + ",".join(f"{f}:{d}:{k}" for f,d,k in self.k) + "\n")
 
 # A configuration: that of `data/conf.atm`, with other values, given as
-# `secao_campo=valor` (`apresentacao_tempo=60`).
+# `secao_campo=valor` (`tempos_jogo=60`).
 def conf (name, **kw):
     c = open("data/conf.atm").read()
     c = c.replace("which takes the place of `conf.json` of the original (v4.1.0).", f"here with other values, for the test `{name}`.")
@@ -104,7 +104,7 @@ k.wait(r.n - n0); k.ctrl("Down"); k.ctrl("S")
 r.save("02-auto"); k.save("02-auto")
 
 # 03: the end by the time, in a presentation of one minute
-conf("03-tempo", apresentacao_tempo=60)
+conf("03-tempo", tempos_jogo=60)
 r = Radar(3); k = Keys()
 seq(k, r, lambda r: (r.nada(30), r.troca(30)))
 seq(k, r, lambda r: (r.nada(30), r.troca(30, kmh=75)))
@@ -136,7 +136,7 @@ r.save("05-nomes"); k.save("05-nomes")
 # 06: the end by the falls, which take 12 s each of a presentation of one
 # minute, with a fall added by the referee between sequences (CTRL-=); and
 # the rest that runs out (3 seconds)
-conf("06-quedas", apresentacao_tempo=60, apresentacao_descanso=3)
+conf("06-quedas", tempos_jogo=60, tempos_descanso=3)
 r = Radar(6); k = Keys()
 for i in range(3):
     seq(k, r, lambda r: (r.nada(30 + 600*(i%2)), r.troca(10, dir=i%2)))   # 10 s to serve: 5 s of rest
@@ -179,7 +179,7 @@ r.save("07-radar"); k.save("07-radar")
 
 # 08: the automatic mode: falls by 3.5 s of silence, the serve after one
 # second, and the end by the time, with one minute (the falls take 12 s each)
-conf("08-radar-auto", apresentacao_tempo=60)
+conf("08-radar-auto", tempos_jogo=60)
 r = Radar(8); k = Keys()
 k.ctrl("A"); k.ctrl("Up")
 r.nada(30)

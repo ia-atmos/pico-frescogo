@@ -277,7 +277,7 @@ task Sequencia (tecla) {
             :desfeita
         } else {
             ;; what the serve took beyond 5 seconds comes out of the rest
-            set J.descanso = J.descanso + max(0, NOW - J.saque - (CONF.apresentacao.saque * 1000))
+            set J.descanso = J.descanso + max(0, NOW - J.saque - (CONF.tempos.saque * 1000))
             set ESTADO  = :seq.golpes
             set crono.t = NOW
             if g == :arbitro {
@@ -387,8 +387,8 @@ task Apresentacao (esquenta) {
     ;; the rest that ran out
     spawn {
         loop {
-            await :quadro until (ESTADO ?? :seq) && (J.restante >  CONF.apresentacao.aviso)
-            await :quadro until (ESTADO ?? :seq) && (J.restante <= CONF.apresentacao.aviso)
+            await :quadro until (ESTADO ?? :seq) && (J.restante >  CONF.tempos.aviso)
+            await :quadro until (ESTADO ?? :seq) && (J.restante <= CONF.tempos.aviso)
             som(:aviso)
         }
     }
