@@ -11,8 +11,8 @@
 04-esquenta  2000 1990
 05-nomes       40   35
 05-nomes      140  130
-06-aborta     900  890
-06-aborta    3169 3160
+06-quedas     900  890
+06-quedas    2112 2100
 07-radar      200  190
 09-radar-ruido 500 490
 10-crono      100   90

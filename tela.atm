@@ -113,6 +113,9 @@ func tela_meio () {
 
     disco(MX, height/2, 1.5*H, VERMELHO, PRETO)
     texto(jogo_quedas(), MX, height/2-15*dy, 110*dy, BRANCO, :meio)
+    if jogo_desconto() > 0 {
+        texto("-" ++ jogo_desconto() ++ " s", MX, height/2+60*dy, 22*dy, BRANCO, :meio)
+    }
 
     if ESTADO ?? :seq {
         val seq = J.seqs@#
@@ -192,9 +195,9 @@ func tela_total () {
 
     texto(J.total, MX, 7*H-15*dy, 140*dy, BRANCO, :meio)
 
-    ;; how it is made: the points of each athlete, less the falls
+    ;; how it is made: the points of each athlete, with the balance
     val ps = jogo_equ()
-    texto("(" ++ ps@0 ++ " + " ++ ps@1 ++ ") - " ++ f100(jogo_quedas_pct()) ++ "%", MX, 7.5*H+20*dy, 15*dy, CINZA, :meio)
+    texto("(" ++ ps@0 ++ " + " ++ ps@1 ++ ")", MX, 7.5*H+20*dy, 15*dy, CINZA, :meio)
 }
 
 func tela () {

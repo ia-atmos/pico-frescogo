@@ -127,14 +127,16 @@ seq(k, r, lambda r: (r.nada(20), r.troca(8)))
 k.ctrl("S"); k.ctrl("Q")
 r.save("05-nomes"); k.save("05-nomes")
 
-# 06: the end by the limit of falls, in a presentation of one minute (4
-# falls), and the rest that runs out (3 seconds)
-conf("06-aborta", tempo=60, descanso=3)
+# 06: the end by the falls, which take 12 s each of a presentation of one
+# minute, with a fall added by the referee between sequences (CTRL-=); and
+# the rest that runs out (3 seconds)
+conf("06-quedas", tempo=60, descanso=3)
 r = Radar(6); k = Keys()
-for i in range(4):
+for i in range(3):
     seq(k, r, lambda r: (r.nada(30 + 600*(i%2)), r.troca(10, dir=i%2)))   # 10 s to serve: 5 s of rest
+k.ctrl("=")
 k.wait(100)
-r.save("06-aborta"); k.save("06-aborta")
+r.save("06-quedas"); k.save("06-quedas")
 
 # 10: the clock started by the referee (CTRL-T): the radar misses the serve;
 # a sequence with no hit at all; and in the automatic mode, where the silence
@@ -168,7 +170,7 @@ k.wait(r.n - n0 - 5); k.ctrl("Down"); k.ctrl("S")
 r.save("07-radar"); k.save("07-radar")
 
 # 08: the automatic mode: falls by 3.5 s of silence, the serve after one
-# second, and the end by the limit of falls (4, with one minute)
+# second, and the end by the time, with one minute (the falls take 12 s each)
 conf("08-radar-auto", tempo=60)
 r = Radar(8); k = Keys()
 k.ctrl("A"); k.ctrl("Up")

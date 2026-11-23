@@ -3,7 +3,7 @@
 `Oracle.java` has the functions of the score of `placar/placar.pde`
 (v4.1.0, the source of the release package) in plain Java, with no
 Processing: `conf_*`, `_jogo_tempo`, `_jogo_lado`, `jogo_kmh`,
-`jogo_quedas_pct`, `jogo_equ`, `jogo_calc`, and the text of the report of
+`jogo_desconto`, `jogo_equ`, `jogo_calc`, and the text of the report of
 `go_termino`. They were copied from the sketch by a script, between the
 marks `BEGIN` and `END` (as the branch `4.1` has them). Here they have the
 changes of the rule since v4.1.0, written apart from the port, and marked
@@ -47,6 +47,6 @@ The line of `calc`:
 
 ```
 calc tempo=<passado>,<restante>,<restante_show> total=<JOGO_TOTAL>
-     equ=<p0>,<p1> pct=<jogo_quedas_pct> aborta=<conf_aborta>
+     equ=<p0>,<p1> desconto=<jogo_desconto>
      jog0=<the 5 numbers of JOGO_JOGS[0]>/<conf_ataques(0)> jog1=<...>
 ```

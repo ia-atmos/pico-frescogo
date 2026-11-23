@@ -15,6 +15,10 @@
 //      #23     no hits by the keyboard: the speeds are those of the radar;
 //              the clock of a sequence starts at its first hit, or at the
 //              key of the referee (`crono`)
+//      #6      the rule of time: 6 minutes, and each fall takes 12 seconds
+//              of the time; no percentage for the falls, and no limit of
+//              falls; the 150 strongest hits of each athlete count
+//      #24     the version is 4.2.0, and the report no longer says `dupla`
 //
 // `min`, `max`, `nf`, and `IntList` are those of Processing, redefined at
 // the end of this file.
@@ -27,7 +31,7 @@ import java.util.*;
 public class Oracle {
 
     static int         MAJOR    = 4;
-    static int         MINOR    = 1;
+    static int         MINOR    = 2;        // #24
     static int         REVISION = 0;
     static String      VERSAO   = MAJOR + "." + MINOR + "." + REVISION;
 
@@ -39,14 +43,12 @@ public class Oracle {
     static int         ESQUENTA_INICIO;
 
     // the defaults are those of `conf.json`
-    static int         CONF_TEMPO       = 300;
-    static int         CONF_ATAQUES     = 60;
+    static int         CONF_TEMPO       = 360;      // #6
+    static int         CONF_ATAQUES     = 150;      // #6: of each athlete
     static int         CONF_EQUILIBRIO  = 130;
     static int         CONF_VEL_MIN     = 50;
     static int         CONF_SAQUE       = 45;
-    static int         CONF_TREGUA      = 1;
-    static int         CONF_QUEDAS      = 1500;
-    static int         CONF_ABORTA      = 15;
+    static int         CONF_QUEDA       = 12;       // #6: seconds per fall
     static int         CONF_ESQUENTA    = 60;
     static int         CONF_DESCANSO    = 90;
 
@@ -85,19 +87,7 @@ public class Oracle {
     }
 
     static int conf_ataques (int jog) {
-        return max(1, conf_tempo() * CONF_ATAQUES / 60 / 2);    // #5
-    }
-
-    static int conf_quedas_base () {
-        return CONF_TREGUA * conf_tempo() / 60;    // 1 / 60s
-    }
-
-    static int conf_quedas_pena () {
-        return CONF_QUEDAS * 60 / conf_tempo();    // 12% / 60s
-    }
-
-    static int conf_aborta () {
-        return conf_tempo() / CONF_ABORTA;              // 1 queda / 15s
+        return CONF_ATAQUES;                                    // #5, #6
     }
 
     static boolean conf_radar () {
@@ -134,7 +124,7 @@ public class Oracle {
         }
 
         JOGO_TEMPO_PASSADO = ret / 1000;
-        JOGO_TEMPO_RESTANTE = max(0, conf_tempo()-JOGO_TEMPO_PASSADO);
+        JOGO_TEMPO_RESTANTE = max(0, conf_tempo()-JOGO_TEMPO_PASSADO-jogo_desconto());   // #6
         JOGO_TEMPO_RESTANTE_SHOW = JOGO_TEMPO_RESTANTE;
 
         if (ESTADO.equals("jogando") && ESTADO_JOGANDO.equals("jogando")) {
@@ -180,8 +170,8 @@ public class Oracle {
         return JOGO_QUEDAS + JOGO_QUEDAS_MANUAL;
     }
 
-    static int jogo_quedas_pct () {
-        return max(0, jogo_quedas()-conf_quedas_base()) * conf_quedas_pena();
+    static int jogo_desconto () {                           // #6: in seconds
+        return ESQUENTA ? 0 : max(0, jogo_quedas() * CONF_QUEDA);
     }
 
     static int[] jogo_equ () {
@@ -205,13 +195,12 @@ public class Oracle {
         _jogo_lado(1);
 
         int[] ps = jogo_equ();
-        JOGO_TOTAL = (ps[0]+ps[1]) * (10000-jogo_quedas_pct()) / 10000;
+        JOGO_TOTAL = ps[0] + ps[1];                         // #6
     }
 
     // `CONF_PARS`, as `setup` builds it.
     static void conf_pars () {
         CONF_PARS = "v" + VERSAO + " / " +
-                    "dupla" + " / " +                                   // #5
                     (conf_radar() ? "radar" : "sem radar") + " / " +    // #23
                     CONF_TEMPO   + "s";
     }
@@ -239,12 +228,12 @@ public class Oracle {
                    + "\n"
                    + ns("Descanso:",      15) + (JOGO_DESCANSO_TOTAL/1000) + "\n"
                    + ns("Quedas:",        15) + jogo_quedas() + manual + "\n"
+                   + ns("Tempo:",         15) + JOGO_TEMPO_PASSADO + "s + " + jogo_desconto() + "s das quedas\n"  // #6
                    + "\n"
                    + jogs[0] + jogs[1]
                    + "\n"
                    + ns("Parcial:",       15) + nf(JOGO_JOGS[0][0]+JOGO_JOGS[1][0],5) + " pontos\n"
                    + ns("Desequilibrio:", 15) + nf((JOGO_JOGS[0][0]+JOGO_JOGS[1][0]) - (ps[0]+ps[1]), 5) + " (-)\n"
-                   + ns("Quedas:",        15) + nf(ps[0]+ps[1] - JOGO_TOTAL, 5) + " (-)\n"
                    + "\n"
                    + ns("FINAL:",         15) + nf(JOGO_TOTAL,5) + " pontos\n"
                    + "\n";
@@ -298,9 +287,7 @@ public class Oracle {
             case "ataques":    CONF_ATAQUES     = v;   break;
             case "equilibrio": CONF_EQUILIBRIO  = v;   break;
             case "minima":     CONF_VEL_MIN     = v;   break;
-            case "tregua":     CONF_TREGUA      = v;   break;
-            case "quedas":     CONF_QUEDAS      = v;   break;
-            case "aborta":     CONF_ABORTA      = v;   break;
+            case "queda":      CONF_QUEDA       = v;   break;
             case "saque":      CONF_SAQUE       = v;   break;
             case "esquenta":   CONF_ESQUENTA    = v;   break;
             case "descanso":   CONF_DESCANSO    = v;   break;
@@ -323,8 +310,7 @@ public class Oracle {
             + " tempo="  + JOGO_TEMPO_PASSADO + "," + JOGO_TEMPO_RESTANTE + "," + JOGO_TEMPO_RESTANTE_SHOW
             + " total="  + JOGO_TOTAL
             + " equ="    + ps[0] + "," + ps[1]
-            + " pct="    + jogo_quedas_pct()
-            + " aborta=" + conf_aborta()
+            + " desconto=" + jogo_desconto()
             + " jog0="   + ints(JOGO_JOGS[0]) + "/" + conf_ataques(0)
             + " jog1="   + ints(JOGO_JOGS[1]) + "/" + conf_ataques(1)
         );

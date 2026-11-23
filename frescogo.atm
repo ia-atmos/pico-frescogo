@@ -152,7 +152,8 @@ func letra (e) {
 ;; THE FLOW
 ;;
 ;;  Apresentacao        from a restart (CTRL-R, CTRL-E) to the next one
-;;      Jogo            sequences, until the time or the limit of falls
+;;      Jogo            sequences, until the time is over (the falls take
+;;                      time too)
 ;;          Ocioso      the referee serves (CTRL-UP), undoes, edits names
 ;;              Nome    a name being typed
 ;;          Sequencia   from a serve to a fall
@@ -203,20 +204,23 @@ task Nome (idx) {
     }
 }
 
-;; Between sequences: until the referee serves.
+;; Between sequences: until the referee serves, or until the falls that the
+;; referee adds (CTRL-=) take the time that was left.
 task Ocioso () {
-    loop {
-        set ESTADO = :ocioso
-        val e = await :key.dn until it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"])
-        match e.key {
-            "Backspace" => {
-                desfaz()
-                jogo_calc()
+    watching :quadro until J.restante <= 0 {
+        loop {
+            set ESTADO = :ocioso
+            val e = await :key.dn until it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"])
+            match e.key {
+                "Backspace" => {
+                    desfaz()
+                    jogo_calc()
+                }
+                "1"  => await Nome(0)
+                "2"  => await Nome(1)
+                "0"  => await Nome(2)
+                else => break
             }
-            "1"  => await Nome(0)
-            "2"  => await Nome(1)
-            "0"  => await Nome(2)
-            else => break
         }
     }
 }
@@ -311,13 +315,13 @@ task Sequencia () {
     }
 }
 
-;; The sequences of a presentation, until the time is over or the falls
-;; reach their limit.
+;; The sequences of a presentation, until the time is over.
 task Jogo () {
     var direto = false      ;; the automatic mode serves by itself
     loop {
         if !direto {
             await Ocioso()
+            until J.restante <= 0
         }
         set direto = false
 
@@ -328,7 +332,7 @@ task Jogo () {
             set ESTADO = :ocioso
             set J.quedas = J.quedas + 1
             jogo_calc()
-            if jogo_quedas() >= conf_aborta() {
+            if J.restante <= 0 {        ;; the fall took the time that was left
                 await 1s
                 break
             }
@@ -388,6 +392,7 @@ task Apresentacao (esquenta) {
     vector.clear(J.seqs)
     vector.clear(J.cronos)
     set ESTADO = :ocioso
+    jogo_calc()             ;; nothing is left of the last presentation
     som(:reinicio)
 
     ;; the warnings: 30 seconds left, each time a sequence crosses them, and

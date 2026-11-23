@@ -1,19 +1,19 @@
-calc tempo=0,300,300 total=0 equ=0,0 pct=0 aborta=20 jog0=0,0,0,0,0/150 jog1=0,0,0,0,0/150
-calc tempo=0,300,300 total=0 equ=0,0 pct=0 aborta=20 jog0=0,0,0,0,0/150 jog1=0,0,0,0,0/150
-calc tempo=0,300,300 total=0 equ=0,0 pct=0 aborta=20 jog0=0,0,0,0,0/150 jog1=0,0,0,0,0/150
-calc tempo=0,300,300 total=60 equ=0,60 pct=0 aborta=20 jog0=0,0,0,0,0/150 jog1=60,1,5500,55,55/150
+calc tempo=0,360,360 total=0 equ=0,0 desconto=0 jog0=0,0,0,0,0/150 jog1=0,0,0,0,0/150
+calc tempo=0,360,360 total=0 equ=0,0 desconto=0 jog0=0,0,0,0,0/150 jog1=0,0,0,0,0/150
+calc tempo=0,360,360 total=0 equ=0,0 desconto=0 jog0=0,0,0,0,0/150 jog1=0,0,0,0,0/150
+calc tempo=0,360,360 total=60 equ=0,60 desconto=0 jog0=0,0,0,0,0/150 jog1=60,1,5500,55,55/150
 Data:          2026_11_19_10_00_00
-Versão:        v4.1.0 / dupla / radar / 300s
+Versão:        v4.2.0 / radar / 360s
 
 Descanso:      0
 Quedas:        0
+Tempo:         0s + 0s das quedas
 
 Atleta 1:      00000 pontos / 000 golpes / 00.00 km/h
 Atleta 2:      00060 pontos / 001 golpes / 55.00 km/h
 
 Parcial:       00060 pontos
 Desequilibrio: 00000 (-)
-Quedas:        00000 (-)
 
 FINAL:         00060 pontos
 

@@ -18,7 +18,7 @@ There are three versions:
 |--------|------|
 | `fidelity` | The port that is one to one with the original, function by function |
 | `4.1` | The same program written for Atmos: the flow of a presentation is a hierarchy of tasks, each state is a place in the code, and the screen and the radar are separate from it. Exactly v4.1.0 |
-| `master` | `4.1` with the changes of the rule since then (`.claude/plans/TODO.md`): no `trinca` mode (`#5`), no hits by the keyboard and a key of the referee for the clock (`#23`) |
+| `master` | `4.1` with the changes of the rule since then (`.claude/plans/TODO.md`): no `trinca` mode (`#5`), no hits by the keyboard and a key of the referee for the clock (`#23`), the rule of time (`#6`), version 4.2.0 (`#24`) |
 
 `fidelity` and `4.1` are checked against the original itself, run over the
 same scripted keys, and their rule is that of the readme of
@@ -76,7 +76,8 @@ hits are only those of the radar (there are no hits by the keyboard), and
 | `CTRL-S` | Ends the presentation, and writes its report; again, writes it again |
 | `CTRL-Q` | Closes the program |
 
-A presentation also ends when the time is over, or at the limit of falls.
+A presentation ends when the time is over: 6 minutes, less 12 seconds for
+each fall (since v4.1.0, `#6`).
 The report, a picture of the screen, and a line of `resultados.csv` go to
 `relatorios/`; with a radar, its readings go to `radar.txt`.
 

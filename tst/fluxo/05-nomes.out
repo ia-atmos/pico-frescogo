@@ -20,17 +20,17 @@
 [007392] snd queda2.wav
 === frescogo-TESTE-Ana_-BIa.txt
 Data:          TESTE
-Versão:        v4.1.0 / dupla / radar / 300s
+Versão:        v4.2.0 / radar / 360s
 
 Descanso:      0
 Quedas:        1
+Tempo:         4s + 12s das quedas
 
 Ana_:          00358 pontos / 003 golpes / 77.00 km/h
 BIa:           00401 pontos / 003 golpes / 81.66 km/h
 
 Parcial:       00759 pontos
 Desequilibrio: 00000 (-)
-Quedas:        00000 (-)
 
 FINAL:         00759 pontos
 

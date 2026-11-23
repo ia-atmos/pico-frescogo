@@ -4,7 +4,7 @@ radar 1
 conf equilibrio 100
 conf minima 31
 conf tempo 117
-conf quedas 135
+conf queda 7
 inicio 500
 seq
 hit 4537 0 49

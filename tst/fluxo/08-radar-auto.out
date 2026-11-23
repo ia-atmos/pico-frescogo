@@ -45,6 +45,7 @@
 >>> [0186] -- 000 <<<
 [021520] snd fall.wav
 [022520] snd start.wav
+[022528] snd 30s.wav
 >>> [0238] -> 720 <<<
 [023856] snd laser.wav
 >>> [0245] <- 700 <<<
@@ -86,30 +87,22 @@
 [041824] snd trophaser.wav
 >>> [0424] -> 569 <<<
 [042400] snd peteleco.mp3
->>> [0431] -- 000 <<<
->>> [0431] <- 610 <<<
-[043184] snd agudo.wav
->>> [0437] -> 720 <<<
-[043760] snd laser.wav
->>> [0444] <- 800 <<<
-[044400] snd hit.wav
->>> [0451] -- 000 <<<
-[048936] snd queda2.wav
+[042416] snd queda2.wav
 === frescogo-TESTE-Atleta 1-Atleta 2.txt
 Data:          TESTE
-Versão:        v4.1.0 / dupla / radar / 60s
+Versão:        v4.2.0 / radar / 60s
 
 Descanso:      0
-Quedas:        4
+Quedas:        3
+Tempo:         24s + 36s das quedas
 
-Atleta 1:      01892 pontos / 017 golpes / 73.64 km/h
-Atleta 2:      01416 pontos / 014 golpes / 70.35 km/h
+Atleta 1:      01725 pontos / 015 golpes / 74.86 km/h
+Atleta 2:      01342 pontos / 013 golpes / 71.07 km/h
 
-Parcial:       03308 pontos
-Desequilibrio: 00052 (-)
-Quedas:        01466 (-)
+Parcial:       03067 pontos
+Desequilibrio: 00000 (-)
 
-FINAL:         01790 pontos
+FINAL:         03067 pontos
 
 SEQUÊNCIA 01
 ============
@@ -178,14 +171,11 @@ TEMPO   DIR   KMH
 041104   ->   056
 041824   <-   092
 042400   ->   057
-043184   <-   061
-043760   ->   072
-044400   <-   080
 
 
 
 === resultados.csv
-TESTE ; 1790 ; 4 ; 0 ; Atleta 1 ; 1892 ; 17 ; 73.64 ; Atleta 2 ; 1416 ; 14 ; 70.35 ; 
+TESTE ; 3067 ; 3 ; 0 ; Atleta 1 ; 1725 ; 15 ; 74.86 ; Atleta 2 ; 1342 ; 13 ; 71.07 ; 
 === radar.txt
 [0006] -> 464
 [0006] -> 522
@@ -434,23 +424,3 @@ TESTE ; 1790 ; 4 ; 0 ; Atleta 1 ; 1892 ; 17 ; 73.64 ; Atleta 2 ; 1416 ; 14 ; 70.
 [0424] -> 569
 >>> [0424] -> 569 <<<
 [0424] -> 610
-[0424] -> 569
-[0424] -> 528
-[0424] -> 488
->>> [0431] -- 000 <<<
-[0431] <- 488
-[0431] <- 549
-[0431] <- 610
->>> [0431] <- 610 <<<
-[0432] <- 610
-[0432] <- 549
-[0432] <- 488
-[0437] -> 576
-[0437] -> 720
-[0437] -> 576
->>> [0437] -> 720 <<<
-[0443] <- 640
-[0443] <- 800
-[0444] <- 640
->>> [0444] <- 800 <<<
->>> [0451] -- 000 <<<

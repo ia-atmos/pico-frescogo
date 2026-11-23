@@ -2,8 +2,7 @@
 radar 1
 conf tempo 60
 conf ataques 20
-conf aborta 10
-conf quedas 3000
+conf queda 30
 inicio 1000
 seq
 hit 10073 1 34

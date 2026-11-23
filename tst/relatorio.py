@@ -18,7 +18,7 @@ for k in ["tempo", "ataques", "equilibrio", "minima", "tregua", "quedas", "abort
     if m:
         out.append(f"conf {k} {m.group(1)}")
 
-ver = re.search(r"^Versão:\s+v\S+ / \S+ / (.+) / \d+s$", rel, re.M)
+ver = re.search(r"^Versão:\s+v\S+ / (?:dupla / )?(.+) / \d+s$", rel, re.M)
 out.append("radar " + ("1" if ver.group(1) == "radar" else "0"))
 out.append("inicio 0")
 

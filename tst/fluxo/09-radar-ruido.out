@@ -34,17 +34,17 @@
 [014400] snd queda2.wav
 === frescogo-TESTE-Atleta 1-Atleta 2.txt
 Data:          TESTE
-Versão:        v4.1.0 / dupla / radar / 300s
+Versão:        v4.2.0 / radar / 360s
 
 Descanso:      0
 Quedas:        1
+Tempo:         12s + 12s das quedas
 
 Atleta 1:      00470 pontos / 004 golpes / 74.75 km/h
 Atleta 2:      00829 pontos / 006 golpes / 80.50 km/h
 
 Parcial:       01299 pontos
 Desequilibrio: 00000 (-)
-Quedas:        00000 (-)
 
 FINAL:         01299 pontos
 

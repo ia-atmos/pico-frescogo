@@ -4,7 +4,7 @@
 ;; It does not depend on pico: `frescogo.atm` includes it, and so does the
 ;; test of the score (`tst/jogo.atm`), which compares it with the oracle.
 
-val VERSAO = "4.1.0"
+val VERSAO = "4.2.0"         ;; v4.1.0 with the changes of the rule (`#24`)
 
 var NOW = 0             ;; the time, in milliseconds
 
@@ -110,7 +110,6 @@ func conf_load (path) {
 ;; The parameters of a presentation, as the screen and the report show them.
 func conf_pars () {
     "v" ++ VERSAO ++ " / " ++
-    "dupla" ++ " / " ++
     (if RADAR != nil => "radar" => "sem radar") ++ " / " ++
     CONF.tempo ++ "s"
 }
@@ -119,24 +118,9 @@ func conf_tempo () {
     if J.esquenta => CONF.esquenta => CONF.tempo
 }
 
-;; The hits of an athlete that count, at most.
+;; The hits of an athlete that count, at most: its strongest ones.
 func conf_ataques (jog) {
-    max(1, conf_tempo() * CONF.ataques // 60 // 2)
-}
-
-;; The falls that cost nothing: one per minute.
-func conf_quedas_base () {
-    CONF.tregua * conf_tempo() // 60
-}
-
-;; What each fall costs after them, in hundredths of percent.
-func conf_quedas_pena () {
-    CONF.quedas * 60 // conf_tempo()
-}
-
-;; The falls that end a presentation: one for each 15 seconds.
-func conf_aborta () {
-    conf_tempo() // CONF.aborta
+    CONF.ataques
 }
 
 ;; ----------------------------------------------------------------------------
@@ -147,9 +131,9 @@ func jogo_quedas () {
     J.quedas + J.manual
 }
 
-;; What the falls take from the points, in hundredths of percent.
-func jogo_quedas_pct () {
-    max(0, jogo_quedas()-conf_quedas_base()) * conf_quedas_pena()
+;; What the falls take from the time, in seconds (none in a warm-up).
+func jogo_desconto () {
+    if J.esquenta => 0 => max(0, CONF.queda * jogo_quedas())
 }
 
 ;; The rest that is left, in seconds: what the athletes took to serve, beyond
@@ -178,7 +162,8 @@ func jogo_equ () {
 
 ;; The time played is the time of the sequences, each from the start of its
 ;; clock (its first hit, or the key of the referee) to its last hit. In a
-;; warm-up, it is the time since the serve.
+;; warm-up, it is the time since the serve. What is left is the time of the
+;; presentation less the time played and the time of the falls.
 func _jogo_tempo () {
     var ms   = 0
     var last = NOW
@@ -198,7 +183,7 @@ func _jogo_tempo () {
     }
 
     set J.passado  = ms // 1000
-    set J.restante = max(0, conf_tempo()-J.passado)
+    set J.restante = max(0, conf_tempo() - J.passado - jogo_desconto())
     set J.mostra   = J.restante
 
     if ESTADO == :seq.golpes {
@@ -244,7 +229,7 @@ func jogo_calc () {
     _jogo_lado(1)
 
     val ps = jogo_equ()
-    set J.total = (ps@0+ps@1) * (10000-jogo_quedas_pct()) // 10000
+    set J.total = ps@0 + ps@1
 }
 
 ;; ----------------------------------------------------------------------------
@@ -276,12 +261,12 @@ func jogo_relatorio (ts) {
               "\n" ++
               ns("Descanso:",      15) ++ (J.descanso // 1000) ++ "\n" ++
               ns("Quedas:",        15) ++ jogo_quedas() ++ manual ++ "\n" ++
+              ns("Tempo:",         15) ++ J.passado ++ "s + " ++ jogo_desconto() ++ "s das quedas\n" ++
               "\n" ++
               atletas ++
               "\n" ++
               ns("Parcial:",       15) ++ nf(parcial,5) ++ " pontos\n" ++
               ns("Desequilibrio:", 15) ++ nf(parcial - equ, 5) ++ " (-)\n" ++
-              ns("Quedas:",        15) ++ nf(equ - J.total, 5) ++ " (-)\n" ++
               "\n" ++
               ns("FINAL:",         15) ++ nf(J.total,5) ++ " pontos\n" ++
               "\n"

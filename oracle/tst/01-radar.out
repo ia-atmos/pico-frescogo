@@ -1,25 +1,25 @@
-calc tempo=3,297,296 total=337 equ=275,62 pct=0 aborta=20 jog0=275,2,8300,79,87/150 jog1=62,1,5600,56,56/150
-calc tempo=10,290,290 total=968 equ=612,356 pct=0 aborta=20 jog0=612,5,7780,59,87/150 jog1=356,3,7500,56,99/150
-calc tempo=13,287,287 total=1370 equ=701,669 pct=0 aborta=20 jog0=701,6,7600,59,87/150 jog1=669,5,8000,56,101/150
-calc tempo=16,284,283 total=1600 equ=759,841 pct=0 aborta=20 jog0=759,7,7285,54,87/150 jog1=841,6,8216,56,101/150
-calc tempo=23,277,277 total=2481 equ=1113,1368 pct=0 aborta=20 jog0=1113,10,7340,51,96/150 jog1=1368,9,8588,56,104/150
-calc tempo=27,273,273 total=2790 equ=1313,1477 pct=0 aborta=20 jog0=1313,11,7581,51,100/150 jog1=1477,10,8470,56,104/150
-calc tempo=30,270,268 total=3174 equ=1517,1657 pct=0 aborta=20 jog0=1517,12,7791,51,101/150 jog1=1657,11,8563,56,104/150
-calc tempo=39,261,260 total=4237 equ=2127,2110 pct=0 aborta=20 jog0=2127,16,7987,51,102/150 jog1=2110,14,8571,56,104/150
-calc tempo=40,260,260 total=4588 equ=2478,2110 pct=0 aborta=20 jog0=2478,18,8138,51,102/150 jog1=2110,14,8571,56,104/150
-calc tempo=40,260,260 total=4588 equ=2478,2110 pct=0 aborta=20 jog0=2478,18,8138,51,102/150 jog1=2110,14,8571,56,104/150
+calc tempo=3,357,356 total=337 equ=275,62 desconto=0 jog0=275,2,8300,79,87/150 jog1=62,1,5600,56,56/150
+calc tempo=10,350,350 total=968 equ=612,356 desconto=0 jog0=612,5,7780,59,87/150 jog1=356,3,7500,56,99/150
+calc tempo=13,335,335 total=1370 equ=701,669 desconto=12 jog0=701,6,7600,59,87/150 jog1=669,5,8000,56,101/150
+calc tempo=16,332,331 total=1600 equ=759,841 desconto=12 jog0=759,7,7285,54,87/150 jog1=841,6,8216,56,101/150
+calc tempo=23,325,325 total=2481 equ=1113,1368 desconto=12 jog0=1113,10,7340,51,96/150 jog1=1368,9,8588,56,104/150
+calc tempo=27,309,309 total=2790 equ=1313,1477 desconto=24 jog0=1313,11,7581,51,100/150 jog1=1477,10,8470,56,104/150
+calc tempo=30,306,304 total=3174 equ=1517,1657 desconto=24 jog0=1517,12,7791,51,101/150 jog1=1657,11,8563,56,104/150
+calc tempo=39,297,296 total=4237 equ=2127,2110 desconto=24 jog0=2127,16,7987,51,102/150 jog1=2110,14,8571,56,104/150
+calc tempo=40,284,284 total=4588 equ=2478,2110 desconto=36 jog0=2478,18,8138,51,102/150 jog1=2110,14,8571,56,104/150
+calc tempo=40,284,284 total=4588 equ=2478,2110 desconto=36 jog0=2478,18,8138,51,102/150 jog1=2110,14,8571,56,104/150
 Data:          2026_11_19_10_00_00
-Versão:        v4.1.0 / dupla / radar / 300s
+Versão:        v4.2.0 / radar / 360s
 
 Descanso:      16
 Quedas:        3
+Tempo:         40s + 36s das quedas
 
 Atleta 1:      02478 pontos / 018 golpes / 81.38 km/h
 Atleta 2:      02110 pontos / 014 golpes / 85.71 km/h
 
 Parcial:       04588 pontos
 Desequilibrio: 00000 (-)
-Quedas:        00000 (-)
 
 FINAL:         04588 pontos
 

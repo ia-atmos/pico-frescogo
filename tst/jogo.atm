@@ -38,8 +38,7 @@ func print_calc () {
         " tempo="  ++ J.passado ++ "," ++ J.restante ++ "," ++ J.mostra ++
         " total="  ++ J.total ++
         " equ="    ++ ps@0 ++ "," ++ ps@1 ++
-        " pct="    ++ jogo_quedas_pct() ++
-        " aborta=" ++ conf_aborta() ++
+        " desconto=" ++ jogo_desconto() ++
         " jog0="   ++ atleta(0) ++
         " jog1="   ++ atleta(1) ++ "\n")
 }
