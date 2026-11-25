@@ -21,13 +21,13 @@ func fundo (cor) {
 
 ;; A box from its top left corner, with an optional border.
 func caixa (x, y, w, h, cor, borda) {
-    pico.set.pencil [color=cor, style=:fill]
+    pico.set.pencil [color=cor, shape=[style=:fill]]
     pico.output.draw.rect ['!', x=x, y=y, w=w, h=h, anchor=:NW]
     if borda != nil {
         ;; in the pixels that hold the edges
         val x0 = math.floor(x)
         val y0 = math.floor(y)
-        pico.set.pencil [color=borda, style=:stroke]
+        pico.set.pencil [color=borda, shape=[style=:stroke]]
         pico.output.draw.rect ['!', x=x0, y=y0, w=math.floor(x+w)-x0+1, h=math.floor(y+h)-y0+1, anchor=:NW]
     }
 }
@@ -38,10 +38,10 @@ func disco (x, y, d, cor, borda) {
     val x0 = math.floor(x - d/2)
     val y0 = math.floor(y - d/2)
     pin r = ['!', x=x0, y=y0, w=math.ceil(x + d/2)-x0, h=math.ceil(y + d/2)-y0, anchor=:NW]
-    pico.set.pencil [color=cor, style=:fill]
+    pico.set.pencil [color=cor, shape=[style=:fill]]
     pico.output.draw.oval(r)
     if borda != nil {
-        pico.set.pencil [color=borda, style=:stroke]
+        pico.set.pencil [color=borda, shape=[style=:stroke]]
         pico.output.draw.oval(r)
     }
 }
@@ -53,7 +53,7 @@ func linha (x1, y1, x2, y2, cor, peso) {
     val d  = math.sqrt(vx*vx + vy*vy)
     val nx = (-vy / d) * (peso / 2)
     val ny = ( vx / d) * (peso / 2)
-    pico.set.pencil [color=cor, style=:fill]
+    pico.set.pencil [color=cor, shape=[style=:fill]]
     pico.output.draw.poly [
         ['!', x=x1+nx, y=y1+ny], ['!', x=x2+nx, y=y2+ny],
         ['!', x=x2-nx, y=y2-ny], ['!', x=x1-nx, y=y1-ny],
@@ -71,7 +71,7 @@ val ASCENTE  = 0.9053
 val DESCENTE = 0.2119
 
 func fonte (path) {
-    pico.set.pencil [font=path, smooth=true]
+    pico.set.pencil [text=[font=path, smooth=true]]
 }
 
 func largura (str, tam) {
