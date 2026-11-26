@@ -434,7 +434,7 @@ do {
 spawn {
     var esquenta = false
     loop {
-        val e = watching :key.dn until ctrl(it, "R", "E") {
+        val _, e = watching :key.dn until ctrl(it, "R", "E") {
             await Apresentacao(esquenta)
         }
         set esquenta = (e.key == "E")
