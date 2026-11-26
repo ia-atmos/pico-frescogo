@@ -326,7 +326,8 @@ task Jogo () {
             }
             som(:queda)
             if AUTO {
-                await CONF.radar.resaque * 1ms
+                val resaque = CONF.radar.resaque * 1ms
+                await resaque
                 set direto = true
             }
         }
