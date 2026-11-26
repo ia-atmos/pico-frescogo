@@ -62,7 +62,11 @@ func radar () {
         set dir = -1                    ;; -1=none
     }
 
-    val sdir = if dir == 0 => "->" => (if dir == 1 => "<-" => "--")
+    val sdir = ifs {
+        dir == 0 => "->"
+        dir == 1 => "<-"
+        else     => "--"
+    }
     val msg = "[" ++ nf(NOW // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3)
 
     if vel != 0 {
@@ -84,10 +88,8 @@ func radar () {
 
     ;; duvida se mesma dir em menos de 700ms
     val now = NOW
-    if (dir != LAST@_DIR) && (now < (LAST@_NOW + CONF.radar.igual)) {
-        return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
-    }
-    if (dir == LAST@_DIR) && (now < (LAST@_NOW + CONF.radar.oposi)) {
+    val espera = if dir != LAST@_DIR => CONF.radar.igual => CONF.radar.oposi
+    if now < (LAST@_NOW + espera) {
         return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
     }
 

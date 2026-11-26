@@ -192,7 +192,7 @@ task Ocioso () {
     watching :quadro until J.restante <= 0 {
         loop {
             set ESTADO = :ocioso
-            val e = await :key.dn until it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"])
+            val e = await :key.dn until (it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"]))
             match e.key {
                 "Backspace" => {
                     desfaz()
@@ -232,7 +232,7 @@ task Sequencia (tecla) {
     ;; goes on
     spawn {
         if RADAR == nil {
-            await(false)
+            await false
         }
         loop on :radar.vez {
             val kmh = radar()
@@ -247,7 +247,7 @@ task Sequencia (tecla) {
 
     par :any {
         ;; the referee marks the fall (a warm-up has no falls)
-        await :key.dn until (!J.esquenta) && ctrl(it, "Down", "J")
+        await :key.dn until ((!J.esquenta) && ctrl(it, "Down", "J"))
         :queda
     } with {
         await :quadro until J.restante <= 0
@@ -295,7 +295,7 @@ task Sequencia (tecla) {
                 }
             } with {
                 ;; in the automatic mode: 3.5 seconds with no reading
-                await :quadro until (!J.esquenta) && AUTO && (NOW >= (AUTO_ULTIMA + CONF.radar.silencio))
+                await :quadro until ((!J.esquenta) && AUTO && (NOW >= (AUTO_ULTIMA + CONF.radar.silencio)))
                 :queda
             }
         }
@@ -326,7 +326,7 @@ task Jogo () {
             }
             som(:queda)
             if AUTO {
-                await(CONF.radar.resaque * 1ms)
+                await CONF.radar.resaque * 1ms
                 set direto = true
             }
         }
@@ -387,8 +387,8 @@ task Apresentacao (esquenta) {
     ;; the rest that ran out
     spawn {
         loop {
-            await :quadro until (ESTADO ?? :seq) && (J.restante >  CONF.tempos.aviso)
-            await :quadro until (ESTADO ?? :seq) && (J.restante <= CONF.tempos.aviso)
+            await :quadro until ((ESTADO ?? :seq) && (J.restante >  CONF.tempos.aviso))
+            await :quadro until ((ESTADO ?? :seq) && (J.restante <= CONF.tempos.aviso))
             som(:aviso)
         }
     }
@@ -443,24 +443,22 @@ spawn {
 
 ;; The keys that are valid at any moment.
 spawn {
-    loop e on :key.dn {
-        if e.ctrl {
-            match e.key {
-                "A" => {                                    ;; the automatic mode
-                    set AUTO = !AUTO
-                    set AUTO_ULTIMA = NOW
-                }
-                "I" => {                                    ;; the athletes change sides
-                    set INV = !INV
-                    set ZER = 1 - ZER
-                    set ONE = 1 - ONE
-                }
-                "-" => set J.manual = J.manual - 1
-                "=" => set J.manual = J.manual + 1
-                "Q" => pico.quit()
+    loop e on :key.dn until e.ctrl {
+        match e.key {
+            "A" => {                                    ;; the automatic mode
+                set AUTO = !AUTO
+                set AUTO_ULTIMA = NOW
             }
-            jogo_calc()
+            "I" => {                                    ;; the athletes change sides
+                set INV = !INV
+                set ZER = 1 - ZER
+                set ONE = 1 - ONE
+            }
+            "-" => set J.manual = J.manual - 1
+            "=" => set J.manual = J.manual + 1
+            "Q" => pico.quit()
         }
+        jogo_calc()
     }
 }
 
