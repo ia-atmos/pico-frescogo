@@ -105,6 +105,7 @@ Still as in the original: `#16` (two hits in one frame divide by zero),
 |------|----------|
 | 2026-11-16 | The serial port: option A. A small library of the port, natives over POSIX (`open`, `termios`, a read that does not block), polled by a task once per frame, as the original does in `draw`. No new environment for now |
 | 2026-11-16 | Packages: the session may install whatever it needs in the container |
+| 2026-11-26 | (through `atmos`) For each group of changes, show the author one pair of short Atmos excerpts of that work, with file and line: one idiomatic, one bad (awkward, verbose, a workaround) |
 | 2026-11-26 | (through `atmos`, said in `pico-1oom`) At each big step (a milestone, a change of what is on the screen), show the author a few screenshots in the report |
 | 2026-11-24 | (through `atmos`, the new managing session, atmos-lang#119) Coordination, status and questions for the author go to `atmos`; measurements of the compiler on this port and its merges stay with `atmos-lang`. A pause until next week: no new work, only what arrives |
 | 2026-11-23 | Do not run the tests on my own: ask the author when testing is relevant (the whole suite takes 10 to 12 minutes). `pontos.equilibrio` is a table (`limite`, `golpes`) |
