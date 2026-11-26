@@ -108,6 +108,7 @@ Still as in the original: `#16` (two hits in one frame divide by zero),
 |------|----------|
 | 2026-11-16 | The serial port: option A. A small library of the port, natives over POSIX (`open`, `termios`, a read that does not block), polled by a task once per frame, as the original does in `draw`. No new environment for now |
 | 2026-11-16 | Packages: the session may install whatever it needs in the container |
+| 2026-11-26 | (through `atmos`, atmos#29) Read `ia-atmos/lang` `.claude/plans/IDIOMS.md` before writing Atmos; a general rule that comes out of the author's review of an excerpt goes to `atmos`, with a before and an after |
 | 2026-11-26 | (through `atmos`, pico-1oom#29, confirmed by the author) The general instruction for the ports: fidelity is the observable behaviour only; free to reorganize; idiomatic Atmos; own file formats (native: `X.load`/`X.dump`); do not reproduce the bugs of safety of the original. Answered in `#28` |
 | 2026-11-26 | (through `atmos`) The excerpts are numbered with the `#N` of this session and listed here; each bad one says why, and what would make it better (the language, the environment, or the port) |
 | 2026-11-26 | (through `atmos`) For each group of changes, show the author one pair of short Atmos excerpts of that work, with file and line: one idiomatic, one bad (awkward, verbose, a workaround) |
