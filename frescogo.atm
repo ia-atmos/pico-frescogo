@@ -233,12 +233,8 @@ func golpe (seq, g) {
 }
 
 ;; The reader of the radar: one reading per frame, while it lives. Each hit
-;; is emitted as `:golpe [jog=, kmh=]`. With no radar, it only waits (a
-;; `spawn` inside an `if RADAR != nil` would end with the `if`).
+;; is emitted as `:golpe [jog=, kmh=]`.
 task Leitor () {
-    if RADAR == nil {
-        await false
-    }
     loop on :radar.vez {
         val r = radar()
         if r != :silencio {
@@ -266,7 +262,7 @@ task Sequencia (tecla) {
     }
     jogo_calc()
 
-    spawn Leitor()          ;; only while the sequence goes on
+    pin leitor = if RADAR != nil => spawn Leitor() => nil     ;; while the sequence goes on
 
     par :any {
         ;; the referee marks the fall
@@ -462,7 +458,7 @@ task Esquenta () {
         if RADAR != nil {
             radar_clear()
         }
-        spawn Leitor()
+        pin leitor = if RADAR != nil => spawn Leitor() => nil
         spawn Ultimos(E.golpes)
         spawn {
             await :quadro until esquenta_resta() <= CONF.tempos.aviso
