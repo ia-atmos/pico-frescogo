@@ -7,6 +7,11 @@
 #                   the launcher runs (`launcher/`)
 #   make test       the tests, with no display (needs xvfb-run)
 #
+# With a compiler of your own, already built, give its directory: it is used
+# as it is (not fetched, not moved to `LANG_REV`), and pico is built over it.
+#
+#   make run ATMOS_LANG=../lang
+#
 # The branch `4.1` (v4.1.0, exact) also runs the original, to check the port
 # against it (`make orig`).
 #
@@ -21,6 +26,9 @@ PICO_REV := 3ecc9add3d86ed6afe32399567f88a0ebc2055a5
 DEPS  := $(CURDIR)/.deps
 ATMOS := $(DEPS)/env-pico/atmos-pico
 
+ATMOS_LANG ?=
+LANG_DIR := $(if $(ATMOS_LANG),$(abspath $(ATMOS_LANG)),$(DEPS)/lang)
+
 .PHONY: all run test clean
 
 FONTES := frescogo.atm jogo.atm tela.atm desenho.atm radar.atm serial.atm
@@ -34,11 +42,12 @@ $(DEPS)/lang/atmos:
 	git -C $(DEPS)/lang checkout -q $(LANG_REV)
 	$(MAKE) -C $(DEPS)/lang
 
-$(ATMOS): $(DEPS)/lang/atmos
+$(ATMOS): $(LANG_DIR)/atmos
+	@mkdir -p $(DEPS)
 	test -d $(DEPS)/env-pico || git clone -q $(PICO_URL) $(DEPS)/env-pico
 	git -C $(DEPS)/env-pico fetch -q origin
 	git -C $(DEPS)/env-pico checkout -q $(PICO_REV)
-	$(MAKE) -C $(DEPS)/env-pico ATMOS=$(DEPS)/lang
+	$(MAKE) -C $(DEPS)/env-pico ATMOS=$(LANG_DIR)
 
 run: $(ATMOS)
 	$(ATMOS) frescogo.atm
