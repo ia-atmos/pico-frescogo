@@ -17,7 +17,8 @@ pin var CONF = []
 ;;      :nome           a name is being typed (`NOME` tells which)
 ;;      :seq.espera     a sequence: served, waiting for the first hit
 ;;      :seq.golpes     a sequence: the hits
-;;      :fim            the presentation ended
+;;      :esquenta       a warm-up: the hits, from the serve
+;;      :fim            the presentation, or the warm-up, ended
 ;;
 ;; `ESTADO ?? :seq` holds in a sequence, in any of its two parts.
 var ESTADO = :ocioso
@@ -30,7 +31,6 @@ var RADAR = nil         ;; the serial line of the radar, or nil
 ;; THE GAME: what happened in a presentation, and what `jogo_calc` computes
 ;; from it.
 pin J = [
-    esquenta = false,   ;; a warm-up: the time runs, and there are no falls
     seqs     = [],      ;; the sequences: vectors of hits [t=, jog=, kmh=]
     cronos   = [],      ;; of each sequence, when its clock started: [t=, arbitro=]
                         ;; (`t` is nil before it starts; `arbitro` if by the key)
@@ -93,6 +93,23 @@ func f100 (n) {
     }
 }
 
+;; THE WARM-UP: the athletes play for `tempos.esquenta` seconds from the
+;; serve, with no falls. The screen shows only the speeds and the time: no
+;; points, no report, no record.
+pin E = [
+    inicio = nil,       ;; the time of the serve
+    golpes = [],        ;; the hits [t=, jog=, kmh=], for the screen
+]
+
+;; The time that is left of a warm-up, in seconds.
+func esquenta_resta () {
+    if E.inicio == nil {
+        CONF.tempos.esquenta
+    } else {
+        max(0, CONF.tempos.esquenta - ((NOW - E.inicio) // 1000))
+    }
+}
+
 ;; ----------------------------------------------------------------------------
 ;; THE CONFIGURATION
 ;; ----------------------------------------------------------------------------
@@ -116,9 +133,6 @@ func conf_pars () {
     CONF.tempos.jogo ++ "s"
 }
 
-func conf_tempo () {
-    if J.esquenta => CONF.tempos.esquenta => CONF.tempos.jogo
-}
 
 ;; The hits of an athlete that count, at most: its strongest ones.
 func conf_ataques (jog) {
@@ -133,9 +147,9 @@ func jogo_quedas () {
     J.quedas + J.manual
 }
 
-;; What the falls take from the time, in seconds (none in a warm-up).
+;; What the falls take from the time, in seconds.
 func jogo_desconto () {
-    if J.esquenta => 0 => max(0, CONF.tempos.queda * jogo_quedas())
+    max(0, CONF.tempos.queda * jogo_quedas())
 }
 
 ;; The rest that is left, in seconds: what the athletes took to serve, beyond
@@ -164,29 +178,23 @@ func jogo_equ () {
 }
 
 ;; The time played is the time of the sequences, each from the start of its
-;; clock (its first hit, or the key of the referee) to its last hit. In a
-;; warm-up, it is the time since the serve. What is left is the time of the
-;; presentation less the time played and the time of the falls.
+;; clock (its first hit, or the key of the referee) to its last hit. What is
+;; left is the time of the presentation less the time played and the time of
+;; the falls.
 func _jogo_tempo () {
     var ms   = 0
     var last = NOW
 
-    if J.esquenta {
-        if ESTADO != :ocioso {
-            set ms = NOW - J.saque
-        }
-    } else {
-        loop i,seq in J.seqs {
-            val t0 = (J.cronos@i).t
-            if t0 != nil {
-                set last = if #seq > 0 => (seq@#).t => t0
-                set ms   = ms + (last - t0)
-            }
+    loop i,seq in J.seqs {
+        val t0 = (J.cronos@i).t
+        if t0 != nil {
+            set last = if #seq > 0 => (seq@#).t => t0
+            set ms   = ms + (last - t0)
         }
     }
 
     set J.passado  = ms // 1000
-    set J.restante = max(0, conf_tempo() - J.passado - jogo_desconto())
+    set J.restante = max(0, CONF.tempos.jogo - J.passado - jogo_desconto())
     set J.mostra   = J.restante
 
     if ESTADO == :seq.golpes {

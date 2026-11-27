@@ -29,7 +29,6 @@ One command per line; `#` starts a comment.
 |---------|--------|
 | `conf <key> <value>` | A field of `conf.json` (the defaults are those of the file) |
 | `radar 0\|1` | The answer of `conf_radar()` (only the report shows it: the speeds are those of the hits) |
-| `esquenta 0\|1 [<ms>]` | `ESQUENTA`, and `ESQUENTA_INICIO` |
 | `inicio <ms>` | `JOGO_TEMPO_INICIO` |
 | `estado <estado> [<jogando>]` | `ESTADO` (`ocioso`, `jogando`, ...) and `ESTADO_JOGANDO` (`sacando`, `jogando`) |
 | `now <ms>` | `NOW` |

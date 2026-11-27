@@ -40,6 +40,7 @@ val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
 
 ;; The state of the program, apart from the game (`J`, in `jogo.atm`).
 pin G = [
+    modo   = :apresentacao,     ;; or :esquenta (a warm-up)
     auto   = false,     ;; the automatic mode: a fall after a silence of the
     ultima = 0,         ;; radar, since this time (its last reading)
     inv    = false,     ;; the athletes changed sides
@@ -133,14 +134,18 @@ func letra (e) {
 ;; ----------------------------------------------------------------------------
 ;; THE FLOW
 ;;
-;;  Apresentacao        from a restart (CTRL-R, CTRL-E) to the next one
+;;  Apresentacao        from a restart (CTRL-R) to the next one
 ;;      Jogo            sequences, until the time is over (the falls take
 ;;                      time too)
 ;;          Saque       until the serve (CTRL-UP, or the automatic mode);
 ;;                      meanwhile, the referee undoes, edits names
 ;;              Nome    a name being typed
 ;;          Sequencia   from a serve to a fall
+;;              Leitor  the reader of the radar
 ;;      the end         the report; CTRL-S ends at any moment, and saves again
+;;  Esquenta            from a restart (CTRL-E) to the next one: the serve,
+;;                      and the hits until the time is over, with no falls
+;;      Leitor          the reader of the radar
 ;;
 ;; The events of a frame, in this order, are `:radar.vez` (the radar reads),
 ;; and `:quadro` (the conditions over the time are checked). The score is
@@ -228,6 +233,24 @@ func golpe (seq, g) {
     som_golpe(g.kmh)
 }
 
+;; The reader of the radar: one reading per frame, while it lives. Each hit
+;; is emitted as `:golpe [jog=, kmh=]`. With no radar, it only waits (a
+;; `spawn` inside an `if RADAR != nil` would end with the `if`).
+task Leitor () {
+    if RADAR == nil {
+        await false
+    }
+    loop on :radar.vez {
+        val r = radar()
+        if r != :silencio {
+            set G.ultima = NOW      ;; a reading that is not silence
+        }
+        if type(r) == :table {
+            emit r
+        }
+    }
+}
+
 ;; A sequence, from the serve on. Evaluates to how it ended: `:queda` (the
 ;; ball fell), `:tempo` (the time is over), or `:desfeita` (the referee
 ;; undid the serve). `tecla` if the referee served (CTRL-UP), and not the
@@ -243,26 +266,11 @@ task Sequencia (tecla) {
     }
     jogo_calc()
 
-    ;; the hits of the radar: one reading per frame, only while the sequence
-    ;; goes on
-    spawn {
-        if RADAR == nil {
-            await false
-        }
-        loop on :radar.vez {
-            val r = radar()
-            if r != :silencio {
-                set G.ultima = NOW      ;; a reading that is not silence
-            }
-            if type(r) == :table {
-                emit r                  ;; :golpe [jog=, kmh=]
-            }
-        }
-    }
+    spawn Leitor()          ;; only while the sequence goes on
 
     par :any {
-        ;; the referee marks the fall (a warm-up has no falls)
-        await :key.dn until ((!J.esquenta) && ctrl(it, "Down", "J"))
+        ;; the referee marks the fall
+        await :key.dn until ctrl(it, "Down", "J")
         :queda
     } with {
         await :quadro until J.restante <= 0
@@ -310,7 +318,7 @@ task Sequencia (tecla) {
                 }
             } with {
                 ;; in the automatic mode: 3.5 seconds with no reading
-                await :quadro until ((!J.esquenta) && G.auto && (NOW >= (G.ultima + CONF.radar.silencio)))
+                await :quadro until (G.auto && (NOW >= (G.ultima + CONF.radar.silencio)))
                 :queda
             }
         }
@@ -341,7 +349,7 @@ task Jogo () {
 }
 
 ;; The end of a presentation: the screen, and then its picture, the report,
-;; and a line of `resultados.csv` (not for a warm-up).
+;; and a line of `resultados.csv`.
 func termina () {
     set ESTADO = :fim
     som(:fim)
@@ -350,10 +358,6 @@ func termina () {
     }
     jogo_calc()
     tela()
-
-    if J.esquenta {
-        return
-    }
 
     val ts = os.getenv("FRESCOGO_TS") || `:string fresco_ts()`
     `mkdir(A_STR_OF($REL)->s, 0777);`
@@ -377,9 +381,8 @@ func termina () {
     }
 }
 
-;; A presentation, or a warm-up (the time runs, and there are no falls).
-task Apresentacao (esquenta) {
-    set J.esquenta = esquenta
+;; A presentation.
+task Apresentacao () {
     set J.descanso = 0
     set J.quedas   = 0
     set J.manual   = 0
@@ -400,10 +403,8 @@ task Apresentacao (esquenta) {
         }
     }
     spawn {
-        if !J.esquenta {
-            await :quadro until descanso_resta() < 0
-            som(:aviso)
-        }
+        await :quadro until descanso_resta() < 0
+        som(:aviso)
     }
 
     ;; CTRL-S ends it at any moment
@@ -416,6 +417,51 @@ task Apresentacao (esquenta) {
         termina()
         await :key.dn until ctrl(it, "S")
     }
+}
+
+;; THE WARM-UP (`E`, in `jogo.atm`).
+task Esquenta () {
+    set E.inicio = nil
+    vector.clear(E.golpes)
+    som(:reinicio)
+
+    ;; CTRL-S ends it at any moment
+    watching :key.dn until ctrl(it, "S") {
+        ;; until the serve; meanwhile, the referee edits names
+        loop {
+            set ESTADO = :ocioso
+            val e = await :key.dn until (it.ctrl && X.in(it.key, ["Up", "U", "0", "1", "2"]))
+            match e.key {
+                "1"  => await Nome(0)
+                "2"  => await Nome(1)
+                "0"  => await Nome(2)
+                else => break
+            }
+        }
+
+        set ESTADO   = :esquenta
+        set E.inicio = NOW
+        som(:saque)
+        if RADAR != nil {
+            radar_clear()
+        }
+        spawn Leitor()
+        spawn {
+            await :quadro until esquenta_resta() <= CONF.tempos.aviso
+            som(:aviso)
+        }
+
+        watching :quadro until esquenta_resta() <= 0 {
+            await :golpe until it.kmh >= CONF.radar.saque   ;; the serve
+            loop h on :golpe {
+                vector.insert(E.golpes, [t=NOW, jog=h.jog, kmh=h.kmh])
+                som_golpe(h.kmh)
+            }
+        }
+    }
+
+    set ESTADO = :fim
+    som(:fim)
 }
 
 ;; ----------------------------------------------------------------------------
@@ -436,15 +482,18 @@ do {
     }
 }
 
-;; The presentations, one after the other: CTRL-R starts a new one, and
-;; CTRL-E a warm-up, at any moment.
+;; A presentation or a warm-up, one after the other: CTRL-R starts a new
+;; presentation, and CTRL-E a warm-up, at any moment.
 spawn {
-    var esquenta = false
     loop {
         val _, e = watching :key.dn until ctrl(it, "R", "E") {
-            await Apresentacao(esquenta)
+            match G.modo {
+                :apresentacao => await Apresentacao()
+                :esquenta     => await Esquenta()
+            }
+            await false         ;; the end stays until a restart
         }
-        set esquenta = (e.key == "E")
+        set G.modo = if e.key == "E" => :esquenta => :apresentacao
     }
 }
 

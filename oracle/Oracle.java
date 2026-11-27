@@ -19,6 +19,7 @@
 //              of the time; no percentage for the falls, and no limit of
 //              falls; the 150 strongest hits of each athlete count
 //      #24     the version is 4.2.0, and the report no longer says `dupla`
+//      #32     no warm-up: it has no score (only the speeds and the time)
 //
 // `min`, `max`, `nf`, and `IntList` are those of Processing, redefined at
 // the end of this file.
@@ -39,8 +40,6 @@ public class Oracle {
 
     static boolean     RADAR = false;      // stands for (RADAR!=null || RADAR_MOCK)
 
-    static boolean     ESQUENTA = false;
-    static int         ESQUENTA_INICIO;
 
     // the defaults are those of `conf.json`
     static int         CONF_TEMPO       = 360;      // #6
@@ -49,7 +48,6 @@ public class Oracle {
     static int         CONF_VEL_MIN     = 50;
     static int         CONF_SAQUE       = 45;
     static int         CONF_QUEDA       = 12;       // #6: seconds per fall
-    static int         CONF_ESQUENTA    = 60;
     static int         CONF_DESCANSO    = 90;
 
     static int         LADO_RADAR       = 0;
@@ -83,7 +81,7 @@ public class Oracle {
     ///////////////////////////////////////////////////////////////////////////////
 
     static int conf_tempo () {
-        return (ESQUENTA ? CONF_ESQUENTA : CONF_TEMPO);
+        return CONF_TEMPO;                                      // #32
     }
 
     static int conf_ataques (int jog) {
@@ -98,11 +96,7 @@ public class Oracle {
         int ret = 0;
         int last = NOW;
 
-        if (ESQUENTA) {
-            if (!ESTADO.equals("ocioso")) {
-                ret = NOW - ESQUENTA_INICIO;
-            }
-        } else {
+        {                                                   // #32
             for (int i=0; i<JOGO.size(); i++) {
                 ArrayList<int[]> seq = JOGO.get(i);
                 int S = seq.size();
@@ -171,7 +165,7 @@ public class Oracle {
     }
 
     static int jogo_desconto () {                           // #6: in seconds
-        return ESQUENTA ? 0 : max(0, jogo_quedas() * CONF_QUEDA);
+        return max(0, jogo_quedas() * CONF_QUEDA);          // #32
     }
 
     static int[] jogo_equ () {
@@ -289,7 +283,6 @@ public class Oracle {
             case "minima":     CONF_VEL_MIN     = v;   break;
             case "queda":      CONF_QUEDA       = v;   break;
             case "saque":      CONF_SAQUE       = v;   break;
-            case "esquenta":   CONF_ESQUENTA    = v;   break;
             case "descanso":   CONF_DESCANSO    = v;   break;
             case "lado_radar": LADO_RADAR       = v-1; break;
             default: throw new RuntimeException("conf : invalid key : " + key);
@@ -333,12 +326,6 @@ public class Oracle {
                     break;
                 case "radar":
                     RADAR = w[1].equals("1");
-                    break;
-                case "esquenta":
-                    ESQUENTA = w[1].equals("1");
-                    if (w.length > 2) {
-                        ESQUENTA_INICIO = Integer.parseInt(w[2]);
-                    }
                     break;
                 case "inicio":
                     JOGO_TEMPO_INICIO = Integer.parseInt(w[1]);

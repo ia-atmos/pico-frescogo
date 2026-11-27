@@ -16,7 +16,6 @@ conf = open(sys.argv[2], encoding="utf-8").read()
 CAMPOS = {
     "tempo":      ("tempos", "jogo"),
     "queda":      ("tempos", "queda"),
-    "esquenta":   ("tempos", "esquenta"),
     "descanso":   ("tempos", "descanso"),
     "ataques":    ("pontos", "golpes"),
     "minima":     ("pontos", "minima"),

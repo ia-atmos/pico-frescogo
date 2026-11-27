@@ -12,7 +12,6 @@ conf_load("data/conf.atm")
 val CAMPOS = [
     tempo      = [:tempos, "jogo"],
     queda      = [:tempos, "queda"],
-    esquenta   = [:tempos, "esquenta"],
     descanso   = [:tempos, "descanso"],
     ataques    = [:pontos, "golpes"],
     minima     = [:pontos, "minima"],
@@ -71,12 +70,6 @@ loop {
     match w@0 {
         "conf"     => conf(w@1, w@2)
         "radar"    => set RADAR = if w@1 == "1" => true => nil
-        "esquenta" => {
-            set J.esquenta = (w@1 == "1")
-            if #w > 2 {
-                set J.saque = tonumber(w@2)
-            }
-        }
         "inicio"   => set J.inicio = tonumber(w@1)
         "estado"   => {
             set jogando = w@2 || jogando
