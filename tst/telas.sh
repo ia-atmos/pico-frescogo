@@ -31,7 +31,7 @@ err=0
 while read -r name frames shot; do
     case "$name" in ''|'#'*) continue ;; esac
     conf="tst/fluxo/$name.conf"
-    [ -f "$conf" ] || conf="data/conf.atm"
+    [ -f "$conf" ] || conf="tst/fluxo/padrao.conf"      # see `tst/radar.py`
     serial="tst/fluxo/$name.radar"      # the packets of the radar, or no radar
     [ -f "$serial" ] || serial=/nenhuma
     FRESCOGO_SERIAL="$serial" FRESCOGO_RADAR="$OUT/radar.txt" FRESCOGO_TS=TESTE FRESCOGO_REL="$OUT/rel" FRESCOGO_CONF="$conf" \

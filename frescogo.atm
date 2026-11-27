@@ -115,9 +115,6 @@ func som_golpe (kmh) {
 ;; ----------------------------------------------------------------------------
 
 ;; CTRL with one of the given keys (the names of SDL).
-func ctrl (e, k1, k2) {
-    e.ctrl && ((e.key == k1) || (e.key == k2))
-}
 
 ;; The character of a key in a name: a letter, or `_`.
 func letra (e) {
@@ -201,7 +198,7 @@ task Saque (auto) {
         par :any {
             loop {
                 set ESTADO = :ocioso
-                val e = await :key.dn until (it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"]))
+                val e = await :comando until X.in(it.key, ["Up", "Backspace", "0", "1", "2"])
                 match e.key {
                     "Backspace" => {
                         desfaz()
@@ -266,7 +263,7 @@ task Sequencia (tecla) {
 
     par :any {
         ;; the referee marks the fall
-        await :key.dn until ctrl(it, "Down", "J")
+        await :comando until (it.key == "Down")
         :queda
     } with {
         await :quadro until J.restante <= 0
@@ -277,13 +274,13 @@ task Sequencia (tecla) {
         ;; spite of the radar (CTRL-UP again, once the key of the serve was
         ;; released: a key held repeats); before it, the referee may undo
         val g = par :any {
-            await :key.dn until ctrl(it, "Backspace")
+            await :comando until (it.key == "Backspace")
             :desfeita
         } with {
             if tecla {
-                await :key.up until X.in(it.key, ["Up", "U"])
+                await :key.up until (it.key == "Up")
             }
-            await :key.dn until ctrl(it, "Up", "U")
+            await :comando until (it.key == "Up")
             :arbitro
         } with {
             await :golpe until it.kmh >= CONF.radar.saque
@@ -300,6 +297,7 @@ task Sequencia (tecla) {
             set ESTADO  = :seq.golpes
             set crono.t = NOW
             if g == :arbitro {
+                toca(CONF.som.arbitro)
                 set crono.arbitro = true
                 set G.ultima      = NOW     ;; the silence counts from here
                 jogo_calc()
@@ -410,7 +408,7 @@ task Apresentacao () {
     }
 
     ;; CTRL-S ends it at any moment
-    watching :key.dn until ctrl(it, "S") {
+    watching :comando until (it.key == "S") {
         spawn Relogio(\{ max(0, J.mostra) }, false)
         spawn Descanso(false)
         await Jogo()
@@ -421,7 +419,7 @@ task Apresentacao () {
     ;; and saves it again, later
     loop {
         termina()
-        await :key.dn until ctrl(it, "S")
+        await :comando until (it.key == "S")
     }
 }
 
@@ -437,13 +435,13 @@ task Esquenta () {
     spawn Luz(['!', r=200, g=200, b=0], \{ true })     ;; yellow
 
     ;; CTRL-S ends it at any moment
-    watching :key.dn until ctrl(it, "S") {
+    watching :comando until (it.key == "S") {
         spawn Relogio(esquenta_resta, false)
 
         ;; until the serve; meanwhile, the referee edits names
         loop {
             set ESTADO = :ocioso
-            val e = await :key.dn until (it.ctrl && X.in(it.key, ["Up", "U", "0", "1", "2"]))
+            val e = await :comando until X.in(it.key, ["Up", "0", "1", "2"])
             match e.key {
                 "1"  => await Nome(0)
                 "2"  => await Nome(1)
@@ -483,6 +481,29 @@ task Esquenta () {
     await false
 }
 
+;; THE COMMANDS: the keys with CTRL. An arrow counts at once; any other key
+;; only when it is held for `tempos.segurar` seconds, with a bar on the
+;; screen meanwhile, and only once while it is held. Each command is emitted
+;; to every task as `:comando [key=]`.
+task Teclas () {
+    val setas = ["Up", "Down", "Left", "Right"]
+    loop e on :key.dn until e.ctrl {
+        if X.in(e.key, setas) {
+            emit @:global :comando [key=e.key]
+        } else {
+            val segurar = CONF.tempos.segurar * 1s
+            val ok = watching :key.up {         ;; a key released cancels it
+                spawn Barra(NOW)
+                await segurar
+            }
+            if ok {
+                emit @:global :comando [key=e.key]
+                await :key.up
+            }
+        }
+    }
+}
+
 ;; ----------------------------------------------------------------------------
 ;; MAIN
 ;; ----------------------------------------------------------------------------
@@ -504,11 +525,12 @@ do {
 ;; A presentation or a warm-up, one after the other: CTRL-R starts a new
 ;; presentation, and CTRL-E a warm-up, at any moment.
 spawn Base()            ;; the regions of the screen that are always there
+spawn Teclas()          ;; the commands of the referee
 
 spawn {
     var modo = :apresentacao
     loop {
-        val _, e = watching :key.dn until ctrl(it, "R", "E") {
+        val _, e = watching :comando until X.in(it.key, ["R", "E"]) {
             match modo {
                 :apresentacao => await Apresentacao()
                 :esquenta     => await Esquenta()
@@ -518,9 +540,9 @@ spawn {
     }
 }
 
-;; The keys that are valid at any moment.
+;; The commands that are valid at any moment.
 spawn {
-    loop e on :key.dn until e.ctrl {
+    loop e on :comando {
         val r = match e.key {
             "A" => {                                    ;; the automatic mode
                 set G.auto   = !G.auto

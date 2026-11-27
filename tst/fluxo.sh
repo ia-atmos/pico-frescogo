@@ -31,7 +31,7 @@ for k in tst/fluxo/*.keys; do
     rel="$OUT/$name"
     rm -f "$OUT/radar.txt"
     conf="tst/fluxo/$name.conf"
-    [ -f "$conf" ] || conf="data/conf.atm"
+    [ -f "$conf" ] || conf="tst/fluxo/padrao.conf"      # see `tst/radar.py`
     serial="tst/fluxo/$name.radar"      # the packets of the radar, or no radar
     [ -f "$serial" ] || serial=/nenhuma
     FRESCOGO_TRACE=1 FRESCOGO_SERIAL="$serial" FRESCOGO_RADAR="$OUT/radar.txt" FRESCOGO_TS=TESTE FRESCOGO_REL="$rel" FRESCOGO_CONF="$conf" \

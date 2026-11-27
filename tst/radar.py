@@ -45,8 +45,11 @@ class Radar:
 
 class Keys:
     def __init__ (self): self.k = []; self.f = 5
+    # A command: an arrow is pressed and released; any other key is held for
+    # 3 frames, more than `tempos.segurar` of the tests (0.03 s, 2 frames).
     def ctrl (self, key):
-        self.k += [(self.f,"dn","Left Ctrl"), (self.f+1,"dn",key), (self.f+2,"up",key), (self.f+2,"up","Left Ctrl")]
+        up = 2 if key in ("Up", "Down", "Left", "Right") else 4
+        self.k += [(self.f,"dn","Left Ctrl"), (self.f+1,"dn",key), (self.f+up,"up",key), (self.f+up,"up","Left Ctrl")]
         self.f += 5
     def wait (self, n): self.f += n
     def save (self, name, extra=20):
@@ -54,7 +57,9 @@ class Keys:
 
 # A configuration: that of `data/conf.atm`, with other values, given as
 # `secao_campo=valor` (`tempos_jogo=60`).
+# The keys of the tests are held for 3 frames (see `Keys.ctrl`).
 def conf (name, **kw):
+    kw = {"tempos_segurar": 0.03, **kw}
     c = open("data/conf.atm").read()
     c = c.replace("which takes the place of `conf.json` of the original (v4.1.0).", f"here with other values, for the test `{name}`.")
     for k,v in kw.items():
@@ -74,14 +79,17 @@ def seq (k, r, build, fim="Down", saque="Up"):
     if fim:
         k.ctrl(fim)
 
-# 01: a presentation: the falls by key (CTRL-DOWN, CTRL-J), the falls added
-# and removed (CTRL-=, CTRL--), the serve by CTRL-U, a sequence undone after
+# The configuration of the tests that have none of their own.
+conf("padrao")
+
+# 01: a presentation: the falls by key (CTRL-DOWN), the falls added
+# and removed (CTRL-=, CTRL--), a sequence undone after
 # its fall (CTRL-BACKSPACE), the sides inverted (CTRL-I), a serve undone,
 # and the end by CTRL-S
 r = Radar(1); k = Keys()
 seq(k, r, lambda r: (r.nada(30), r.troca(24)))
 k.ctrl("="); k.ctrl("="); k.ctrl("-")
-seq(k, r, lambda r: (r.nada(25), r.troca(12, kmh=70)), fim="J", saque="U")
+seq(k, r, lambda r: (r.nada(25), r.troca(12, kmh=70)))
 k.ctrl("Backspace")
 seq(k, r, lambda r: (r.nada(20), r.troca(10, kmh=80)))
 k.ctrl("I")

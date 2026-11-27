@@ -94,6 +94,15 @@ task Base () {
     }
 }
 
+;; While a command is held: a bar over the middle, which fills in
+;; `tempos.segurar`, from `t0`.
+task Barra (t0) {
+    loop on :tela.frente {
+        val f = min(1, (NOW - t0) / (CONF.tempos.segurar * 1000))
+        caixa(0, 3*H, 11*W*f, 15*dy, AZUL)
+    }
+}
+
 ;; ----------------------------------------------------------------------------
 ;; THE REGIONS OF A PRESENTATION, OR OF A WARM-UP
 ;; ----------------------------------------------------------------------------
