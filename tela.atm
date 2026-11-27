@@ -1,98 +1,141 @@
-;; The screen of the scoreboard: what the original draws, by regions. Each
-;; region is drawn by a task, at each picture of the screen (`desenha`), in
-;; two layers: `:tela.fundo` (the boxes, and what is always there) and then
-;; `:tela.frente` (what is drawn on them). The task of the program, of a
-;; presentation, of a warm-up, or of a sequence spawns the regions that are
-;; its own, which go away with it.
+;; The screen of the scoreboard: panels, each a layer of pico, placed in the
+;; window by percentages, as the original has them:
 ;;
 ;;      +-----------+---------+-----------+
-;;      |   logo    |  tempo  |   logo    |     0..2
-;;      +-----------+descanso +-----------+
-;;      |   nome    |         |   nome    |     2..3
+;;      | logo1     | tempo   | logo2     |     0..2
+;;      +-----------+         +-----------+
+;;      | nome1     |         | nome2     |     2..3
 ;;      +-----------+---------+-----------+
-;;      | última  -->  quedas    última   |     3..5
+;;      | meio                            |     3..5
 ;;      +-----------+---------+-----------+
-;;      |  golpes   | árbitro |  golpes   |     5..8
-;;      |  média    | recorde |  média    |
-;;      |  pontos   |  TOTAL  |  pontos   |
+;;      | atleta1   | total   | atleta2   |     5..8
 ;;      +-----------+---------+-----------+
 ;;           4           3          4           (11 columns, 8 rows)
+;;
+;; Each region of the screen is a task that draws into its panel, at each
+;; picture of the screen (`:tela`), in fractions of the panel. The task of
+;; the program, of a presentation, of a warm-up, or of a sequence spawns the
+;; regions that are its own, which go away with it.
 
 include "desenho.atm"
 
-;; The whole screen, as the original has it; or a window of three quarters
-;; of the screen, with `tela.cheia = false` (or `FRESCOGO_JANELA=1`).
+;; The whole screen; or a window of three quarters of the screen, with
+;; `tela.cheia = false` (or `FRESCOGO_JANELA=1`).
 pico.open [title="FrescoGO! " ++ VERSAO]
-val cheia  = CONF.tela.cheia && (os.getenv("FRESCOGO_JANELA") == nil)
-val width  = if cheia => pico.get.app().screen.w => (pico.get.app().screen.w * 3 // 4)
-val height = if cheia => pico.get.app().screen.h => (pico.get.app().screen.h * 3 // 4)
-pico.set.dim ['!', w=width, h=height]
+val cheia = CONF.tela.cheia && (os.getenv("FRESCOGO_JANELA") == nil)
+do {
+    val s = pico.get.app().screen
+    if cheia {
+        pico.set.dim ['!', w=s.w, h=s.h]
+    } else {
+        pico.set.dim ['!', w=s.w*3//4, h=s.h*3//4]
+    }
+}
 pico.set.app [fullscreen=cheia]
 
 pico.set.expert(true, 60)
 pico.set.aids(false)            ;; the keys with CTRL are of the scoreboard
 
-val W  = width  / 11.0          ;; a column
-val H  = height /  8.0          ;; a row
-val dx = 0.001 * width          ;; the sizes are thousandths of the screen
-val dy = 0.001 * height
-val MX = width / 2              ;; the middle
+pico.set.effect [color=BRANCO]
 
 val CINZA = cinza(150)
 
-fonte("data/LiberationSans-Bold.ttf")
+;; THE PANELS, by columns (of 11) and rows (of 8), and their colors.
+func painel (c, l, w, h) {
+    ['%', x=c/11, y=l/8, w=w/11, h=h/8, anchor=:NW]
+}
+pin P = [
+    logo1   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 0, 4, 2)],
+    tempo   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(4, 0, 3, 3)],
+    logo2   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(7, 0, 4, 2)],
+    nome1   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 2, 4, 1)],
+    nome2   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(7, 2, 4, 1)],
+    meio    = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 3, 11, 2)],
+    atleta1 = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 5, 4, 3)],
+    total   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(4, 5, 3, 3)],
+    atleta2 = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(7, 5, 4, 3)],
+]
+loop k, l in P {
+    val old = pico.set.layer(l)
+    pico.set.effect [color=(if X.in(k, ["tempo", "total"]) => PRETO => BRANCO)]
+    fonte("data/LiberationSans-Bold.ttf")
+    pico.set.layer(old)
+}
+
+;; The contexts of the panels: a region draws in its panel with
+;; `in <:tela> C.<panel>, do {...}`.
+pin C = []
+loop k, l in P {
+    set C@k = pico.ctx.layer(l)
+}
 
 pin IMG = [
-    logos    = [ figura(CONF.tela.imagem1, height // 8), figura(CONF.tela.imagem2, height // 8) ],
-    veloc    = figura("data/icos/speed-03.png",   math.floor(45*dy)),
-    golpes   = figura("data/icos/raq-03.png",     math.floor(50*dy)),
-    pontos   = figura("data/icos/flag.png",       math.floor(40*dy)),
-    apito    = figura("data/icos/apito-04.png",   math.floor(30*dy)),
-    trofeu   = figura("data/icos/trophy-02.png",  math.floor(30*dy)),
-    descanso = figura("data/icos/timeout-03.png", math.floor(25*dy)),
-    radar    = figura("data/icos/radar.png",      math.floor(30*dy)),
-    raquete  = figura("data/icos/raq.png",        math.floor(40*dy)),
+    logos    = [ figura(CONF.tela.imagem1), figura(CONF.tela.imagem2) ],
+    veloc    = figura("data/icos/speed-03.png"),
+    golpes   = figura("data/icos/raq-03.png"),
+    pontos   = figura("data/icos/flag.png"),
+    apito    = figura("data/icos/apito-04.png"),
+    trofeu   = figura("data/icos/trophy-02.png"),
+    descanso = figura("data/icos/timeout-03.png"),
+    radar    = figura("data/icos/radar.png"),
 ]
 
-;; One picture of the screen.
+;; One picture of the screen: the world and its panels are cleared, and the
+;; regions draw.
 func desenha () {
-    fundo(BRANCO)
-    emit @:global :tela.fundo
-    emit @:global :tela.frente
+    pico.output.clear()
+    emit @:global :tela
 }
 
 ;; ----------------------------------------------------------------------------
 ;; THE REGIONS OF THE PROGRAM
 ;; ----------------------------------------------------------------------------
 
-;; The name of an athlete, in blue; in red, with a cursor, while it is typed.
-func tela_nome (x, jog) {
-    caixa(x, 2*H, 4*W, H, BRANCO, PRETO)
-    if NOME == jog {
-        texto(NOMES@jog ++ "_", x+2*W, 2.5*H-10*dy, 90*dy, VERMELHO, :meio)
-    } else {
-        texto(NOMES@jog, x+2*W, 2.5*H-10*dy, 90*dy, AZUL, :meio)
+;; A logo.
+task Logo (ctx, img) {
+    in <:tela> ctx, do {
+        loop on :tela {
+            poe(img, 0.5, 0.5, 0.5)
+        }
     }
 }
 
-;; What is always there: the logos, the names, the box of the middle with
-;; the radar, and the box of the referee.
-task Base () {
-    loop on :tela.fundo {
-        poe(IMG.logos@0, 2*W, H)
-        poe(IMG.logos@1, 9*W, H)
-        tela_nome(0*W, G.zer)
-        tela_nome(7*W, G.one)
-
-        caixa(0, 3*H, 11*W, 2*H-1, BRANCO, PRETO)
-        if RADAR != nil {
-            poe(IMG.radar, (if CONF.radar.lado == 0 => 20*dx => (width-20*dx)), 4*H)
+;; The name of the athlete `jog()`, in blue; in red, with a cursor, while it
+;; is typed.
+task Rotulo (ctx, jog) {
+    in <:tela> ctx, do {
+        loop on :tela {
+            val j = jog()
+            moldura(PRETO)
+            if NOME == j {
+                texto(NOMES@j ++ "_", 0.5, 0.5, 0.75, VERMELHO, :C)
+            } else {
+                texto(NOMES@j, 0.5, 0.5, 0.75, AZUL, :C)
+            }
         }
+    }
+}
 
-        caixa(4*W, 5*H, 3*W, 3*H, PRETO)
-        val arbitro = if NOME == 2 => (NOMES@2 ++ "_") => NOMES@2
-        texto(arbitro, MX, 5*H+12*dy, 20*dy, (if NOME == 2 => VERMELHO => CINZA), :topo)
-        poe(IMG.apito, MX - largura(arbitro, 20*dy)/2 - 15*dx, 5*H+20*dy)
+;; The box of the middle, and the radar at its side.
+task Centro () {
+    in <:tela> C.meio, do {
+        loop on :tela {
+            moldura(PRETO)
+            if RADAR != nil {
+                poe(IMG.radar, (if CONF.radar.lado == 0 => 0.02 => 0.98), 0.5, 0.12)
+            }
+        }
+    }
+}
+
+;; The referee, at the top of the total.
+task Arbitro () {
+    in <:tela> C.total, do {
+        loop on :tela {
+            val nome = if NOME == 2 => (NOMES@2 ++ "_") => NOMES@2
+            texto(nome, 0.5, 0.03, 0.055, (if NOME == 2 => VERMELHO => CINZA), :N)
+            poe(IMG.apito, 0.5 - largura(nome, 0.055)/2 - 0.06, 0.055, 0.08)
+        }
     }
 }
 
@@ -104,69 +147,79 @@ task Base () {
 ;; end (`fim`). The other parameters are in the report.
 task Relogio (resta, fim) {
     val claro = if fim => BRANCO => CINZA
-    loop on :tela.fundo {
-        caixa(4*W, 0, 3*W, 3*H, (if fim => VERMELHO => PRETO))
-        val t = resta()
-        texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), MX, 1.25*H-10*dy, 140*dy, BRANCO, :meio)
-        texto("v" ++ VERSAO, MX, 0, 18*dy, claro, :topo)
+    in <:tela> C.tempo, do {
+        loop on :tela {
+            if fim {
+                caixa(0, 0, 1, 1, VERMELHO)
+            }
+            val t = resta()
+            texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), 0.5, 0.42, 0.37, BRANCO, :C)
+            texto("v" ++ VERSAO, 0.5, 0.0, 0.05, claro, :N)
+        }
     }
 }
 
 ;; The record: in red while `abaixo()`.
 task Recorde (abaixo) {
-    loop on :tela.frente {
-        val cor = if abaixo() => ['!', r=200, g=100, b=100] => CINZA
-        texto(CONF.tela.recorde, MX, 6*H-15*dy, 35*dy, cor, :meio)
-        poe(IMG.trofeu, MX - largura(CONF.tela.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
-    }
-}
-
-;; A light by the referee: yellow in a warm-up, green in the automatic mode.
-task Luz (cor, acesa) {
-    loop on :tela.frente {
-        if acesa() {
-            disco(6.5*W, 5.2*H, 20*dy, cor)
+    in <:tela> C.total, do {
+        loop on :tela {
+            val cor = if abaixo() => ['!', r=200, g=100, b=100] => CINZA
+            texto(CONF.tela.recorde, 0.5, 0.29, 0.093, cor, :C)
+            poe(IMG.trofeu, 0.5 - largura(CONF.tela.recorde, 0.093)/2 - 0.09, 0.29, 0.08)
         }
     }
 }
 
-;; The speed of a hit, at one side: gray if it does not count.
+;; A light by the referee, while `acesa()`: green in the automatic mode.
+task Luz (cor, acesa) {
+    in <:tela> C.total, do {
+        loop on :tela {
+            if acesa() {
+                disco(0.83, 0.067, 0.053, cor)
+            }
+        }
+    }
+}
+
+;; The speed of a hit, at one side of the middle: gray if it does not count.
 func tela_ultima (esq, kmh) {
     if kmh == 0 {
         return
     }
-    val x   = if esq => 1.5*W => 9.5*W
+    val x   = if esq => 0.136 => 0.864
     val cor = if kmh >= CONF.pontos.minima => PRETO => cinza(200)
-    texto(kmh,    x, 4*H+45*dy, 120*dy, cor, :fundo)
-    texto("km/h", x, 4*H+35*dy,  30*dy, cor, :topo)
+    texto(kmh,    x, 0.62, 0.48, cor, :S)
+    texto("km/h", x, 0.62, 0.12, cor, :N)
 }
 
-;; An arrow from the side of who hit.
+;; An arrow in the middle, from the side of who hit.
 func tela_seta (esq) {
     val s = if esq => 1 => -1                   ;; it points to the middle
-    val x = (if esq => 2.5*W => 8.5*W) + s*60*dy
-    linha(x - s*60*dy, 4*H, x, 4*H, AZUL, 10*dy)
-    linha(x, 4*H, x - s*15*dy, 4*H+20*dy, AZUL, 10*dy)
-    linha(x, 4*H, x - s*15*dy, 4*H-20*dy, AZUL, 10*dy)
+    val x = (if esq => 0.227 => 0.773) + s*larg(0.24)
+    linha(x - s*larg(0.24), 0.5, x, 0.5, AZUL, 0.04)
+    linha(x, 0.5, x - s*larg(0.06), 0.58, AZUL, 0.04)
+    linha(x, 0.5, x - s*larg(0.06), 0.42, AZUL, 0.04)
 }
 
 ;; The last hit of each athlete, of the hits `golpes`: its speed for
 ;; `tela.velocidade`, and an arrow for `tela.seta`.
 task Ultimos (golpes) {
-    loop on :tela.frente {
-        var de = nil
-        loop i in (1,2) {
-            val golpe = golpes@(#golpes-i)
-            if (golpe == nil) || (golpe.jog == de) {
-                skip            ;; the same athlete gave the last two hits
-            }
-            set de = golpe.jog
-            val esq = (de == G.zer)
-            if NOW <= (golpe.t + CONF.tela.velocidade) {
-                tela_ultima(esq, golpe.kmh)
-            }
-            if NOW <= (golpe.t + CONF.tela.seta) {
-                tela_seta(esq)
+    in <:tela> C.meio, do {
+        loop on :tela {
+            var de = nil
+            loop i in (1,2) {
+                val golpe = golpes@(#golpes-i)
+                if (golpe == nil) || (golpe.jog == de) {
+                    skip            ;; the same athlete gave the last two hits
+                }
+                set de = golpe.jog
+                val esq = (de == G.zer)
+                if NOW <= (golpe.t + CONF.tela.velocidade) {
+                    tela_ultima(esq, golpe.kmh)
+                }
+                if NOW <= (golpe.t + CONF.tela.seta) {
+                    tela_seta(esq)
+                }
             }
         }
     }
@@ -176,8 +229,10 @@ task Ultimos (golpes) {
 task Seta (esq) {
     val seta = CONF.tela.seta * 1ms
     watching seta {
-        loop on :tela.frente {
-            tela_seta(esq)
+        in <:tela> C.meio, do {
+            loop on :tela {
+                tela_seta(esq)
+            }
         }
     }
 }
@@ -189,69 +244,82 @@ task Seta (esq) {
 ;; The rest that is left, under the time: red when it ran out.
 task Descanso (fim) {
     val claro = if fim => BRANCO => CINZA
-    loop on :tela.frente {
-        val resta = descanso_resta()
-        val cor   = if resta < 0 => VERMELHO => claro
-        texto(math.abs(resta) ++ " s", MX, 2.5*H, 35*dy, cor, :meio)
-        poe(IMG.descanso, MX-50*dx, 2.5*H)
-        if resta < 0 {
-            texto("(ESGOTADO)", MX, 2.5*H+30*dy, 20*dy, cor, :meio)
+    in <:tela> C.tempo, do {
+        loop on :tela {
+            val resta = descanso_resta()
+            val cor   = if resta < 0 => VERMELHO => claro
+            texto(math.abs(resta) ++ " s", 0.5, 0.83, 0.093, cor, :C)
+            poe(IMG.descanso, 0.32, 0.83, 0.067)
+            if resta < 0 {
+                texto("(ESGOTADO)", 0.5, 0.92, 0.053, cor, :C)
+            }
         }
     }
 }
 
 ;; The falls, in the middle.
 task Quedas () {
-    loop on :tela.frente {
-        disco(MX, height/2, 1.5*H, VERMELHO, PRETO)
-        texto(jogo_quedas(), MX, height/2-15*dy, 110*dy, BRANCO, :meio)
+    in <:tela> C.meio, do {
+        loop on :tela {
+            disco(0.5, 0.5, 0.75, VERMELHO, PRETO)
+            texto(jogo_quedas(), 0.5, 0.5, 0.5, BRANCO, :C)
+        }
     }
 }
 
-;; The numbers of an athlete, in a column that starts at `x`: the hits and
-;; their limit, the mean speed with the highest and the lowest at its outer
-;; side, and the points.
-func tela_atleta (esq, x, jog) {
+;; The numbers of an athlete, in its panel: the hits and their limit, the
+;; mean speed with the highest and the lowest at its outer side, and the
+;; points. `esq` if the panel is at the left.
+func tela_atleta (esq, jog) {
     val a = J.atletas@jog
-    val m = x + W                           ;; the middle of the column
+    val m = if esq => 0.56 => 0.44             ;; the middle of the numbers
 
     val limite = conf_ataques(jog)
-    texto(a.golpes, m, 5.5*H, 65*dy, (if (limite > 0) && (a.golpes >= limite) => VERMELHO => PRETO), :meio)
-    texto("/" ++ limite, m + largura(a.golpes, 20*dy) + 10*dx, 5.5*H+30*dy, 20*dy, CINZA, :esq)
+    texto(a.golpes, m, 0.17, 0.17, (if (limite > 0) && (a.golpes >= limite) => VERMELHO => PRETO), :C)
+    texto("/" ++ limite, m + largura(a.golpes, 0.17)/2 + 0.02, 0.25, 0.053, CINZA, :SW)
 
-    texto(a.media // 100, m, 6.5*H, 65*dy, PRETO, :meio)
-    texto("." ++ nf(a.media % 100, 2), m+30*dx, 6.5*H+15*dy, 25*dy, PRETO, :meio)
+    texto(a.media // 100, m, 0.5, 0.17, PRETO, :C)
+    texto("." ++ nf(a.media % 100, 2), m + largura(a.media // 100, 0.17)/2, 0.56, 0.067, PRETO, :W)
 
-    val xn = if esq => (x + 2*W + 30*dx) => (x - W/3)       ;; the numbers
-    val xr = if esq => (x + 2*W) => (x - W/3 + 30*dx)       ;; and their names
-    texto(a.max, xn, 6.5*H-H/6, 30*dy, CINZA, :meio)
-    texto(a.min, xn, 6.5*H+H/4, 30*dy, CINZA, :meio)
-    texto("máx", xr, 6.5*H-H/6, 15*dy, CINZA, :meio)
-    texto("min", xr, 6.5*H+H/4, 15*dy, CINZA, :meio)
+    val xn = if esq => 0.9  => 0.1              ;; the numbers
+    val xr = if esq => 0.81 => 0.19             ;; and their names
+    texto(a.max, xn, 0.44, 0.08, CINZA, :C)
+    texto(a.min, xn, 0.58, 0.08, CINZA, :C)
+    texto("máx", xr, 0.44, 0.04, CINZA, :C)
+    texto("min", xr, 0.58, 0.04, CINZA, :C)
 
     ;; red while the balance cuts the points of the other athlete
     val outro = (J.atletas@(1-jog)).pontos
     val corta = (CONF.pontos.equilibrio.limite != 0) && (outro > (a.pontos*CONF.pontos.equilibrio.limite // 100))
-    texto(a.pontos, m, 7.5*H, 65*dy, (if corta => VERMELHO => PRETO), :meio)
+    texto(a.pontos, m, 0.83, 0.17, (if corta => VERMELHO => PRETO), :C)
 
     ;; what each row is
-    val xi = if esq => 1*W => 10*W
-    poe(IMG.golpes, xi, 5.5*H+5*dy)
-    poe(IMG.veloc,  xi, 6.5*H+5*dy)
-    texto("km/h", xi, 6.5*H+25*dy, 10*dy, cinza(100), :meio)
-    poe(IMG.pontos, xi, 7.5*H+10*dy)
+    val xi = if esq => 0.25 => 0.75
+    poe(IMG.golpes, xi, 0.18, 0.13)
+    poe(IMG.veloc,  xi, 0.51, 0.12)
+    texto("km/h", xi, 0.57, 0.027, cinza(100), :C)
+    poe(IMG.pontos, xi, 0.86, 0.11)
 }
 
 ;; The two athletes, and the total of the presentation.
 task Pontos () {
-    loop on :tela.frente {
-        tela_atleta(true,  1.25*W, G.zer)
-        tela_atleta(false, 7.75*W, G.one)
-
-        texto(J.total, MX, 7*H-15*dy, 140*dy, BRANCO, :meio)
-        ;; how it is made: the points of each athlete, with the balance
-        val ps = jogo_equ()
-        texto("(" ++ ps@0 ++ " + " ++ ps@1 ++ ")", MX, 7.5*H+20*dy, 15*dy, CINZA, :meio)
+    in <:tela> C.atleta1, spawn {
+        loop on :tela {
+            tela_atleta(true, G.zer)
+        }
+    }
+    in <:tela> C.atleta2, spawn {
+        loop on :tela {
+            tela_atleta(false, G.one)
+        }
+    }
+    in <:tela> C.total, do {
+        loop on :tela {
+            texto(J.total, 0.5, 0.63, 0.37, BRANCO, :C)
+            ;; how it is made: the points of each athlete, with the balance
+            val ps = jogo_equ()
+            texto("(" ++ ps@0 ++ " + " ++ ps@1 ++ ")", 0.5, 0.89, 0.04, CINZA, :C)
+        }
     }
 }
 
@@ -260,24 +328,28 @@ task Pontos () {
 ;; ----------------------------------------------------------------------------
 
 ;; A text in the middle.
-task Meio (txt) {
-    loop on :tela.frente {
-        texto(txt, MX, height/2, 60*dy, VERMELHO, :meio)
+task Aviso (txt) {
+    in <:tela> C.meio, do {
+        loop on :tela {
+            texto(txt, 0.5, 0.5, 0.24, VERMELHO, :C)
+        }
     }
 }
 
 ;; No radar: a red radar that blinks at both sides, half of each second.
-task RadarAusente () {
-    loop {
-        watching 500ms {
-            loop on :tela.frente {
-                loop _, x in [20*dx, width-20*dx] {
-                    disco(x, 4*H, 50*dy, VERMELHO)
-                    poe(IMG.radar, x, 4*H)
+task SemRadar () {
+    in <:tela> C.meio, do {
+        loop {
+            watching 500ms {
+                loop on :tela {
+                    loop _, x in [0.02, 0.98] {
+                        disco(x, 0.5, 0.2, VERMELHO)
+                        poe(IMG.radar, x, 0.5, 0.12)
+                    }
                 }
             }
+            await 500ms
         }
-        await 500ms
     }
 }
 
@@ -285,9 +357,7 @@ task RadarAusente () {
 task Pisca (txt) {
     loop {
         watching 500ms {
-            loop on :tela.frente {
-                texto(txt, MX, height/2, 60*dy, VERMELHO, :meio)
-            }
+            await Aviso(txt)
         }
         await 500ms
     }

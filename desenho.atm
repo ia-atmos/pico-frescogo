@@ -1,9 +1,9 @@
 ;; The drawing that the screen uses, over pico: boxes, discs, lines, text,
-;; and images, each with all that it needs as arguments. The positions are
-;; in pixels.
+;; and images, each with all that it needs as arguments. The positions and
+;; the sizes are fractions of the current layer (a panel of the screen): x
+;; and widths of its width, y and heights of its height.
 ;;
-;; A shape with a border has a line of one pixel around it. The images are
-;; drawn by their centers, at half opacity.
+;; The images are drawn at half opacity.
 
 val BRANCO   = ['!', r=255, g=255, b=255]
 val PRETO    = ['!', r=0,   g=0,   b=0]
@@ -14,30 +14,29 @@ func cinza (v) {
     ['!', r=v, g=v, b=v]
 }
 
-func fundo (cor) {
-    pico.set.effect [color=cor]
-    pico.output.clear()
+;; A height of the current layer as a width: for what must be round, or
+;; keep the proportion of the screen.
+func larg (h) {
+    val d = pico.get.scene().dim
+    h * d.h / d.w
 }
 
-;; A box from its top left corner, with an optional border.
-func caixa (x, y, w, h, cor, borda) {
+;; A box from its top left corner.
+func caixa (x, y, w, h, cor) {
     pico.set.pencil [color=cor, shape=[style=:fill]]
-    pico.output.draw.rect ['!', x=x, y=y, w=w, h=h, anchor=:NW]
-    if borda != nil {
-        ;; in the pixels that hold the edges
-        val x0 = math.floor(x)
-        val y0 = math.floor(y)
-        pico.set.pencil [color=borda, shape=[style=:stroke]]
-        pico.output.draw.rect ['!', x=x0, y=y0, w=math.floor(x+w)-x0+1, h=math.floor(y+h)-y0+1, anchor=:NW]
-    }
+    pico.output.draw.rect ['%', x=x, y=y, w=w, h=h, anchor=:NW]
 }
 
-;; A disc from its center, with an optional border: all the pixels that it
-;; touches.
+;; A line of one pixel around the whole layer.
+func moldura (cor) {
+    pico.set.pencil [color=cor, shape=[style=:stroke]]
+    pico.output.draw.rect ['%', x=0, y=0, w=1, h=1, anchor=:NW]
+}
+
+;; A disc from its center, of diameter `d` (a height), with an optional
+;; border.
 func disco (x, y, d, cor, borda) {
-    val x0 = math.floor(x - d/2)
-    val y0 = math.floor(y - d/2)
-    pin r = ['!', x=x0, y=y0, w=math.ceil(x + d/2)-x0, h=math.ceil(y + d/2)-y0, anchor=:NW]
+    pin r = ['%', x=x, y=y, w=larg(d), h=d, anchor=:C]
     pico.set.pencil [color=cor, shape=[style=:fill]]
     pico.output.draw.oval(r)
     if borda != nil {
@@ -46,75 +45,66 @@ func disco (x, y, d, cor, borda) {
     }
 }
 
-;; A thick line, with round ends.
+;; A thick line, with round ends; `peso` is a height.
 func linha (x1, y1, x2, y2, cor, peso) {
-    val vx = x2 - x1
-    val vy = y2 - y1
-    val d  = math.sqrt(vx*vx + vy*vy)
-    val nx = (-vy / d) * (peso / 2)
-    val ny = ( vx / d) * (peso / 2)
+    val d  = pico.get.scene().dim
+    val px1 = x1 * d.w
+    val py1 = y1 * d.h
+    val px2 = x2 * d.w
+    val py2 = y2 * d.h
+    val p  = peso * d.h
+    val vx = px2 - px1
+    val vy = py2 - py1
+    val n  = math.sqrt(vx*vx + vy*vy)
+    val nx = (-vy / n) * (p / 2)
+    val ny = ( vx / n) * (p / 2)
     pico.set.pencil [color=cor, shape=[style=:fill]]
     pico.output.draw.poly [
-        ['!', x=x1+nx, y=y1+ny], ['!', x=x2+nx, y=y2+ny],
-        ['!', x=x2-nx, y=y2-ny], ['!', x=x1-nx, y=y1-ny],
+        ['!', x=px1+nx, y=py1+ny], ['!', x=px2+nx, y=py2+ny],
+        ['!', x=px2-nx, y=py2-ny], ['!', x=px1-nx, y=py1-ny],
     ]
-    pico.output.draw.oval ['!', x=x1, y=y1, w=peso, h=peso]
-    pico.output.draw.oval ['!', x=x2, y=y2, w=peso, h=peso]
+    pico.output.draw.oval ['!', x=px1, y=py1, w=p, h=p]
+    pico.output.draw.oval ['!', x=px2, y=py2, w=p, h=p]
 }
 
 ;; TEXT
 
-;; The font of the screen (LiberationSans-Bold): its ascent and descent, as fractions of
-;; the size. pico draws a text in a whole size, in a box that starts at the
-;; ascent above the baseline.
-val ASCENTE  = 0.9053
-val DESCENTE = 0.2119
-
+;; The font of a layer (the pencil is of each layer).
 func fonte (path) {
     pico.set.pencil [text=[font=path, smooth=true]]
 }
 
-func largura (str, tam) {
+;; The width of a text of height `h`.
+func largura (str, h) {
     val s = tostring(str)
-    if #s == 0 => 0 => pico.get.text(['!', h=math.floor(tam + 0.5)], s).w
+    if #s == 0 => 0 => pico.get.text(['%', h=h], s).w
 }
 
-;; A text of size `tam`, placed by the point (x,y) according to `onde`:
-;;
-;;      :meio       its center, at the middle of the ascent
-;;      :topo       the middle of its top
-;;      :fundo      the middle of its bottom
-;;      :esq        the start of its baseline
-func texto (str, x, y, tam, cor, onde) {
+;; A text of height `h`, placed by the point (x,y) and the anchor `onde` of
+;; its box (`:C`, `:N`, `:S`, `:W`, `:E`, ...).
+func texto (str, x, y, h, cor, onde) {
     val s = tostring(str)
     if #s == 0 {
         return
     }
-    val sobe  = math.floor(ASCENTE  * tam + 0.5)
-    val desce = math.floor(DESCENTE * tam + 0.5)
-    val base = match onde {
-        :meio  => y + sobe/2
-        :topo  => y + sobe
-        :fundo => y - desce
-        :esq   => y
-    }
-    val h = math.floor(tam + 0.5)
     pico.set.pencil [color=cor]
-    pico.output.draw.text(s, ['!', x=x, y=base-math.ceil(ASCENTE*h), h=h, anchor=(if onde == :esq => :NW => :N)])
+    pico.output.draw.text(s, ['%', x=x, y=y, h=h, anchor=onde])
 }
 
 ;; IMAGES
 
-;; An image, with the given height.
-func figura (path, altura) {
+;; An image, as a layer at half opacity, and the proportion of its width to
+;; its height.
+func figura (path) {
     val d = pico.get.image(path)
     val l = pico.layer.image [path=path]
     val old = pico.set.layer(l)
     pico.set.effect [alpha=128]
     pico.set.layer(old)
-    [layer=l, w=math.floor(d.w * (altura / d.h)), h=altura]
+    [layer=l, r=d.w/d.h]
 }
 
-func poe (img, x, y) {
-    pico.output.draw.layer(img.layer, ['!', x=x, y=y, w=img.w, h=img.h])
+;; An image by its center, of height `h`.
+func poe (img, x, y, h) {
+    pico.output.draw.layer(img.layer, ['%', x=x, y=y, w=larg(h)*img.r, h=h, anchor=:C])
 }

@@ -201,8 +201,8 @@ task PreJogo () {
     defer {
         set G.livres = []
     }
-    spawn Meio("PRÉ-JOGO")
-    pin ausente = if RADAR == nil => spawn RadarAusente() => nil
+    spawn Aviso("PRÉ-JOGO")
+    pin ausente = if RADAR == nil => spawn SemRadar() => nil
     loop {
         set ESTADO = :prejogo
         val e = await :comando until X.in(it.key, ["Up", "0", "1", "2"])
@@ -375,9 +375,11 @@ task Sequencia (tecla) {
 }
 
 ;; The sequences of a presentation, until the time is over.
-task Jogo () {
+;; `regioes` is the pool of the regions of the screen of the presentation,
+;; which outlive the game.
+task Jogo (regioes) {
     await PreJogo()
-    spawn Quedas()          ;; in the middle, after the pre-game
+    spawn @regioes Quedas()     ;; in the middle, after the pre-game
     var saque = :tecla
     loop {
         val fim = await Sequencia(saque == :tecla)
@@ -410,6 +412,7 @@ func termina () {
     }
     jogo_calc()
     desenha()
+    pico.output.draw.layers()       ;; the panels, on the window
 
     val ts = os.getenv("FRESCOGO_TS") || `:string fresco_ts()`
     `mkdir(A_STR_OF($REL)->s, 0777);`
@@ -446,6 +449,7 @@ task Apresentacao () {
     som(:reinicio)
 
     ;; its regions of the screen
+    pin regioes = tasks()
     spawn Pontos()
     spawn Recorde(\{ J.total < CONF.tela.recorde })
     spawn Luz(['!', r=0, g=150, b=0], \{ G.auto })      ;; green
@@ -468,7 +472,7 @@ task Apresentacao () {
     watching :comando until (it.key == "S") {
         spawn Relogio(\{ max(0, J.mostra) }, false)
         spawn Descanso(false)
-        await Jogo()
+        await Jogo(regioes)
     }
     spawn Relogio(\{ max(0, J.mostra) }, true)      ;; red, at the end
     spawn Descanso(true)
@@ -571,7 +575,13 @@ do {
 
 ;; A presentation or a warm-up, one after the other: CTRL-R starts a new
 ;; presentation, and CTRL-E a warm-up, at any moment.
-spawn Base()            ;; the regions of the screen that are always there
+;; the regions of the screen that are always there
+spawn Logo(C.logo1, IMG.logos@0)
+spawn Logo(C.logo2, IMG.logos@1)
+spawn Rotulo(C.nome1, \{ G.zer })
+spawn Rotulo(C.nome2, \{ G.one })
+spawn Centro()
+spawn Arbitro()
 spawn Teclas()          ;; the commands of the referee
 
 spawn {
