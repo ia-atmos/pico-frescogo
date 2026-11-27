@@ -100,18 +100,15 @@ task Base () {
 ;; THE REGIONS OF A PRESENTATION, OR OF A WARM-UP
 ;; ----------------------------------------------------------------------------
 
-;; The time that is left (`resta()`, in seconds), and the parameters; red at
-;; the end (`fim`).
+;; The time that is left (`resta()`, in seconds), and the version; red at the
+;; end (`fim`). The other parameters are in the report.
 task Relogio (resta, fim) {
     val claro = if fim => BRANCO => CINZA
     loop on :tela.fundo {
         caixa(4*W, 0, 3*W, 3*H, (if fim => VERMELHO => PRETO))
         val t = resta()
         texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), MX, 1.25*H-10*dy, 140*dy, BRANCO, :meio)
-        texto("(" ++ conf_pars() ++ ")", MX, 0, 18*dy, claro, :topo)
-        if G.inv {
-            texto("inv", MX, 30*dy, 18*dy, claro, :topo)
-        }
+        texto("v" ++ VERSAO, MX, 0, 18*dy, claro, :topo)
     }
 }
 
@@ -193,14 +190,11 @@ task Descanso (fim) {
     }
 }
 
-;; The falls, in the middle, and the time that they took.
+;; The falls, in the middle.
 task Quedas () {
     loop on :tela.frente {
         disco(MX, height/2, 1.5*H, VERMELHO, PRETO)
         texto(jogo_quedas(), MX, height/2-15*dy, 110*dy, BRANCO, :meio)
-        if jogo_desconto() > 0 {
-            texto("-" ++ jogo_desconto() ++ " s", MX, height/2+60*dy, 22*dy, BRANCO, :meio)
-        }
     }
 }
 
@@ -252,8 +246,30 @@ task Pontos () {
 }
 
 ;; ----------------------------------------------------------------------------
-;; THE REGIONS OF A WARM-UP
+;; THE REGIONS OF THE PRE-GAME, AND OF A WARM-UP
 ;; ----------------------------------------------------------------------------
+
+;; A text in the middle.
+task Meio (txt) {
+    loop on :tela.frente {
+        texto(txt, MX, height/2, 60*dy, VERMELHO, :meio)
+    }
+}
+
+;; No radar: a red radar that blinks at both sides, half of each second.
+task RadarAusente () {
+    loop {
+        watching 500ms {
+            loop on :tela.frente {
+                loop x in [20*dx, width-20*dx] {
+                    disco(x, 4*H, 50*dy, VERMELHO)
+                    poe(IMG.radar, x, 4*H)
+                }
+            }
+        }
+        await 500ms
+    }
+}
 
 ;; A text that blinks in the middle, half of each second.
 task Pisca (txt) {

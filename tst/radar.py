@@ -214,3 +214,19 @@ r.golpe(104, d, 9); r.nada(40); r.golpe(120, 1-d, 4); r.nada(40)
 d = r.troca(5, dir=d, lo=10, hi=20)                     # fast
 k.wait(r.n); k.ctrl("Down"); k.ctrl("S")
 r.save("09-radar-ruido"); k.save("09-radar-ruido")
+
+# 11: no radar: the hits by the arrows (LEFT, RIGHT), whose speed is only
+# known at the next one; a fall by key, a second sequence with the clock
+# started by the referee, and the end
+k = Keys()
+def seta (key):
+    k.k += [(k.f,"dn",key), (k.f+2,"up",key)]; k.f += 3
+k.ctrl("Up")
+for i in range(14):
+    k.wait(22 + 6*(i%3)); seta("Left" if i%2 == 0 else "Right")
+k.wait(15); k.ctrl("Down")
+k.ctrl("Up"); k.wait(20); k.ctrl("Up")
+for i in range(9):
+    k.wait(20 + 8*(i%2)); seta("Right" if i%2 == 0 else "Left")
+k.wait(15); k.ctrl("Down"); k.ctrl("S")
+k.save("11-teclado")

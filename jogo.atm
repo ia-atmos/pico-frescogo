@@ -13,6 +13,7 @@ pin var CONF = []
 
 ;; THE STATE of the scoreboard, which the screen reads:
 ;;
+;;      :prejogo        before the first serve
 ;;      :ocioso         between sequences
 ;;      :nome           a name is being typed (`NOME` tells which)
 ;;      :seq.espera     a sequence: served, waiting for the first hit

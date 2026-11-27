@@ -62,8 +62,9 @@ hits are only those of the radar (there are no hits by the keyboard), and
 a second `CTRL-↑` starts the clock. None is held here.
 
 The keys with `CTRL`, but the arrows, are held for `tempos.segurar`
-seconds (2), as in 5.x (since v4.1.0,
-`#42`); the arrows count at once.
+seconds (2), as in 5.x (since v4.1.0, `#42`); the arrows count at once. In
+the pre-game (before the first serve, `#44`), the names, `CTRL-I` and
+`CTRL-A` need not be held.
 
 | Key | What |
 |-----|------|
@@ -72,9 +73,10 @@ seconds (2), as in 5.x (since v4.1.0,
 | `CTRL-↑` | The serve: a sequence starts |
 | `CTRL-↑` again | In a sequence, before the first hit, once the key of the serve was released: starts the clock, in spite of the radar, with a sound (since v4.1.0, `#23`) |
 | `CTRL-↓` | The ball fell |
+| `←` `→` | With no radar: a hit of the athlete at the left or at the right; its speed comes from `manual.distancia` and the time to the next hit |
 | `CTRL-BACKSPACE` | Between sequences, or before the first hit: discards the last sequence and its fall |
 | `CTRL-=` `CTRL--` | One fall more, or less |
-| `CTRL-1` `CTRL-2` `CTRL-0` | Types the name of the athlete at the left, at the right, or of the referee, until `ENTER` (between sequences) |
+| `CTRL-1` `CTRL-2` `CTRL-0` | In the pre-game (before the first serve): types the name of the athlete at the left, at the right, or of the referee, until `ENTER` |
 | `CTRL-I` | The athletes change sides |
 | `CTRL-A` | The automatic mode: a fall after 3.5 seconds with no reading of the radar, and the serve one second later |
 | `CTRL-S` | Ends the presentation, and writes its report; again, writes it again |

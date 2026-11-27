@@ -40,6 +40,7 @@ val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
 
 ;; The state of the program, apart from the game (`J`, in `jogo.atm`).
 pin G = [
+    livres = [],        ;; the commands that need not be held (in the pre-game)
     auto   = false,     ;; the automatic mode: a fall after a silence of the
     ultima = 0,         ;; radar, since this time (its last reading)
     inv    = false,     ;; the athletes changed sides
@@ -133,15 +134,17 @@ func letra (e) {
 ;;  Apresentacao        from a restart (CTRL-R) to the next one
 ;;      Jogo            sequences, until the time is over (the falls take
 ;;                      time too)
+;;          PreJogo     until the first serve: the names, the sides
 ;;          Saque       until the serve (CTRL-UP, or the automatic mode);
-;;                      meanwhile, the referee undoes, edits names
+;;                      meanwhile, the referee undoes
 ;;              Nome    a name being typed
 ;;          Sequencia   from a serve to a fall
-;;              Leitor  the reader of the radar
+;;              Leitor  the reader of the hits: the radar, or the arrows
 ;;      the end         the report; CTRL-S ends at any moment, and saves again
 ;;  Esquenta            from a restart (CTRL-E) to the next one: the serve,
 ;;                      and the hits until the time is over, with no falls
-;;      Leitor          the reader of the radar
+;;      PreJogo         until the serve
+;;      Leitor          the reader of the hits
 ;;
 ;; The events of a frame, in this order, are `:radar.vez` (the radar reads),
 ;; and `:quadro` (the conditions over the time are checked). The score is
@@ -188,27 +191,44 @@ task Nome (idx) {
     }
 }
 
+;; THE PRE-GAME: before the first serve of a presentation or of a warm-up.
+;; The middle of the screen says so, and blinks a red radar at both sides
+;; if there is none. Only here the names are typed (CTRL-1, CTRL-2, CTRL-0),
+;; and these commands, the sides (CTRL-I) and the automatic mode (CTRL-A)
+;; need not be held. It ends at the serve (CTRL-UP).
+task PreJogo () {
+    set G.livres = ["0", "1", "2", "I", "A"]
+    defer {
+        set G.livres = []
+    }
+    spawn Meio("PRÉ-JOGO")
+    pin ausente = if RADAR == nil => spawn RadarAusente() => nil
+    loop {
+        set ESTADO = :prejogo
+        val e = await :comando until X.in(it.key, ["Up", "0", "1", "2"])
+        match e.key {
+            "1"  => await Nome(0)
+            "2"  => await Nome(1)
+            "0"  => await Nome(2)
+            else => break
+        }
+    }
+}
+
 ;; Between sequences, until the serve. Evaluates to how it was served:
 ;; `:tecla` (the referee, CTRL-UP), `:auto` (the automatic mode, a while
 ;; after a fall, if `auto`), or nil (the falls that the referee added,
-;; CTRL-=, took the time that was left).
+;; CTRL-=, took the time that was left). Meanwhile, the referee may undo the
+;; last sequence (CTRL-BACKSPACE).
 task Saque (auto) {
     set ESTADO = :ocioso
     val ok, saque = watching :quadro until J.restante <= 0 {
         par :any {
             loop {
-                set ESTADO = :ocioso
-                val e = await :comando until X.in(it.key, ["Up", "Backspace", "0", "1", "2"])
-                match e.key {
-                    "Backspace" => {
-                        desfaz()
-                        jogo_calc()
-                    }
-                    "1"  => await Nome(0)
-                    "2"  => await Nome(1)
-                    "0"  => await Nome(2)
-                    else => break
-                }
+                val e = await :comando until X.in(it.key, ["Up", "Backspace"])
+                until e.key == "Up"
+                desfaz()                ;; CTRL-BACKSPACE
+                jogo_calc()
             }
             :tecla
         } with {
@@ -223,23 +243,45 @@ task Saque (auto) {
     if ok => saque => nil
 }
 
-;; A hit of the radar, in the sequence that goes on.
+;; A hit, in the sequence that goes on.
 func golpe (seq, g) {
-    vector.insert(seq, [t=NOW, jog=g.jog, kmh=g.kmh])
+    vector.insert(seq, [t=g.t, jog=g.jog, kmh=g.kmh])
     som_golpe(g.kmh)
 }
 
-;; The reader of the radar: one reading per frame, while it lives. Each hit
-;; is emitted as `:golpe [jog=, kmh=]`.
-task Leitor () {
+;; THE READERS of the hits, while a sequence goes on: each one emits to the
+;; task that spawned it `:golpe [t=, jog=, kmh=]`, the time, the athlete,
+;; and the speed of a hit.
+pin Leitor = []
+
+;; The radar: one reading per frame.
+task Leitor.Radar (_) {
     loop on :radar.vez {
         val r = radar()
         if r != :silencio {
             set G.ultima = NOW      ;; a reading that is not silence
         }
         if type(r) == :table {
-            emit @:parent r      ;; to the task that spawned it
+            set r.t = NOW
+            emit @:parent r
         }
+    }
+}
+
+;; The arrows, with no radar: LEFT and RIGHT are the hits of the athlete at
+;; each side. The speed of a hit is only known at the next one, from the
+;; distance between the athletes (`manual`): a hit is emitted at the next
+;; one, and the last one stays in `ultimo`, for who spawned the reader.
+task Leitor.Teclado (ultimo) {
+    loop e on :key.dn until ((!e.ctrl) && X.in(e.key, ["Left", "Right"])) {
+        set G.ultima = NOW
+        if ultimo.t != nil {
+            val dt  = NOW - ultimo.t
+            val kmh = if dt <= 0 => CONF.manual.maxima => min(CONF.manual.maxima, 36 * CONF.manual.distancia // dt)
+            emit @:parent :golpe [t=ultimo.t, jog=ultimo.jog, kmh=kmh]
+        }
+        set ultimo.t   = NOW
+        set ultimo.jog = if e.key == "Left" => G.zer => G.one
     }
 }
 
@@ -259,9 +301,11 @@ task Sequencia (tecla) {
     }
     jogo_calc()
 
-    pin leitor = if RADAR != nil => spawn Leitor() => nil     ;; while the sequence goes on
+    ;; the reader of the hits, while the sequence goes on
+    val ultimo = [t=nil, jog=nil]
+    pin leitor = spawn (if RADAR != nil => Leitor.Radar => Leitor.Teclado)(ultimo)
 
-    par :any {
+    val fim = par :any {
         ;; the referee marks the fall
         await :comando until (it.key == "Down")
         :queda
@@ -293,9 +337,9 @@ task Sequencia (tecla) {
             :desfeita
         } else {
             ;; what the serve took beyond 5 seconds comes out of the rest
-            set J.descanso = J.descanso + max(0, NOW - J.saque - (CONF.tempos.saque * 1000))
+            set crono.t = if g == :arbitro => NOW => g.t
+            set J.descanso = J.descanso + max(0, crono.t - J.saque - (CONF.tempos.saque * 1000))
             set ESTADO  = :seq.golpes
-            set crono.t = NOW
             if g == :arbitro {
                 toca(CONF.som.arbitro)
                 set crono.arbitro = true
@@ -317,16 +361,23 @@ task Sequencia (tecla) {
             }
         }
     }
+
+    ;; the last hit of the arrows, which has no speed: it ends the time of
+    ;; the sequence, and does not count, as the last hit of any sequence
+    if (fim != :desfeita) && (crono.t != nil) && (ultimo.t != nil) {
+        golpe(seq, [t=ultimo.t, jog=ultimo.jog, kmh=0])
+        jogo_calc()
+    }
+    fim
 }
 
 ;; The sequences of a presentation, until the time is over.
 task Jogo () {
-    var fim = nil
+    await PreJogo()
+    spawn Quedas()          ;; in the middle, after the pre-game
+    var saque = :tecla
     loop {
-        ;; after a fall, the automatic mode serves by itself
-        val saque = await Saque(G.auto && (fim == :queda))
-        until saque == nil
-        set fim = await Sequencia(saque == :tecla)
+        val fim = await Sequencia(saque == :tecla)
         until fim == :tempo
 
         if fim == :queda {
@@ -339,6 +390,10 @@ task Jogo () {
             }
             som(:queda)
         }
+
+        ;; after a fall, the automatic mode serves by itself
+        set saque = await Saque(G.auto && (fim == :queda))
+        until saque == nil
     }
 }
 
@@ -388,7 +443,6 @@ task Apresentacao () {
     som(:reinicio)
 
     ;; its regions of the screen
-    spawn Quedas()
     spawn Pontos()
     spawn Recorde(\{ J.total < CONF.tela.recorde })
     spawn Luz(['!', r=0, g=150, b=0], \{ G.auto })      ;; green
@@ -430,25 +484,14 @@ task Esquenta () {
     som(:reinicio)
 
     ;; its regions of the screen
-    spawn Pisca("AQUECIMENTO")
     spawn Recorde(\{ false })
-    spawn Luz(['!', r=200, g=200, b=0], \{ true })     ;; yellow
 
     ;; CTRL-S ends it at any moment
     watching :comando until (it.key == "S") {
         spawn Relogio(esquenta_resta, false)
 
-        ;; until the serve; meanwhile, the referee edits names
-        loop {
-            set ESTADO = :ocioso
-            val e = await :comando until X.in(it.key, ["Up", "0", "1", "2"])
-            match e.key {
-                "1"  => await Nome(0)
-                "2"  => await Nome(1)
-                "0"  => await Nome(2)
-                else => break
-            }
-        }
+        await PreJogo()
+        spawn Pisca("AQUECIMENTO")      ;; in the middle, after the pre-game
 
         set ESTADO   = :esquenta
         set E.inicio = NOW
@@ -456,7 +499,8 @@ task Esquenta () {
         if RADAR != nil {
             radar_clear()
         }
-        pin leitor = if RADAR != nil => spawn Leitor() => nil
+        val ultimo = [t=nil, jog=nil]
+        pin leitor = spawn (if RADAR != nil => Leitor.Radar => Leitor.Teclado)(ultimo)
         spawn Ultimos(E.golpes)
         spawn {
             await :quadro until esquenta_resta() <= CONF.tempos.aviso
@@ -464,7 +508,7 @@ task Esquenta () {
         }
 
         func golpe_e (g) {
-            vector.insert(E.golpes, [t=NOW, jog=g.jog, kmh=g.kmh])
+            vector.insert(E.golpes, [t=g.t, jog=g.jog, kmh=g.kmh])
             som_golpe(g.kmh)
         }
         watching :quadro until esquenta_resta() <= 0 {
@@ -481,15 +525,15 @@ task Esquenta () {
     await false
 }
 
-;; THE COMMANDS: the keys with CTRL. An arrow counts at once; any other key
-;; only when it is held for `tempos.segurar` seconds, and only once while it
-;; is held. Each command is emitted
+;; THE COMMANDS: the keys with CTRL. An arrow counts at once, and so do the
+;; keys of `G.livres`; any other key only when it is held for
+;; `tempos.segurar` seconds, and only once while it is held. Each command is emitted
 ;; to every task as `:comando [key=]`.
 task Teclas () {
     val setas = ["Up", "Down", "Left", "Right"]
     val ctrls = ["Left Ctrl", "Right Ctrl"]         ;; CTRL itself is no command
     loop e on :key.dn until (e.ctrl && !X.in(e.key, ctrls)) {
-        if X.in(e.key, setas) {
+        if X.in(e.key, setas) || X.in(e.key, G.livres) {
             emit @:global :comando [key=e.key]
         } else {
             val segurar = CONF.tempos.segurar * 1s
