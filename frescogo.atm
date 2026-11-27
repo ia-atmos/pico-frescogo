@@ -246,7 +246,7 @@ task Leitor () {
             set G.ultima = NOW      ;; a reading that is not silence
         }
         if type(r) == :table {
-            emit r
+            emit @:parent r      ;; to the task that spawned it
         }
     }
 }
@@ -451,11 +451,14 @@ task Esquenta () {
             som(:aviso)
         }
 
+        func golpe_e (g) {
+            vector.insert(E.golpes, [t=NOW, jog=g.jog, kmh=g.kmh])
+            som_golpe(g.kmh)
+        }
         watching :quadro until esquenta_resta() <= 0 {
-            await :golpe until it.kmh >= CONF.radar.saque   ;; the serve
+            golpe_e(await :golpe until it.kmh >= CONF.radar.saque)    ;; the serve
             loop h on :golpe {
-                vector.insert(E.golpes, [t=NOW, jog=h.jog, kmh=h.kmh])
-                som_golpe(h.kmh)
+                golpe_e(h)
             }
         }
     }
