@@ -22,7 +22,7 @@
 include "jogo.atm"
 include "serial.atm"
 
-```:prelude
+```:prelude.c
 #include <sys/stat.h>
 #include <time.h>
 

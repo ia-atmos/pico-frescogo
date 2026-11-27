@@ -60,9 +60,7 @@ func radar () {
     }
     val s = serial.bytes(RADAR, 22)
 
-    ;; in tenths: the digits, as the original reads them (`tonumber` would
-    ;; take "0740" as octal)
-    val kmh = iter.fold((8, 11), 0, \(acc, i) { (acc * 10) + (string.byte(s, i) - 48) })
+    val kmh = tonumber(string.sub(s, 8, 11)) || 0      ;; in tenths
     val dir = if kmh == 0 => -1 => ((string.byte(s, 7) >> 1) & 0x01)
 
     val agora = string.format("[%04d]", NOW // 100)

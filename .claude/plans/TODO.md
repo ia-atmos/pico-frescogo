@@ -53,7 +53,7 @@ reused (rule of 2026-11-18). The older identifiers (`A.5`, `B.11`, `C.3`,
 | #38 | Rule: what is visible while something lives is a task spawned by it | sent to `atmos` for `IDIOMS.md` on 2026-11-27 (approved by the author) | |  |
 | #39 | Rule: a change of state is a new task, not a flag (the red clock of the end) | sent to `atmos` on 2026-11-27 | |  |
 | #40 | Rule: a rhythm in time is `watching`/`await`, not arithmetic over the clock (the blink) | sent to `atmos` on 2026-11-27 | |  |
-| #41 | Move to lang main past eb2c350 (`:prelude` must be `:prelude.h` or `:prelude.c`): the two preludes of the port (`frescogo.atm`, `serial.atm`), and the pins | waits for env-pico, which does not build on that lang yet (told `atmos` on 2026-11-27); the author asked to wait and do it then | the author's `make run ATMOS_LANG=../lang` failed on it |  |
+| #41 | Move to lang main past eb2c350 (`:prelude` must be `:prelude.h` or `:prelude.c`): the two preludes of the port (`frescogo.atm`, `serial.atm`), and the pins | done on 2026-11-27 (lang ab2e325, env-pico 125025b), compiled, tests waiting for the author's ok; the radar reads its speed with `tonumber` again | the author's `make run ATMOS_LANG=../lang` failed on it |  |
 | #22 | The operation of v4.1.0 (its keys) is written in `PORT.md`; the `README.md` of the root, which describes 5.x, was not touched | by the session, to be confirmed | done on 2026-11-20. To decide: whether `README.md` becomes the text of v4.1.0 |  |
 
 ## The expressive version (#14)

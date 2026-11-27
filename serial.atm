@@ -5,7 +5,7 @@
 ;; byte. The path may also be a regular file, for the tests: its bytes are
 ;; the bytes that arrive, and its end is an error.
 
-```:prelude
+```:prelude.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
