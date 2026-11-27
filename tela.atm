@@ -1,16 +1,16 @@
 ;; The screen of the scoreboard: panels, each a layer of pico, placed in the
-;; window by percentages, as the original has them:
+;; window by percentages:
 ;;
 ;;      +-----------+---------+-----------+
-;;      | logo1     | tempo   | logo2     |     0..2
+;;      | logo1     | tempo   | logo2     |     0 .. 15%
 ;;      +-----------+         +-----------+
-;;      | nome1     |         | nome2     |     2..3
+;;      | nome1     |         | nome2     |    15 .. 30%
 ;;      +-----------+---------+-----------+
-;;      | meio                            |     3..5
+;;      | meio                            |    30 .. 60%
 ;;      +-----------+---------+-----------+
-;;      | atleta1   | total   | atleta2   |     5..8
+;;      | atleta1   | total   | atleta2   |    60 .. 100%
 ;;      +-----------+---------+-----------+
-;;           4           3          4           (11 columns, 8 rows)
+;;           4           3          4           (11 columns)
 ;;
 ;; Each region of the screen is a task that draws into its panel, at each
 ;; picture of the screen (`:tela`), in fractions of the panel. The task of
@@ -40,21 +40,24 @@ pico.set.effect [color=BRANCO]
 
 val CINZA = cinza(150)
 
-;; THE PANELS, by columns (of 11) and rows (of 8), and their colors.
-func painel (c, l, w, h) {
-    ['%', x=c/11, y=l/8, w=w/11, h=h/8, anchor=:NW]
+;; THE PANELS: the columns (of 11) and the rows (in fractions of the height),
+;; and their colors.
+val COL = [0, 4/11, 7/11, 1]
+val LIN = [0, 0.15, 0.30, 0.60, 1]
+func painel (c1, c2, l1, l2) {
+    ['%', x=COL@c1, y=LIN@l1, w=COL@c2-COL@c1, h=LIN@l2-LIN@l1, anchor=:NW]
 }
 pin P = [
-    logo1   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 0, 4, 2)],
-    tempo   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(4, 0, 3, 3)],
-    logo2   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(7, 0, 4, 2)],
-    nome1   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 2, 4, 1)],
-    nome2   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(7, 2, 4, 1)],
-    meio    = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 3, 11, 2)],
-    atleta1 = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 5, 4, 3)],
-    total   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(4, 5, 3, 3)],
-    atleta2 = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(7, 5, 4, 3)],
-    grade   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 0, 11, 8)],
+    logo1   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 1, 0, 1)],
+    tempo   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(1, 2, 0, 2)],
+    logo2   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(2, 3, 0, 1)],
+    nome1   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 1, 1, 2)],
+    nome2   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(2, 3, 1, 2)],
+    meio    = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 3, 2, 3)],
+    atleta1 = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 1, 3, 4)],
+    total   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(1, 2, 3, 4)],
+    atleta2 = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(2, 3, 3, 4)],
+    grade   = pico.layer.empty [up=pico.layer.world, clear=true, target=painel(0, 3, 0, 4)],
 ]
 loop k, l in P {
     val old = pico.set.layer(l)
@@ -101,12 +104,12 @@ func desenha () {
 task Grade () {
     in <:tela> C.grade, do {
         loop on :tela {
-            traco_h(0,    4/11, 2/8, 2, PRETO)        ;; over the names
-            traco_h(7/11, 1,    2/8, 2, PRETO)
-            traco_h(0,    1,    3/8, 2, PRETO)        ;; around the middle
-            traco_h(0,    1,    5/8, 2, PRETO)
-            traco_v(4/11, 2/8,  3/8, 2, PRETO)        ;; at the sides of the names
-            traco_v(7/11, 2/8,  3/8, 2, PRETO)
+            traco_h(COL@0, COL@1, LIN@1, 2, PRETO)    ;; over the names
+            traco_h(COL@2, COL@3, LIN@1, 2, PRETO)
+            traco_h(COL@0, COL@3, LIN@2, 2, PRETO)    ;; around the middle
+            traco_h(COL@0, COL@3, LIN@3, 2, PRETO)
+            traco_v(COL@1, LIN@1, LIN@2, 2, PRETO)    ;; at the sides of the names
+            traco_v(COL@2, LIN@1, LIN@2, 2, PRETO)
         }
     }
 }
@@ -115,7 +118,7 @@ task Grade () {
 task Logo (ctx, img) {
     in <:tela> ctx, do {
         loop on :tela {
-            poe(img, 0.5, 0.5, 0.5)
+            poe(img, 0.5, 0.5, 0.7)
         }
     }
 }
@@ -127,9 +130,9 @@ task Rotulo (ctx, jog) {
         loop on :tela {
             val j = jog()
             if NOME == j {
-                texto(NOMES@j ++ "_", 0.5, 0.5, 0.75, VERMELHO, :C)
+                texto(NOMES@j ++ "_", 0.5, 0.5, 0.65, VERMELHO, :C)
             } else {
-                texto(NOMES@j, 0.5, 0.5, 0.75, AZUL, :C)
+                texto(NOMES@j, 0.5, 0.5, 0.65, AZUL, :C)
             }
         }
     }
@@ -146,10 +149,11 @@ task Centro () {
     }
 }
 
-;; The referee, at the top of the total.
+;; The referee, at the top of the total, and the version at its left.
 task Arbitro () {
     in <:tela> C.total, do {
         loop on :tela {
+            texto("v" ++ VERSAO, 0.03, 0.02, 0.04, CINZA, :NW)
             val nome = if NOME == 2 => (NOMES@2 ++ "_") => NOMES@2
             texto(nome, 0.5, 0.03, 0.055, (if NOME == 2 => VERMELHO => CINZA), :N)
             poe(IMG.apito, 0.5 - largura(nome, 0.055)/2 - 0.06, 0.055, 0.08)
@@ -161,10 +165,8 @@ task Arbitro () {
 ;; THE REGIONS OF A PRESENTATION, OR OF A WARM-UP
 ;; ----------------------------------------------------------------------------
 
-;; The time that is left (`resta()`, in seconds), and the version; red at the
-;; end (`fim`). The other parameters are in the report.
+;; The time that is left (`resta()`, in seconds); red at the end (`fim`).
 task Relogio (resta, fim) {
-    val claro = if fim => BRANCO => CINZA
     in <:tela> C.tempo, do {
         loop on :tela {
             if fim {
@@ -172,7 +174,6 @@ task Relogio (resta, fim) {
             }
             val t = resta()
             texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), 0.5, 0.42, 0.37, BRANCO, :C)
-            texto("v" ++ VERSAO, 0.5, 0.0, 0.05, claro, :N)
         }
     }
 }
