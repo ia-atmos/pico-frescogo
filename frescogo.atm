@@ -40,7 +40,6 @@ val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
 
 ;; The state of the program, apart from the game (`J`, in `jogo.atm`).
 pin G = [
-    modo   = :apresentacao,     ;; or :esquenta (a warm-up)
     auto   = false,     ;; the automatic mode: a fall after a silence of the
     ultima = 0,         ;; radar, since this time (its last reading)
     inv    = false,     ;; the athletes changed sides
@@ -260,6 +259,7 @@ task Sequencia (tecla) {
     set J.saque = NOW
     val seq   = vector.insert(J.seqs, [])
     val crono = vector.insert(J.cronos, [arbitro=false])
+    spawn Ultimos(seq)
     som(:saque)
     if RADAR != nil {
         radar_clear()
@@ -357,7 +357,7 @@ func termina () {
         set CONF.tela.recorde = J.total
     }
     jogo_calc()
-    tela()
+    desenha()
 
     val ts = os.getenv("FRESCOGO_TS") || `:string fresco_ts()`
     `mkdir(A_STR_OF($REL)->s, 0777);`
@@ -393,6 +393,12 @@ task Apresentacao () {
     jogo_calc()             ;; nothing is left of the last presentation
     som(:reinicio)
 
+    ;; its regions of the screen
+    spawn Quedas()
+    spawn Pontos()
+    spawn Recorde(\{ J.total < CONF.tela.recorde })
+    spawn Luz(['!', r=0, g=150, b=0], \{ G.auto })      ;; green
+
     ;; the warnings: `aviso` seconds left, each time a sequence crosses them, and
     ;; the rest that ran out
     spawn {
@@ -409,8 +415,12 @@ task Apresentacao () {
 
     ;; CTRL-S ends it at any moment
     watching :key.dn until ctrl(it, "S") {
+        spawn Relogio(\{ max(0, J.mostra) }, false)
+        spawn Descanso(false)
         await Jogo()
     }
+    spawn Relogio(\{ max(0, J.mostra) }, true)      ;; red, at the end
+    spawn Descanso(true)
 
     ;; and saves it again, later
     loop {
@@ -425,8 +435,15 @@ task Esquenta () {
     vector.clear(E.golpes)
     som(:reinicio)
 
+    ;; its regions of the screen
+    spawn Pisca("AQUECIMENTO")
+    spawn Recorde(\{ false })
+    spawn Luz(['!', r=200, g=200, b=0], \{ true })     ;; yellow
+
     ;; CTRL-S ends it at any moment
     watching :key.dn until ctrl(it, "S") {
+        spawn Relogio(esquenta_resta, false)
+
         ;; until the serve; meanwhile, the referee edits names
         loop {
             set ESTADO = :ocioso
@@ -446,6 +463,7 @@ task Esquenta () {
             radar_clear()
         }
         spawn Leitor()
+        spawn Ultimos(E.golpes)
         spawn {
             await :quadro until esquenta_resta() <= CONF.tempos.aviso
             som(:aviso)
@@ -464,7 +482,9 @@ task Esquenta () {
     }
 
     set ESTADO = :fim
+    spawn Relogio(esquenta_resta, true)             ;; red, at the end
     som(:fim)
+    await false
 }
 
 ;; ----------------------------------------------------------------------------
@@ -487,16 +507,18 @@ do {
 
 ;; A presentation or a warm-up, one after the other: CTRL-R starts a new
 ;; presentation, and CTRL-E a warm-up, at any moment.
+spawn Base()            ;; the regions of the screen that are always there
+
 spawn {
+    var modo = :apresentacao
     loop {
         val _, e = watching :key.dn until ctrl(it, "R", "E") {
-            match G.modo {
+            match modo {
                 :apresentacao => await Apresentacao()
                 :esquenta     => await Esquenta()
             }
-            await false         ;; the end stays until a restart
         }
-        set G.modo = if e.key == "E" => :esquenta => :apresentacao
+        set modo = if e.key == "E" => :esquenta => :apresentacao
     }
 }
 
@@ -530,5 +552,5 @@ loop on :draw {
     emit :radar.vez
     emit :quadro
     jogo_calc()
-    tela()
+    desenha()
 }

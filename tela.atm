@@ -1,5 +1,9 @@
-;; The screen of the scoreboard: what the original draws, by regions. It
-;; only reads the state of the game (`J`, `ESTADO`, `NOME`, ...).
+;; The screen of the scoreboard: what the original draws, by regions. Each
+;; region is drawn by a task, at each picture of the screen (`desenha`), in
+;; two layers: `:tela.fundo` (the boxes, and what is always there) and then
+;; `:tela.frente` (what is drawn on them). The task of the program, of a
+;; presentation, of a warm-up, or of a sequence spawns the regions that are
+;; its own, which go away with it.
 ;;
 ;;      +-----------+---------+-----------+
 ;;      |   logo    |  tempo  |   logo    |     0..2
@@ -48,6 +52,17 @@ pin IMG = [
     raquete  = figura("data/icos/raq.png",        math.floor(40*dy)),
 ]
 
+;; One picture of the screen.
+func desenha () {
+    fundo(BRANCO)
+    emit @:global :tela.fundo
+    emit @:global :tela.frente
+}
+
+;; ----------------------------------------------------------------------------
+;; THE REGIONS OF THE PROGRAM
+;; ----------------------------------------------------------------------------
+
 ;; The name of an athlete, in blue; in red, with a cursor, while it is typed.
 func tela_nome (x, jog) {
     caixa(x, 2*H, 4*W, H, BRANCO, PRETO)
@@ -58,29 +73,61 @@ func tela_nome (x, jog) {
     }
 }
 
-;; The time that is left, the rest, and the parameters. Red at the end.
-func tela_tempo () {
-    val fim   = (ESTADO == :fim)
+;; What is always there: the logos, the names, the box of the middle with
+;; the radar, and the box of the referee.
+task Base () {
+    loop on :tela.fundo {
+        poe(IMG.logos@0, 2*W, H)
+        poe(IMG.logos@1, 9*W, H)
+        tela_nome(0*W, G.zer)
+        tela_nome(7*W, G.one)
+
+        caixa(0, 3*H, 11*W, 2*H-1, BRANCO, PRETO)
+        if RADAR != nil {
+            poe(IMG.radar, (if CONF.radar.lado == 0 => 20*dx => (width-20*dx)), 4*H)
+        }
+
+        caixa(4*W, 5*H, 3*W, 3*H, PRETO)
+        val arbitro = if NOME == 2 => (NOMES@2 ++ "_") => NOMES@2
+        texto(arbitro, MX, 5*H+12*dy, 20*dy, (if NOME == 2 => VERMELHO => CINZA), :topo)
+        poe(IMG.apito, MX - largura(arbitro, 20*dy)/2 - 15*dx, 5*H+20*dy)
+    }
+}
+
+;; ----------------------------------------------------------------------------
+;; THE REGIONS OF A PRESENTATION, OR OF A WARM-UP
+;; ----------------------------------------------------------------------------
+
+;; The time that is left (`resta()`, in seconds), and the parameters; red at
+;; the end (`fim`).
+task Relogio (resta, fim) {
     val claro = if fim => BRANCO => CINZA
-
-    caixa(4*W, 0, 3*W, 3*H, (if fim => VERMELHO => PRETO))
-
-    val t = if G.modo == :esquenta => esquenta_resta() => max(0, J.mostra)
-    texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), MX, 1.25*H-10*dy, 140*dy, BRANCO, :meio)
-
-    if G.modo == :apresentacao {
-        val resta = descanso_resta()
-        val cor   = if resta < 0 => VERMELHO => claro
-        texto(math.abs(resta) ++ " s", MX, 2.5*H, 35*dy, cor, :meio)
-        poe(IMG.descanso, MX-50*dx, 2.5*H)
-        if resta < 0 {
-            texto("(ESGOTADO)", MX, 2.5*H+30*dy, 20*dy, cor, :meio)
+    loop on :tela.fundo {
+        caixa(4*W, 0, 3*W, 3*H, (if fim => VERMELHO => PRETO))
+        val t = resta()
+        texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), MX, 1.25*H-10*dy, 140*dy, BRANCO, :meio)
+        texto("(" ++ conf_pars() ++ ")", MX, 0, 18*dy, claro, :topo)
+        if G.inv {
+            texto("inv", MX, 30*dy, 18*dy, claro, :topo)
         }
     }
+}
 
-    texto("(" ++ conf_pars() ++ ")", MX, 0, 18*dy, claro, :topo)
-    if G.inv {
-        texto("inv", MX, 30*dy, 18*dy, claro, :topo)
+;; The record: in red while `abaixo()`.
+task Recorde (abaixo) {
+    loop on :tela.frente {
+        val cor = if abaixo() => ['!', r=200, g=100, b=100] => CINZA
+        texto(CONF.tela.recorde, MX, 6*H-15*dy, 35*dy, cor, :meio)
+        poe(IMG.trofeu, MX - largura(CONF.tela.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
+    }
+}
+
+;; A light by the referee: yellow in a warm-up, green in the automatic mode.
+task Luz (cor, acesa) {
+    loop on :tela.frente {
+        if acesa() {
+            disco(6.5*W, 5.2*H, 20*dy, cor)
+        }
     }
 }
 
@@ -106,49 +153,52 @@ func tela_seta (esq) {
 
 ;; The last hit of each athlete, of the hits `golpes`: its speed for
 ;; `tela.velocidade`, and an arrow for `tela.seta`.
-func tela_ultimos (golpes) {
-    var de = nil
-    loop i in (1,2) {
-        val golpe = golpes@(#golpes-i)
-        if (golpe == nil) || (golpe.jog == de) {
-            skip            ;; the same athlete gave the last two hits
-        }
-        set de = golpe.jog
-        val esq = (de == G.zer)
-        if NOW <= (golpe.t + CONF.tela.velocidade) {
-            tela_ultima(esq, golpe.kmh)
-        }
-        if NOW <= (golpe.t + CONF.tela.seta) {
-            tela_seta(esq)
+task Ultimos (golpes) {
+    loop on :tela.frente {
+        var de = nil
+        loop i in (1,2) {
+            val golpe = golpes@(#golpes-i)
+            if (golpe == nil) || (golpe.jog == de) {
+                skip            ;; the same athlete gave the last two hits
+            }
+            set de = golpe.jog
+            val esq = (de == G.zer)
+            if NOW <= (golpe.t + CONF.tela.velocidade) {
+                tela_ultima(esq, golpe.kmh)
+            }
+            if NOW <= (golpe.t + CONF.tela.seta) {
+                tela_seta(esq)
+            }
         }
     }
 }
 
-;; The middle: the falls, or the warm-up, blinking (half of each second);
-;; and the last hits.
-func tela_meio () {
-    caixa(0, 3*H, 11*W, 2*H-1, BRANCO, PRETO)
+;; ----------------------------------------------------------------------------
+;; THE REGIONS OF A PRESENTATION
+;; ----------------------------------------------------------------------------
 
-    if G.modo == :esquenta {
-        if (NOW % 1000) < 500 {
-            texto("AQUECIMENTO", MX, height/2, 60*dy, VERMELHO, :meio)
+;; The rest that is left, under the time: red when it ran out.
+task Descanso (fim) {
+    val claro = if fim => BRANCO => CINZA
+    loop on :tela.frente {
+        val resta = descanso_resta()
+        val cor   = if resta < 0 => VERMELHO => claro
+        texto(math.abs(resta) ++ " s", MX, 2.5*H, 35*dy, cor, :meio)
+        poe(IMG.descanso, MX-50*dx, 2.5*H)
+        if resta < 0 {
+            texto("(ESGOTADO)", MX, 2.5*H+30*dy, 20*dy, cor, :meio)
         }
-        if ESTADO == :esquenta {
-            tela_ultimos(E.golpes)
-        }
-    } else {
+    }
+}
+
+;; The falls, in the middle, and the time that they took.
+task Quedas () {
+    loop on :tela.frente {
         disco(MX, height/2, 1.5*H, VERMELHO, PRETO)
         texto(jogo_quedas(), MX, height/2-15*dy, 110*dy, BRANCO, :meio)
         if jogo_desconto() > 0 {
             texto("-" ++ jogo_desconto() ++ " s", MX, height/2+60*dy, 22*dy, BRANCO, :meio)
         }
-        if ESTADO ?? :seq {
-            tela_ultimos(J.seqs@#)
-        }
-    }
-
-    if RADAR != nil {
-        poe(IMG.radar, (if CONF.radar.lado == 0 => 20*dx => (width-20*dx)), 4*H)
     }
 }
 
@@ -186,48 +236,31 @@ func tela_atleta (esq, x, jog) {
     poe(IMG.pontos, xi, 7.5*H+10*dy)
 }
 
-;; The referee, the record, and the total of the presentation (no total in
-;; a warm-up).
-func tela_total () {
-    caixa(4*W, 5*H, 3*W, 3*H, PRETO)
-
-    val arbitro = if NOME == 2 => (NOMES@2 ++ "_") => NOMES@2
-    texto(arbitro, MX, 5*H+12*dy, 20*dy, (if NOME == 2 => VERMELHO => CINZA), :topo)
-    poe(IMG.apito, MX - largura(arbitro, 20*dy)/2 - 15*dx, 5*H+20*dy)
-
-    ;; a light: yellow in a warm-up, green in the automatic mode
-    ifs {
-        G.modo == :esquenta => disco(6.5*W, 5.2*H, 20*dy, ['!', r=200, g=200, b=0])
-        G.auto              => disco(6.5*W, 5.2*H, 20*dy, ['!', r=0,   g=150, b=0])
-    }
-    ;; the record: in red while the total is below it (gray in a warm-up)
-    val abaixo = (G.modo == :apresentacao) && (J.total < CONF.tela.recorde)
-    texto(CONF.tela.recorde, MX, 6*H-15*dy, 35*dy, (if abaixo => ['!', r=200, g=100, b=100] => CINZA), :meio)
-    poe(IMG.trofeu, MX - largura(CONF.tela.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
-
-    if G.modo == :esquenta {
-        return
-    }
-
-    texto(J.total, MX, 7*H-15*dy, 140*dy, BRANCO, :meio)
-
-    ;; how it is made: the points of each athlete, with the balance
-    val ps = jogo_equ()
-    texto("(" ++ ps@0 ++ " + " ++ ps@1 ++ ")", MX, 7.5*H+20*dy, 15*dy, CINZA, :meio)
-}
-
-func tela () {
-    fundo(BRANCO)
-
-    poe(IMG.logos@0, 2*W, H)
-    poe(IMG.logos@1, 9*W, H)
-    tela_nome(0*W, G.zer)
-    tela_nome(7*W, G.one)
-    tela_tempo()
-    tela_meio()
-    if G.modo == :apresentacao {        ;; a warm-up has no points
+;; The two athletes, and the total of the presentation.
+task Pontos () {
+    loop on :tela.frente {
         tela_atleta(true,  1.25*W, G.zer)
         tela_atleta(false, 7.75*W, G.one)
+
+        texto(J.total, MX, 7*H-15*dy, 140*dy, BRANCO, :meio)
+        ;; how it is made: the points of each athlete, with the balance
+        val ps = jogo_equ()
+        texto("(" ++ ps@0 ++ " + " ++ ps@1 ++ ")", MX, 7.5*H+20*dy, 15*dy, CINZA, :meio)
     }
-    tela_total()
+}
+
+;; ----------------------------------------------------------------------------
+;; THE REGIONS OF A WARM-UP
+;; ----------------------------------------------------------------------------
+
+;; A text that blinks in the middle, half of each second.
+task Pisca (txt) {
+    loop {
+        watching 500ms {
+            loop on :tela.frente {
+                texto(txt, MX, height/2, 60*dy, VERMELHO, :meio)
+            }
+        }
+        await 500ms
+    }
 }
