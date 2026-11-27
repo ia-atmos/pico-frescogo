@@ -39,7 +39,7 @@ func estado (e, j) {
         e == "digitando" => :nome
         e != "jogando"   => :ocioso
         j == "jogando"   => :seq.golpes
-        else             => :seq.saque
+        else             => :seq.espera
     }
 }
 

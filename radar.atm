@@ -1,15 +1,18 @@
 ;; The radar: the packets of the serial line, and the filter that turns
-;; them into the speeds of the hits (`radar_be` of the original, as it is).
+;; them into the hits (`radar_be` of the original, with the same behaviour).
 ;;
 ;; `radar()` reads one packet, waiting for it, and evaluates to:
-;;      -1: an error, or a doubt
-;;       0: nothing detected
-;;      >0: the speed of a ball that goes away, in km/h
-;;      <0: the speed of a ball that comes
+;;      :silencio           nothing was detected
+;;      :duvida             a reading that the filter does not accept
+;;      :golpe [jog=, kmh=] a hit: the athlete (0=esq, 1=dir) and its speed,
+;;                          ready to be emitted
+;;
+;; A packet has 23 bytes: 0x88, and then 22 characters, with the direction
+;; in the bit 1 of the 8th one (0=the ball goes away from the radar, 1=it
+;; comes), and the speed in the 9th to the 12th, in tenths of km/h.
 
 val RADAR_OUT = os.getenv("FRESCOGO_RADAR") || "radar.txt"      ;; the log
 
-;; `RADAR_OUT.println(msg)` and `flush`.
 func radar_out (msg) {
     pin f = io.open(RADAR_OUT, "a")
     io.write(f, msg, "\n")
@@ -19,13 +22,21 @@ func radar_clear () {
     serial.clear(RADAR)
 }
 
-var BUF_I = 0
-pin BUF = [ [0,0],[0,0],[0,0],[0,0],[0,0],      ;; `radar.reps` up to 10
-            [0,0],[0,0],[0,0],[0,0],[0,0] ]
-
-val _VEL = 0
-val _DIR = 1
-val _NOW = 2
+;; The state of the filter, which lasts from a sequence to the next one.
+;; `dir` is 0 (goes away), 1 (comes), or -1 (none).
+pin R = [
+    ;; the last `radar.reps` readings, the oldest first: a hit needs all of
+    ;; them in the same direction
+    leituras = [],
+    ;; the last hit: the side that the next one is expected from (the other
+    ;; one), and its time
+    proximo  = -1,
+    t        = 0,
+    kmh      = 0,       ;; the speed of the last reading accepted, or 0
+]
+loop in CONF.radar.reps {
+    vector.insert(R.leituras, [kmh=0, dir=0])
+}
 
 ;;;
 75 km/h = 20.8 m/s
@@ -33,80 +44,65 @@ val _NOW = 2
 15.0 m -  721 ms
 700ms sem repeticao é seguro
 ;;;
-pin LAST = [ 0,-1,0 ]   ;; vel, dir, ms
 
-func four (s, idx) {
-    (s@(idx+0) - 48) * 1000 +
-    (s@(idx+1) - 48) *  100 +
-    (s@(idx+2) - 48) *   10 +
-    (s@(idx+3) - 48) *    1
-}
-
-;; -1: erro ou duvida
-;; =0: nada detectado
-;; >0: velocidade se distanciando
-;; <0: velocidade se aproximando
-
-func radar () {
-    ;; aproximadamente 40/50 reads/sec (20/25 ms/read)
-    loop {
-        val n = serial.byte(RADAR)
-        until n == 0x88         ;; espera o primeiro byte do pacote
-    }
-
-    val s = serial.bytes(RADAR, 22)     ;; espera ter o tamanho do pacote
-
-    var dir = (s@7 >> 1) & 0x01         ;; 0=out, 1=in
-    var vel = four(s,8)
-    if vel == 0 {
-        set dir = -1                    ;; -1=none
-    }
-
-    val sdir = ifs {
+func seta (dir) {
+    ifs {
         dir == 0 => "->"
         dir == 1 => "<-"
         else     => "--"
     }
-    val msg = "[" ++ nf(NOW // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3)
+}
 
-    if vel != 0 {
+func radar () {
+    ;; about 40 to 50 packets per second (20 to 25 ms each)
+    loop {
+        until serial.byte(RADAR) == 0x88        ;; the first byte of a packet
+    }
+    val s = serial.bytes(RADAR, 22)
+
+    val kmh = tonumber(string.sub(s, 8, 11)) || 0      ;; in tenths
+    val dir = if kmh == 0 => -1 => ((string.byte(s, 7) >> 1) & 0x01)
+
+    val agora = string.format("[%04d]", NOW // 100)
+    if kmh != 0 {
+        radar_out(string.format("%s %s %03d", agora, seta(dir), kmh))
+    }
+
+    ;; the readings: the newest in, the oldest out
+    val nova = vector.insert(R.leituras, [kmh=kmh, dir=dir])
+    vector.remove(R.leituras, 0)
+
+    ;; a hit only when all the readings are in the same direction, with the
+    ;; highest of their speeds
+    if !iter.all(R.leituras, \{ it.dir == dir }) {
+        return :duvida
+    }
+    val vel = iter.max(iter.map(R.leituras, \{ it.kmh }))
+
+    ;; too soon after the last hit: `oposi` for a hit of the other side,
+    ;; which is expected; `igual` for one of the same side
+    val espera = if dir == R.proximo => CONF.radar.oposi => CONF.radar.igual
+    if NOW < (R.t + espera) {
+        return if vel == 0 => :silencio => :duvida
+    }
+
+    if (vel != 0) || (R.kmh != 0) {
+        val msg = string.format(">>> %s %s %03d <<<", agora, seta(dir), vel)
         radar_out(msg)
+        print(msg)
     }
 
-    set BUF@BUF_I@_VEL = vel
-    set BUF@BUF_I@_DIR = dir
-    val I = BUF_I
-    set BUF_I = (BUF_I + 1) % CONF.radar.reps
-
-    ;; aceito somente se N velocidades na mesma direcao
-    loop i in CONF.radar.reps {
-        set vel = max(vel, BUF@i@_VEL)
-        if BUF@i@_DIR != BUF@0@_DIR {
-            return -1       ;; falhou na direcao
-        }
-    }
-
-    ;; duvida se mesma dir em menos de 700ms
-    val now = NOW
-    val espera = if dir != LAST@_DIR => CONF.radar.igual => CONF.radar.oposi
-    if now < (LAST@_NOW + espera) {
-        return if vel == 0 => 0 => -1   ;; retorna 0 pra contar no timeout de queda
-    }
-
-    if (vel != 0) || (LAST@_VEL != 0) {
-        val msg2 = ">>> [" ++ nf(NOW // 100,4) ++ "] " ++ sdir ++ " " ++ nf(vel,3) ++ " <<<"
-        radar_out(msg2)
-        print(msg2)
-    }
-
-    set LAST@_VEL = vel
+    set R.kmh = vel
     if vel != 0 {
-        set LAST@_DIR = 1-dir   ;; negate current dir (only accept opposite next)
-        set LAST@_NOW = now
+        set R.proximo = 1 - dir
+        set R.t       = NOW
     }
+    set nova.dir = -1       ;; the next hit needs new readings
 
-    set BUF@I@_DIR = -1     ;; restarts buffer
-
-    set vel = (vel + 5) // 10   ;; round
-    if dir == 1 => -vel => vel
+    val v = (vel + 5) // 10     ;; rounded, in km/h
+    ifs {
+        v == 0 => :silencio
+        v == 1 => :duvida
+        else   => :golpe [jog=(if dir == 1 => (1 - CONF.radar.lado) => CONF.radar.lado), kmh=v]
+    }
 }

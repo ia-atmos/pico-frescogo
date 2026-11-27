@@ -81,7 +81,7 @@ func tela_tempo () {
     }
 
     texto("(" ++ conf_pars() ++ ")", MX, 0, 18*dy, claro, :topo)
-    if INV {
+    if G.inv {
         texto("inv", MX, 30*dy, 18*dy, claro, :topo)
     }
 }
@@ -126,7 +126,7 @@ func tela_meio () {
                 skip            ;; the same athlete gave the last two hits
             }
             set de = golpe.jog
-            val esq = (de == ZER)
+            val esq = (de == G.zer)
             if NOW <= (golpe.t + CONF.tela.velocidade) {
                 tela_ultima(esq, golpe.kmh)
             }
@@ -186,7 +186,7 @@ func tela_total () {
     ;; a light: yellow in a warm-up, green in the automatic mode
     ifs {
         J.esquenta => disco(6.5*W, 5.2*H, 20*dy, ['!', r=200, g=200, b=0])
-        AUTO       => disco(6.5*W, 5.2*H, 20*dy, ['!', r=0,   g=150, b=0])
+        G.auto     => disco(6.5*W, 5.2*H, 20*dy, ['!', r=0,   g=150, b=0])
     }
 
     val batido = J.total >= CONF.tela.recorde
@@ -205,11 +205,11 @@ func tela () {
 
     poe(IMG.logos@0, 2*W, H)
     poe(IMG.logos@1, 9*W, H)
-    tela_nome(0*W, ZER)
-    tela_nome(7*W, ONE)
+    tela_nome(0*W, G.zer)
+    tela_nome(7*W, G.one)
     tela_tempo()
     tela_meio()
-    tela_atleta(true,  1.25*W, ZER)
-    tela_atleta(false, 7.75*W, ONE)
+    tela_atleta(true,  1.25*W, G.zer)
+    tela_atleta(false, 7.75*W, G.one)
     tela_total()
 }

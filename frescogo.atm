@@ -38,13 +38,15 @@ static const char* fresco_ts (void) {
 val TRACE = os.getenv("FRESCOGO_TRACE") != nil
 val REL   = os.getenv("FRESCOGO_REL") || "relatorios"
 
-var AUTO = false             ;; the automatic mode: a fall after a silence
-var AUTO_ULTIMA = 0          ;; of the radar, since its last reading
-
-
-var INV = false                     ;; the athletes changed sides
-var ZER = 0
-var ONE = 1
+;; The state of the program, apart from the game (`J`, in `jogo.atm`).
+pin G = [
+    auto   = false,     ;; the automatic mode: a fall after a silence of the
+    ultima = 0,         ;; radar, since this time (its last reading)
+    inv    = false,     ;; the athletes changed sides
+    zer    = 0,         ;; the side of the first athlete
+    one    = 1,         ;; the side of the second one
+    micros = 0,         ;; the time, in microseconds
+]
 
 conf_load(os.getenv("FRESCOGO_CONF") || "data/conf.atm")
 
@@ -56,12 +58,10 @@ conf_load(os.getenv("FRESCOGO_CONF") || "data/conf.atm")
 ;; pico advances: once per frame, and also at the instant of each timer that
 ;; expires in between.
 
-var MICROS = 0
-
 spawn {
     loop dt on :clock {
-        set MICROS = MICROS + dt
-        set NOW    = MICROS // 1000
+        set G.micros = G.micros + dt
+        set NOW      = G.micros // 1000
     }
 }
 
@@ -136,7 +136,8 @@ func letra (e) {
 ;;  Apresentacao        from a restart (CTRL-R, CTRL-E) to the next one
 ;;      Jogo            sequences, until the time is over (the falls take
 ;;                      time too)
-;;          Ocioso      the referee serves (CTRL-UP), undoes, edits names
+;;          Saque       until the serve (CTRL-UP, or the automatic mode);
+;;                      meanwhile, the referee undoes, edits names
 ;;              Nome    a name being typed
 ;;          Sequencia   from a serve to a fall
 ;;      the end         the report; CTRL-S ends at any moment, and saves again
@@ -186,25 +187,39 @@ task Nome (idx) {
     }
 }
 
-;; Between sequences: until the referee serves, or until the falls that the
-;; referee adds (CTRL-=) take the time that was left.
-task Ocioso () {
-    watching :quadro until J.restante <= 0 {
-        loop {
-            set ESTADO = :ocioso
-            val e = await :key.dn until (it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"]))
-            match e.key {
-                "Backspace" => {
-                    desfaz()
-                    jogo_calc()
+;; Between sequences, until the serve. Evaluates to how it was served:
+;; `:tecla` (the referee, CTRL-UP), `:auto` (the automatic mode, a while
+;; after a fall, if `auto`), or nil (the falls that the referee added,
+;; CTRL-=, took the time that was left).
+task Saque (auto) {
+    set ESTADO = :ocioso
+    val ok, saque = watching :quadro until J.restante <= 0 {
+        par :any {
+            loop {
+                set ESTADO = :ocioso
+                val e = await :key.dn until (it.ctrl && X.in(it.key, ["Up", "U", "Backspace", "0", "1", "2"]))
+                match e.key {
+                    "Backspace" => {
+                        desfaz()
+                        jogo_calc()
+                    }
+                    "1"  => await Nome(0)
+                    "2"  => await Nome(1)
+                    "0"  => await Nome(2)
+                    else => break
                 }
-                "1"  => await Nome(0)
-                "2"  => await Nome(1)
-                "0"  => await Nome(2)
-                else => break
             }
+            :tecla
+        } with {
+            if !auto {
+                await false
+            }
+            val resaque = CONF.radar.resaque * 1ms
+            await resaque
+            :auto
         }
     }
+    if ok => saque => nil
 }
 
 ;; A hit of the radar, in the sequence that goes on.
@@ -218,7 +233,7 @@ func golpe (seq, g) {
 ;; undid the serve). `tecla` if the referee served (CTRL-UP), and not the
 ;; automatic mode.
 task Sequencia (tecla) {
-    set ESTADO  = :seq.saque
+    set ESTADO  = :seq.espera
     set J.saque = NOW
     val seq   = vector.insert(J.seqs, [])
     val crono = vector.insert(J.cronos, [arbitro=false])
@@ -235,12 +250,12 @@ task Sequencia (tecla) {
             await false
         }
         loop on :radar.vez {
-            val kmh = radar()
-            if math.abs(kmh) > 1 {
-                emit :golpe [jog=(if kmh > 0 => CONF.radar.lado => (1-CONF.radar.lado)), kmh=math.abs(kmh)]
+            val r = radar()
+            if r != :silencio {
+                set G.ultima = NOW      ;; a reading that is not silence
             }
-            if AUTO && (kmh != 0) {
-                set AUTO_ULTIMA = NOW     ;; any reading that is not silence
+            if type(r) == :table {
+                emit r                  ;; :golpe [jog=, kmh=]
             }
         }
     }
@@ -282,7 +297,7 @@ task Sequencia (tecla) {
             set crono.t = NOW
             if g == :arbitro {
                 set crono.arbitro = true
-                set AUTO_ULTIMA   = NOW     ;; the silence counts from here
+                set G.ultima      = NOW     ;; the silence counts from here
                 jogo_calc()
             } else {
                 golpe(seq, g)
@@ -295,7 +310,7 @@ task Sequencia (tecla) {
                 }
             } with {
                 ;; in the automatic mode: 3.5 seconds with no reading
-                await :quadro until ((!J.esquenta) && AUTO && (NOW >= (AUTO_ULTIMA + CONF.radar.silencio)))
+                await :quadro until ((!J.esquenta) && G.auto && (NOW >= (G.ultima + CONF.radar.silencio)))
                 :queda
             }
         }
@@ -304,16 +319,12 @@ task Sequencia (tecla) {
 
 ;; The sequences of a presentation, until the time is over.
 task Jogo () {
-    var direto = false      ;; the automatic mode serves by itself
+    var fim = nil
     loop {
-        if !direto {
-            await Ocioso()
-            until J.restante <= 0
-        }
-        val tecla = !direto
-        set direto = false
-
-        val fim = await Sequencia(tecla)
+        ;; after a fall, the automatic mode serves by itself
+        val saque = await Saque(G.auto && (fim == :queda))
+        until saque == nil
+        set fim = await Sequencia(saque == :tecla)
         until fim == :tempo
 
         if fim == :queda {
@@ -325,11 +336,6 @@ task Jogo () {
                 break
             }
             som(:queda)
-            if AUTO {
-                val resaque = CONF.radar.resaque * 1ms
-                await resaque
-                set direto = true
-            }
         }
     }
 }
@@ -445,21 +451,24 @@ spawn {
 ;; The keys that are valid at any moment.
 spawn {
     loop e on :key.dn until e.ctrl {
-        match e.key {
+        val r = match e.key {
             "A" => {                                    ;; the automatic mode
-                set AUTO = !AUTO
-                set AUTO_ULTIMA = NOW
+                set G.auto   = !G.auto
+                set G.ultima = NOW
             }
             "I" => {                                    ;; the athletes change sides
-                set INV = !INV
-                set ZER = 1 - ZER
-                set ONE = 1 - ONE
+                set G.inv = !G.inv
+                set G.zer = 1 - G.zer
+                set G.one = 1 - G.one
             }
-            "-" => set J.manual = J.manual - 1
-            "=" => set J.manual = J.manual + 1
-            "Q" => pico.quit()
+            "-"  => set J.manual = J.manual - 1
+            "="  => set J.manual = J.manual + 1
+            "Q"  => pico.quit()
+            else => :nada
         }
-        jogo_calc()
+        if r != :nada {
+            jogo_calc()
+        }
     }
 }
 

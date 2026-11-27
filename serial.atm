@@ -134,13 +134,13 @@ func serial.byte (fd) {
     c
 }
 
-;; The next `n` bytes, as a vector of numbers.
+;; The next `n` bytes, as a string.
 func serial.bytes (fd, n) {
-    val v = []
-    loop i in n {
-        vector.insert(v, serial.byte(fd))
+    var s = ""
+    loop in n {
+        set s = s ++ string.char(serial.byte(fd))
     }
-    v
+    s
 }
 
 ;; Discards what arrived and was not read.

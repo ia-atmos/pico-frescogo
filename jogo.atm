@@ -15,7 +15,7 @@ pin var CONF = []
 ;;
 ;;      :ocioso         between sequences
 ;;      :nome           a name is being typed (`NOME` tells which)
-;;      :seq.saque      a sequence: served, with no hit yet
+;;      :seq.espera     a sequence: served, waiting for the first hit
 ;;      :seq.golpes     a sequence: the hits
 ;;      :fim            the presentation ended
 ;;
@@ -142,7 +142,7 @@ func jogo_desconto () {
 ;; 5 seconds each time, is taken from `descanso`. Negative when it ran out.
 func descanso_resta () {
     var ms = J.descanso
-    if ESTADO == :seq.saque {
+    if ESTADO == :seq.espera {
         set ms = ms + max(0, NOW - J.saque - (CONF.tempos.saque * 1000))
     }
     CONF.tempos.descanso - (ms // 1000)
