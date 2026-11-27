@@ -188,13 +188,12 @@ task Recorde (abaixo) {
     }
 }
 
-;; A light by the referee, while `acesa()`: green in the automatic mode.
-task Luz (cor, acesa) {
+;; The light of the automatic mode, by the referee: green when it is on, and
+;; dark when it is off.
+task Luz () {
     in <:tela> C.total, do {
         loop on :tela {
-            if acesa() {
-                disco(0.83, 0.067, 0.053, cor)
-            }
+            disco(0.83, 0.067, 0.053, (if G.auto => ['!', r=0, g=150, b=0] => cinza(60)))
         }
     }
 }
@@ -206,8 +205,9 @@ func tela_ultima (esq, kmh) {
     }
     val x   = if esq => 0.136 => 0.864
     val cor = if kmh >= CONF.pontos.minima => PRETO => cinza(200)
-    texto(kmh,    x, 0.62, 0.48, cor, :S)
-    texto("km/h", x, 0.62, 0.12, cor, :N)
+    val h = 0.48                                ;; the number, centered
+    texto(kmh,    x, 0.45,       h,      cor, :C)
+    texto("km/h", x, 0.45 + h/2, h/4,    cor, :N)    ;; under it, a quarter of it
 }
 
 ;; An arrow in the middle, from the side of who hit.

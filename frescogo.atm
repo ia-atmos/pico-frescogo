@@ -452,7 +452,6 @@ task Apresentacao () {
     pin regioes = tasks()
     spawn Pontos()
     spawn Recorde(\{ J.total < CONF.tela.recorde })
-    spawn Luz(['!', r=0, g=150, b=0], \{ G.auto })      ;; green
 
     ;; the warnings: `aviso` seconds left, each time a sequence crosses them, and
     ;; the rest that ran out
@@ -582,6 +581,7 @@ spawn Rotulo(C.nome1, \{ G.zer })
 spawn Rotulo(C.nome2, \{ G.one })
 spawn Centro()
 spawn Arbitro()
+spawn Luz()                 ;; of the automatic mode
 spawn Grade()               ;; over all
 spawn Teclas()          ;; the commands of the referee
 
