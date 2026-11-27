@@ -172,6 +172,16 @@ task Ultimos (golpes) {
     }
 }
 
+;; An arrow from the side of who hit, for `tela.seta`.
+task Seta (esq) {
+    val seta = CONF.tela.seta * 1ms
+    watching seta {
+        loop on :tela.frente {
+            tela_seta(esq)
+        }
+    }
+}
+
 ;; ----------------------------------------------------------------------------
 ;; THE REGIONS OF A PRESENTATION
 ;; ----------------------------------------------------------------------------
@@ -261,7 +271,7 @@ task RadarAusente () {
     loop {
         watching 500ms {
             loop on :tela.frente {
-                loop x in [20*dx, width-20*dx] {
+                loop _, x in [20*dx, width-20*dx] {
                     disco(x, 4*H, 50*dy, VERMELHO)
                     poe(IMG.radar, x, 4*H)
                 }

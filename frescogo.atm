@@ -135,11 +135,11 @@ func letra (e) {
 ;;      Jogo            sequences, until the time is over (the falls take
 ;;                      time too)
 ;;          PreJogo     until the first serve: the names, the sides
-;;          Saque       until the serve (CTRL-UP, or the automatic mode);
-;;                      meanwhile, the referee undoes
 ;;              Nome    a name being typed
 ;;          Sequencia   from a serve to a fall
 ;;              Leitor  the reader of the hits: the radar, or the arrows
+;;          Saque       until the next serve (CTRL-UP, or the automatic
+;;                      mode); meanwhile, the referee undoes
 ;;      the end         the report; CTRL-S ends at any moment, and saves again
 ;;  Esquenta            from a restart (CTRL-E) to the next one: the serve,
 ;;                      and the hits until the time is over, with no falls
@@ -271,9 +271,12 @@ task Leitor.Radar (_) {
 ;; The arrows, with no radar: LEFT and RIGHT are the hits of the athlete at
 ;; each side. The speed of a hit is only known at the next one, from the
 ;; distance between the athletes (`manual`): a hit is emitted at the next
-;; one, and the last one stays in `ultimo`, for who spawned the reader.
+;; one, and the last one stays in `ultimo`, for who spawned the reader. The
+;; arrow of a hit is on the screen at once.
 task Leitor.Teclado (ultimo) {
+    pin setas = tasks()
     loop e on :key.dn until ((!e.ctrl) && X.in(e.key, ["Left", "Right"])) {
+        spawn @setas Seta(e.key == "Left")
         set G.ultima = NOW
         if ultimo.t != nil {
             val dt  = NOW - ultimo.t

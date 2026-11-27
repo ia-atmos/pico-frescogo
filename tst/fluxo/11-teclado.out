@@ -1,0 +1,81 @@
+[000000] snd restart.wav
+[000080] snd start.wav
+[000992] snd peteleco.mp3
+[001984] snd agudo.wav
+[002480] snd peteleco.mp3
+[003472] snd agudo.wav
+[003968] snd peteleco.mp3
+[004960] snd agudo.wav
+[005456] snd peteleco.mp3
+[006448] snd agudo.wav
+[006944] snd peteleco.mp3
+[007248] snd fall.wav
+[007328] snd start.wav
+[007728] snd peteleco.mp3
+[008608] snd peteleco.mp3
+[008976] snd laser.wav
+[009472] snd peteleco.mp3
+[009840] snd laser.wav
+[010336] snd peteleco.mp3
+[010704] snd laser.wav
+[011200] snd peteleco.mp3
+[011568] snd laser.wav
+[011872] snd fall.wav
+[011982] snd queda2.wav
+=== frescogo-TESTE-Atleta 1-Atleta 2.txt
+Data:          TESTE
+Versão:        v4.2.0 / sem radar / 360s
+
+Descanso:      0
+Quedas:        2
+Tempo:         10s + 24s das quedas
+
+Atleta 1:      00776 pontos / 009 golpes / 65.33 km/h
+Atleta 2:      00526 pontos / 008 golpes / 57.25 km/h
+
+Parcial:       01302 pontos
+Desequilibrio: 00000 (-)
+
+FINAL:         01302 pontos
+
+SEQUÊNCIA 01
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+000496   ->   054
+000992   <-   045
+001584   ->   067
+001984   <-   054
+002480   ->   045
+003072   <-   067
+003472   ->   054
+003968   <-   045
+004560   ->   067
+004960   <-   054
+005456   ->   045
+006048   <-   067
+006448   ->   054
+006944   <-   000
+
+
+SEQUÊNCIA 02
+============
+
+TEMPO   DIR   KMH
+-----   ---   ---
+007728   cronômetro pelo árbitro
+008112   <-   054
+008608   ->   073
+008976   <-   054
+009472   ->   073
+009840   <-   054
+010336   ->   073
+010704   <-   054
+011200   ->   073
+011568   <-   000
+
+
+
+=== resultados.csv
+TESTE ; 1302 ; 2 ; 0 ; Atleta 1 ; 776 ; 9 ; 65.33 ; Atleta 2 ; 526 ; 8 ; 57.25 ; 

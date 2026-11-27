@@ -17,3 +17,5 @@
 09-radar-ruido 500 490
 10-crono      100   90
 10-crono      700  690
+11-teclado      5    3
+11-teclado    130  127
