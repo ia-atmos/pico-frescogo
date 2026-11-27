@@ -184,8 +184,8 @@ func tela_atleta (esq, x, jog) {
     poe(IMG.pontos, xi, 7.5*H+10*dy)
 }
 
-;; The referee, the record, and the total of the presentation (only the
-;; referee in a warm-up).
+;; The referee, the record, and the total of the presentation (no total in
+;; a warm-up).
 func tela_total () {
     caixa(4*W, 5*H, 3*W, 3*H, PRETO)
 
@@ -198,13 +198,14 @@ func tela_total () {
         G.modo == :esquenta => disco(6.5*W, 5.2*H, 20*dy, ['!', r=200, g=200, b=0])
         G.auto              => disco(6.5*W, 5.2*H, 20*dy, ['!', r=0,   g=150, b=0])
     }
+    ;; the record: in red while the total is below it (gray in a warm-up)
+    val abaixo = (G.modo == :apresentacao) && (J.total < CONF.tela.recorde)
+    texto(CONF.tela.recorde, MX, 6*H-15*dy, 35*dy, (if abaixo => ['!', r=200, g=100, b=100] => CINZA), :meio)
+    poe(IMG.trofeu, MX - largura(CONF.tela.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
+
     if G.modo == :esquenta {
         return
     }
-
-    val batido = J.total >= CONF.tela.recorde
-    texto(CONF.tela.recorde, MX, 6*H-15*dy, 35*dy, (if batido => CINZA => ['!', r=200, g=100, b=100]), :meio)
-    poe(IMG.trofeu, MX - largura(CONF.tela.recorde, 35*dy)/2 - 25*dx, 6*H-10*dy)
 
     texto(J.total, MX, 7*H-15*dy, 140*dy, BRANCO, :meio)
 
