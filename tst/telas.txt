@@ -8,7 +8,7 @@
 01-jogo      2772 2770
 02-auto       600  560
 03-tempo     6106 6100
-04-esquenta  2000 1990
+04-esquenta  2000 1965
 05-nomes       40   35
 05-nomes      140  130
 06-quedas     900  890

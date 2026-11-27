@@ -68,9 +68,7 @@ func tela_tempo () {
     val t = if G.modo == :esquenta => esquenta_resta() => max(0, J.mostra)
     texto(nf(t // 60, 2) ++ ":" ++ nf(t % 60, 2), MX, 1.25*H-10*dy, 140*dy, BRANCO, :meio)
 
-    if G.modo == :esquenta {
-        texto("AQUECIMENTO", MX, 2.5*H, 35*dy, VERMELHO, :meio)
-    } else {
+    if G.modo == :apresentacao {
         val resta = descanso_resta()
         val cor   = if resta < 0 => VERMELHO => claro
         texto(math.abs(resta) ++ " s", MX, 2.5*H, 35*dy, cor, :meio)
@@ -126,11 +124,15 @@ func tela_ultimos (golpes) {
     }
 }
 
-;; The middle: the falls (not in a warm-up), and the last hits.
+;; The middle: the falls, or the warm-up, blinking (half of each second);
+;; and the last hits.
 func tela_meio () {
     caixa(0, 3*H, 11*W, 2*H-1, BRANCO, PRETO)
 
     if G.modo == :esquenta {
+        if (NOW % 1000) < 500 {
+            texto("AQUECIMENTO", MX, height/2, 60*dy, VERMELHO, :meio)
+        }
         if ESTADO == :esquenta {
             tela_ultimos(E.golpes)
         }
