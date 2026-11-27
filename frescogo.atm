@@ -582,6 +582,7 @@ spawn Rotulo(C.nome1, \{ G.zer })
 spawn Rotulo(C.nome2, \{ G.one })
 spawn Centro()
 spawn Arbitro()
+spawn Grade()               ;; over all
 spawn Teclas()          ;; the commands of the referee
 
 spawn {

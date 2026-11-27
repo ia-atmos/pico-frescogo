@@ -3,7 +3,7 @@
 ;; the sizes are fractions of the current layer (a panel of the screen): x
 ;; and widths of its width, y and heights of its height.
 ;;
-;; The images are drawn at half opacity.
+;; The images are drawn at half opacity, unless told otherwise.
 
 val BRANCO   = ['!', r=255, g=255, b=255]
 val PRETO    = ['!', r=0,   g=0,   b=0]
@@ -27,10 +27,15 @@ func caixa (x, y, w, h, cor) {
     pico.output.draw.rect ['%', x=x, y=y, w=w, h=h, anchor=:NW]
 }
 
-;; A line of one pixel around the whole layer.
-func moldura (cor) {
-    pico.set.pencil [color=cor, shape=[style=:stroke]]
-    pico.output.draw.rect ['%', x=0, y=0, w=1, h=1, anchor=:NW]
+;; A horizontal line from x1 to x2, and a vertical one from y1 to y2, of
+;; `px` pixels, centered on the given position.
+func traco_h (x1, x2, y, px, cor) {
+    val d = pico.get.scene().dim
+    caixa(x1, y - (px/2)/d.h, x2 - x1, px/d.h, cor)
+}
+func traco_v (x, y1, y2, px, cor) {
+    val d = pico.get.scene().dim
+    caixa(x - (px/2)/d.w, y1, px/d.w, y2 - y1, cor)
 }
 
 ;; A disc from its center, of diameter `d` (a height), with an optional
@@ -93,13 +98,13 @@ func texto (str, x, y, h, cor, onde) {
 
 ;; IMAGES
 
-;; An image, as a layer at half opacity, and the proportion of its width to
-;; its height.
-func figura (path) {
+;; An image, as a layer at the opacity `alpha` (half by default), and the
+;; proportion of its width to its height.
+func figura (path, alpha) {
     val d = pico.get.image(path)
     val l = pico.layer.image [path=path]
     val old = pico.set.layer(l)
-    pico.set.effect [alpha=128]
+    pico.set.effect [alpha=alpha || 128]
     pico.set.layer(old)
     [layer=l, r=d.w/d.h]
 }
