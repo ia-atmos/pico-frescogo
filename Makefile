@@ -9,8 +9,10 @@
 #
 # With a compiler of your own, already built, give its directory: it is used
 # as it is (not fetched, not moved to `LANG_REV`), and pico is built over it.
+# The same for pico, with a checkout of your own:
 #
 #   make run ATMOS_LANG=../lang
+#   make run ATMOS_LANG=../lang ATMOS_PICO=../env-pico
 #
 # The branch `4.1` (v4.1.0, exact) also runs the original, to check the port
 # against it (`make orig`).
@@ -24,10 +26,12 @@ PICO_URL := https://github.com/ia-atmos/env-pico
 PICO_REV := 125025b5b3bf7eb8435cb251525ed489358b77ea
 
 DEPS  := $(CURDIR)/.deps
-ATMOS := $(DEPS)/env-pico/atmos-pico
 
 ATMOS_LANG ?=
+ATMOS_PICO ?=
 LANG_DIR := $(if $(ATMOS_LANG),$(abspath $(ATMOS_LANG)),$(DEPS)/lang)
+PICO_DIR := $(if $(ATMOS_PICO),$(abspath $(ATMOS_PICO)),$(DEPS)/env-pico)
+ATMOS    := $(PICO_DIR)/atmos-pico
 
 .PHONY: all run test clean
 
@@ -42,12 +46,17 @@ $(DEPS)/lang/atmos:
 	git -C $(DEPS)/lang checkout -q $(LANG_REV)
 	$(MAKE) -C $(DEPS)/lang
 
+ifeq ($(ATMOS_PICO),)
 $(ATMOS): $(LANG_DIR)/atmos
 	@mkdir -p $(DEPS)
 	test -d $(DEPS)/env-pico || git clone -q $(PICO_URL) $(DEPS)/env-pico
 	git -C $(DEPS)/env-pico fetch -q origin
 	git -C $(DEPS)/env-pico checkout -q $(PICO_REV)
 	$(MAKE) -C $(DEPS)/env-pico ATMOS=$(LANG_DIR)
+else
+$(ATMOS): $(LANG_DIR)/atmos
+	$(MAKE) -C $(PICO_DIR) ATMOS=$(LANG_DIR)
+endif
 
 run: $(ATMOS)
 	$(ATMOS) frescogo.atm
