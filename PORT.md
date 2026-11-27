@@ -62,7 +62,7 @@ hits are only those of the radar (there are no hits by the keyboard), and
 a second `CTRL-↑` starts the clock. None is held here.
 
 The keys with `CTRL`, but the arrows, are held for `tempos.segurar`
-seconds (2), with a bar on the screen meanwhile, as in 5.x (since v4.1.0,
+seconds (2), as in 5.x (since v4.1.0,
 `#42`); the arrows count at once.
 
 | Key | What |

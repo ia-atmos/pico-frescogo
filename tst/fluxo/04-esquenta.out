@@ -1,5 +1,5 @@
 [000000] snd restart.wav
-[000080] snd restart.wav
+[000110] snd restart.wav
 [000160] snd start.wav
 >>> [0007] -> 500 <<<
 [000704] snd peteleco.mp3

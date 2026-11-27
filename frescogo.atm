@@ -482,18 +482,18 @@ task Esquenta () {
 }
 
 ;; THE COMMANDS: the keys with CTRL. An arrow counts at once; any other key
-;; only when it is held for `tempos.segurar` seconds, with a bar on the
-;; screen meanwhile, and only once while it is held. Each command is emitted
+;; only when it is held for `tempos.segurar` seconds, and only once while it
+;; is held. Each command is emitted
 ;; to every task as `:comando [key=]`.
 task Teclas () {
     val setas = ["Up", "Down", "Left", "Right"]
-    loop e on :key.dn until e.ctrl {
+    val ctrls = ["Left Ctrl", "Right Ctrl"]         ;; CTRL itself is no command
+    loop e on :key.dn until (e.ctrl && !X.in(e.key, ctrls)) {
         if X.in(e.key, setas) {
             emit @:global :comando [key=e.key]
         } else {
             val segurar = CONF.tempos.segurar * 1s
             val ok = watching :key.up {         ;; a key released cancels it
-                spawn Barra(NOW)
                 await segurar
             }
             if ok {

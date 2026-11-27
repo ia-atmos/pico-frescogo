@@ -1,5 +1,6 @@
 [000000] snd restart.wav
 [000080] snd start.wav
+[000880] snd peteleco.mp3
 >>> [0013] <- 710 <<<
 [001328] snd laser.wav
 >>> [0020] -> 606 <<<
@@ -26,9 +27,11 @@
 [009216] snd fall.wav
 [009296] snd start.wav
 >>> [0094] -- 000 <<<
+[010016] snd peteleco.mp3
 [012016] snd fall.wav
 [012176] snd start.wav
 >>> [0127] -> 350 <<<
+[012976] snd peteleco.mp3
 >>> [0134] -- 000 <<<
 >>> [0135] -> 588 <<<
 [013584] snd peteleco.mp3
@@ -47,7 +50,7 @@
 [020576] snd fall.wav
 [021576] snd start.wav
 [022272] snd fall.wav
-[022352] snd queda2.wav
+[022382] snd queda2.wav
 === frescogo-TESTE-Atleta 1-Atleta 2.txt
 Data:          TESTE
 Versão:        v4.2.0 / radar / 360s

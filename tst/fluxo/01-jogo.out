@@ -79,7 +79,7 @@
 [025232] snd trophaser.wav
 >>> [0259] -- 000 <<<
 [026016] snd fall.wav
-[026096] snd undo.wav
+[026126] snd undo.wav
 [026176] snd start.wav
 >>> [0263] -> 746 <<<
 [026384] snd laser.wav
@@ -139,8 +139,8 @@
 >>> [0431] -- 000 <<<
 [043392] snd fall.wav
 [043472] snd start.wav
-[043552] snd undo.wav
-[043952] snd queda2.wav
+[043582] snd undo.wav
+[043982] snd queda2.wav
 === frescogo-TESTE-Atleta 1-Atleta 2.txt
 Data:          TESTE
 Versão:        v4.2.0 / radar / 360s

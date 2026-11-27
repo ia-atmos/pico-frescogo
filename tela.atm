@@ -20,12 +20,14 @@
 
 include "desenho.atm"
 
-;; The whole screen, as the original has it.
+;; The whole screen, as the original has it; or a window of three quarters
+;; of the screen, with `tela.cheia = false` (or `FRESCOGO_JANELA=1`).
 pico.open [title="FrescoGO! " ++ VERSAO]
-val width  = pico.get.app().screen.w
-val height = pico.get.app().screen.h
+val cheia  = CONF.tela.cheia && (os.getenv("FRESCOGO_JANELA") == nil)
+val width  = if cheia => pico.get.app().screen.w => (pico.get.app().screen.w * 3 // 4)
+val height = if cheia => pico.get.app().screen.h => (pico.get.app().screen.h * 3 // 4)
 pico.set.dim ['!', w=width, h=height]
-pico.set.app [fullscreen=true]
+pico.set.app [fullscreen=cheia]
 
 pico.set.expert(true, 60)
 pico.set.aids(false)            ;; the keys with CTRL are of the scoreboard
@@ -91,15 +93,6 @@ task Base () {
         val arbitro = if NOME == 2 => (NOMES@2 ++ "_") => NOMES@2
         texto(arbitro, MX, 5*H+12*dy, 20*dy, (if NOME == 2 => VERMELHO => CINZA), :topo)
         poe(IMG.apito, MX - largura(arbitro, 20*dy)/2 - 15*dx, 5*H+20*dy)
-    }
-}
-
-;; While a command is held: a bar over the middle, which fills in
-;; `tempos.segurar`, from `t0`.
-task Barra (t0) {
-    loop on :tela.frente {
-        val f = min(1, (NOW - t0) / (CONF.tempos.segurar * 1000))
-        caixa(0, 3*H, 11*W*f, 15*dy, AZUL)
     }
 }
 
